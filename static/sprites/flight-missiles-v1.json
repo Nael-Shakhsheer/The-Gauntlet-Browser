@@ -1,0 +1,99 @@
+{
+  "columns": 4,
+  "overrides": "art/projectile-animations/source/overrides-v1.png",
+  "source": "art/projectile-animations/source/missiles-v1.png",
+  "cell": 96,
+  "rows": [
+    {
+      "description": "a slender wooden arrow, silver sharp arrowhead, pale feather fletching fluttering subtly, a short faint speed streak behind it",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "quick_arrow",
+      "nativeLength": 36,
+      "row": 0
+    },
+    {
+      "description": "a barbed wooden arrow with a bright green tip, two small vines fluttering backward along its shaft, a green trailing wisp",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "snare_arrow",
+      "nativeLength": 39,
+      "row": 1
+    },
+    {
+      "description": "a massive long golden arrow with a thick shaft and oversized broad spear arrowhead, bold gold feathers, a long blazing golden trail behind it; much larger and thicker than every other arrow",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "deadeye_arrow",
+      "nativeLength": 78,
+      "row": 2
+    },
+    {
+      "description": "a real straight silver tipped arrow with dark shaft and white feathers, fluttering fletching and a very short pale speed streak; this arrow will be rotated downwards by the game",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "rain_arrow",
+      "nativeLength": 34,
+      "row": 3
+    },
+    {
+      "description": "a small corked round amber glass potion bottle tumbling end over end, filled with golden light; four rotations 0, 90, 180, 270 degrees with tiny gold droplets behind",
+      "anchor": [
+        48,
+        48
+      ],
+      "id": "radiant_flask",
+      "nativeLength": 23,
+      "row": 4
+    },
+    {
+      "description": "a slender corked white gold sacred potion vial tumbling end over end; four rotations 0, 90, 180, 270 degrees with small pale golden sparks",
+      "anchor": [
+        48,
+        48
+      ],
+      "id": "sanctified_vial",
+      "nativeLength": 23,
+      "row": 5
+    },
+    {
+      "description": "a pointed knotted thorn pod dart with dark wood and lime green barbs, thorn vine tendrils wriggling behind it",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "briar_pod",
+      "nativeLength": 32,
+      "row": 6
+    },
+    {
+      "description": "one long sharp wooden thorn spike, ivory pointed tip, tiny green leaves and a short green trail fluttering behind",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "thorn_spike",
+      "nativeLength": 32,
+      "row": 7
+    },
+    {
+      "description": "a real slender steel throwing dagger, pointed blade forward, dark purple wrapped handle behind, bright glint shifting along the blade",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "flying_dagger",
+      "nativeLength": 28,
+      "row": 8
+    }
+  ],
+  "frames": 4
+}

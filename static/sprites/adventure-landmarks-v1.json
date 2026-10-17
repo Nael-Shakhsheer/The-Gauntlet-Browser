@@ -1,0 +1,61 @@
+{
+  "frames": 4,
+  "rows": [
+    {
+      "width": 250,
+      "row": 0,
+      "description": "a horizontal wooden footbridge crossing a small teal river patch, mossy stone banks, ropes and weathered posts; six middle planks missing, clearly broken gap; four changing water-ripple phases beneath the fixed bridge",
+      "id": "bridge_broken",
+      "height": 150
+    },
+    {
+      "width": 250,
+      "row": 1,
+      "description": "the SAME horizontal footbridge and teal river patch, SAME banks and ropes; all middle planks newly repaired with lighter timber; four changing water-ripple phases beneath the fixed bridge",
+      "id": "bridge_repaired",
+      "height": 150
+    },
+    {
+      "width": 110,
+      "row": 2,
+      "description": "an ancient mossy woodland stone altar, carved rune pedestal and a floating violet crystal, purple corruption tendrils; crystal pulses and tendrils curl in four phases",
+      "id": "shrine_corrupt",
+      "height": 94
+    },
+    {
+      "width": 110,
+      "row": 3,
+      "description": "the SAME mossy carved altar and pedestal, restored mint green crystal light, tiny golden petals and healthy ivy; gentle four-phase crystal pulse",
+      "id": "shrine_restored",
+      "height": 94
+    },
+    {
+      "width": 194,
+      "row": 4,
+      "description": "an imposing ruined gray stone archway with cracked lintel, broken columns, moss and ivy, dark OPEN entrance, no door; four subtle ivy movement phases, fixed stone silhouette",
+      "id": "ruins_arch",
+      "height": 138
+    },
+    {
+      "width": 145,
+      "row": 5,
+      "description": "an abandoned patched olive green canvas expedition tent, rolled bedroll, wooden poles and guy ropes; four gentle canvas flutter phases, entrance remains open",
+      "id": "camp_tent",
+      "height": 105
+    },
+    {
+      "width": 130,
+      "row": 6,
+      "description": "two small woodland village flagpoles joined by a swag of ochre and emerald triangular pennants, floral decoration; four fluttering phases, poles fixed",
+      "id": "celebration_banner",
+      "height": 62
+    }
+  ],
+  "anchor": [
+    128,
+    192
+  ],
+  "source": "art/adventure-sprites/source/landmarks-v1.png",
+  "cell": 256,
+  "columns": 4
+}

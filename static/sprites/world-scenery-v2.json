@@ -1,0 +1,316 @@
+{
+  "purpose": "Cosmetic depth-sorted scenery; no server collision or concealment",
+  "rows": 4,
+  "anchor": [
+    80,
+    140
+  ],
+  "objects": [
+    {
+      "scale": 0.3618421052631579,
+      "id": "oak",
+      "column": 0,
+      "sourceCrop": [
+        0,
+        0,
+        328,
+        366
+      ],
+      "row": 0,
+      "region": "woodland",
+      "placement": [
+        26,
+        30,
+        107,
+        110
+      ]
+    },
+    {
+      "scale": 0.3588039867109635,
+      "id": "leafy_birch",
+      "column": 1,
+      "sourceCrop": [
+        328,
+        0,
+        286,
+        366
+      ],
+      "row": 0,
+      "region": "woodland",
+      "placement": [
+        32,
+        32,
+        95,
+        108
+      ]
+    },
+    {
+      "scale": 0.3063583815028902,
+      "id": "berry_fern",
+      "column": 2,
+      "sourceCrop": [
+        614,
+        0,
+        310,
+        366
+      ],
+      "row": 0,
+      "region": "woodland",
+      "placement": [
+        36,
+        87,
+        87,
+        53
+      ]
+    },
+    {
+      "scale": 0.2919254658385093,
+      "id": "fallen_log",
+      "column": 3,
+      "sourceCrop": [
+        924,
+        0,
+        330,
+        366
+      ],
+      "row": 0,
+      "region": "woodland",
+      "placement": [
+        37,
+        93,
+        86,
+        47
+      ]
+    },
+    {
+      "scale": 0.3374233128834356,
+      "id": "ivy_arch",
+      "column": 0,
+      "sourceCrop": [
+        0,
+        366,
+        359,
+        296
+      ],
+      "row": 1,
+      "region": "ruins",
+      "placement": [
+        25,
+        50,
+        110,
+        90
+      ]
+    },
+    {
+      "scale": 0.34101382488479265,
+      "id": "ivy_column",
+      "column": 1,
+      "sourceCrop": [
+        359,
+        366,
+        255,
+        296
+      ],
+      "row": 1,
+      "region": "ruins",
+      "placement": [
+        43,
+        53,
+        74,
+        87
+      ]
+    },
+    {
+      "scale": 0.30246913580246915,
+      "id": "ivy_flowers",
+      "column": 2,
+      "sourceCrop": [
+        614,
+        366,
+        309,
+        296
+      ],
+      "row": 1,
+      "region": "ruins",
+      "placement": [
+        38,
+        91,
+        83,
+        49
+      ]
+    },
+    {
+      "scale": 0.31893687707641194,
+      "id": "masonry",
+      "column": 3,
+      "sourceCrop": [
+        923,
+        366,
+        331,
+        296
+      ],
+      "row": 1,
+      "region": "ruins",
+      "placement": [
+        32,
+        83,
+        96,
+        57
+      ]
+    },
+    {
+      "scale": 0.3418181818181818,
+      "id": "stalagmites",
+      "column": 0,
+      "sourceCrop": [
+        0,
+        662,
+        325,
+        271
+      ],
+      "row": 2,
+      "region": "cavern",
+      "placement": [
+        33,
+        54,
+        94,
+        86
+      ]
+    },
+    {
+      "scale": 0.3895582329317269,
+      "id": "glowing_mushroom",
+      "column": 1,
+      "sourceCrop": [
+        325,
+        662,
+        304,
+        271
+      ],
+      "row": 2,
+      "region": "cavern",
+      "placement": [
+        30,
+        43,
+        99,
+        97
+      ]
+    },
+    {
+      "scale": 0.3076923076923077,
+      "id": "blue_crystal",
+      "column": 2,
+      "sourceCrop": [
+        629,
+        662,
+        288,
+        271
+      ],
+      "row": 2,
+      "region": "cavern",
+      "placement": [
+        42,
+        80,
+        76,
+        60
+      ]
+    },
+    {
+      "scale": 0.33222591362126247,
+      "id": "shale",
+      "column": 3,
+      "sourceCrop": [
+        917,
+        662,
+        337,
+        271
+      ],
+      "row": 2,
+      "region": "cavern",
+      "placement": [
+        30,
+        95,
+        100,
+        45
+      ]
+    },
+    {
+      "scale": 0.35,
+      "id": "snow_pine",
+      "column": 0,
+      "sourceCrop": [
+        0,
+        933,
+        324,
+        321
+      ],
+      "row": 3,
+      "region": "frost",
+      "placement": [
+        34,
+        43,
+        91,
+        97
+      ]
+    },
+    {
+      "scale": 0.3805668016194332,
+      "id": "bare_birch",
+      "column": 1,
+      "sourceCrop": [
+        324,
+        933,
+        289,
+        321
+      ],
+      "row": 3,
+      "region": "frost",
+      "placement": [
+        33,
+        35,
+        94,
+        105
+      ]
+    },
+    {
+      "scale": 0.33212996389891697,
+      "id": "snow_berry",
+      "column": 2,
+      "sourceCrop": [
+        613,
+        933,
+        302,
+        321
+      ],
+      "row": 3,
+      "region": "frost",
+      "placement": [
+        34,
+        88,
+        92,
+        52
+      ]
+    },
+    {
+      "scale": 0.34615384615384615,
+      "id": "ice_arch",
+      "column": 3,
+      "sourceCrop": [
+        915,
+        933,
+        339,
+        321
+      ],
+      "row": 3,
+      "region": "frost",
+      "placement": [
+        26,
+        49,
+        108,
+        91
+      ]
+    }
+  ],
+  "cell": 160,
+  "columns": 4
+}

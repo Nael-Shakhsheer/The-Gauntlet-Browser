@@ -20,6 +20,7 @@ from urllib.request import Request, urlopen
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import game
 import server
+import adventure
 
 
 def main():
@@ -27,6 +28,7 @@ def main():
     args.add_argument('--seconds', type=float, default=30)
     args.add_argument('--port', type=int, default=0)
     args.add_argument('--keep-open', action='store_true')
+    args.add_argument('--adventure', action='store_true', help='Exercise placed woodland groups and the ruins guardian instead of Gauntlet waves.')
     args.add_argument('--report', type=Path)
     options = args.parse_args()
     world = game.GameWorld()
@@ -39,8 +41,12 @@ def main():
     for pid, hero in zip(ids, heroes):
         world.action(code, pid, {'action':'class', 'class':hero})
         world.action(code, pid, {'action':'loadout', 'abilities':[a[0] for a in game.ABILITY_SETS[hero][::2]]})
+    if options.adventure: world.action(code, host, {'action':'runOptions','mode':'adventure'})
     world.action(code, host, {'action':'start'})
     room = world.rooms[code]
+    if options.adventure:
+        for p in room['players'].values():
+            d=p['dialogue'];world.action(code,p['id'],dict(action='dialogueNext',id=d['id'],page=d['page']))
     room['story']['encountered'] = True
     errors, ticks = [], []
     class ErrorCapture(logging.Handler):
@@ -64,8 +70,9 @@ def main():
     stop = threading.Event()
     http = threading.Thread(target=listener.serve_forever, daemon=True); http.start()
     simulator = threading.Thread(target=server._simulation_loop, args=(stop,), daemon=True); simulator.start()
-    start = time.monotonic(); responses = []; moves = [0]*4
+    start = time.monotonic(); responses = []; moves = [0]*4; large_moves = [0]*4
     stages = [(7,'squadron'),(13,'regular'),(17,'regular'),(20,'boss'),(25,'dragon')]
+    if options.adventure: stages=[(1,'road'),(2,'crossroads'),(3,'camp'),(4,'shrine'),(6,'ruins')]
     def request(path, payload=None):
         data = json.dumps(payload).encode() if payload is not None else None
         before = time.perf_counter()
@@ -84,7 +91,9 @@ def main():
                 view = request(f'/api/state?room={code}&player={ids[index]}')
                 own = next(p for p in view['players'] if p['id'] == ids[index])
                 position = (own['x'],own['y'])
-                if previous and math.dist(previous,position) > .1: moves[index] += 1
+                if previous and math.dist(previous,position) > .1:
+                    moves[index] += 1
+                    if options.adventure and (own['x']>932 or own['y']>510):large_moves[index] += 1
                 previous = position
                 if sequence%15 == 0:
                     # Normal cooldown/mana rejection is expected, not a server fault.
@@ -105,7 +114,13 @@ def main():
                         hazards=[],projectiles=[],environment=None,objective=None,assassinationStage=None,
                         bossStages=[stage] if kind in ('boss','dragon') else [],miniBossStages=[])
             world._dismiss_summons(room)
-            if kind == 'squadron':
+            if options.adventure:
+                adventure.enter(world,room,kind,'south')
+                if kind in ('shrine','ruins'): adventure.spawn_guardian(world,room,final=kind=='ruins')
+                for p in room['players'].values():
+                    x,y=adventure.point(room,430+list(room['players']).index(p['id'])*30,310)
+                    p.update(x=x,y=y)
+            elif kind == 'squadron':
                 choose = lambda values: 'squadron' if 'empowered' in values else values[0]
                 with patch('game.random.choice',side_effect=choose): world._spawn_mini_boss(room)
                 world._tune_enemy_group(room)
@@ -125,9 +140,11 @@ def main():
     health = request('/healthz')
     ordered = sorted(responses)
     report = {'clients':4,'seconds':options.seconds,'requests':len(responses),'simulationTicks':len(ticks),
-              'movingSnapshotsPerClient':moves,'httpMedianMs':round(statistics.median(responses)*1000,2),
+              'movingSnapshotsPerClient':moves,'largeFieldMovingSnapshotsPerClient':large_moves,
+              'httpMedianMs':round(statistics.median(responses)*1000,2),
               'httpP95Ms':round(ordered[int(len(ordered)*.95)]*1000,2),
               'tickMaxMs':round(max(ticks)*1000,2),'errors':errors,'health':health,
+              'mode':'adventure' if options.adventure else 'gauntlet',
               'fixtures':[{'stage':s,'kind':k} for s,k in stages],
               'note':'Synthetic localhost reliability fixtures with extra hero/enemy HP; not balance or physical-phone testing.'}
     if options.report:
@@ -135,6 +152,7 @@ def main():
         options.report.write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(report),flush=True)
     assert not errors and all(moves) and health['ok'], 'Multiplayer reliability probe failed'
+    if options.adventure:assert all(large_moves), 'All clients must move outside the old field bounds'
     if options.keep_open:
         print('Browser QA: '+base,flush=True)
         try:

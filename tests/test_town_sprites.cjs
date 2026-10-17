@@ -9,6 +9,10 @@ vm.runInContext(fs.readFileSync(path.join(__dirname,'../static/town-sprites.js')
   await new Promise(setImmediate);
   const renderer = sandbox.window.GauntletTownSprites;
   const ctx = { save(){}, restore(){}, drawImage(...args){ drawn=args; } };
+  // Only request sprites when they first become relevant, then let metadata arrive.
+  for(const key of ['Merchant','Guildmaster','Alchemist','Innkeeper',...Array.from({length:8},(_,i)=>'Villager'+String(i+1).padStart(2,'0'))])assert.equal(renderer.character(ctx,key,100,100),false);
+  renderer.chest(ctx,{x:100,y:100,opened:false});
+  await new Promise(setImmediate);
   const directions=['south','south-east','east','north-east','north','north-west','west','south-west'];
   for (const key of ['Merchant','Guildmaster','Alchemist','Innkeeper',...Array.from({length:8},(_,i)=>'Villager'+String(i+1).padStart(2,'0'))]) {
     const png=fs.readFileSync(path.join(__dirname,'../static/sprites/'+key.toLowerCase()+'-idle.png'));

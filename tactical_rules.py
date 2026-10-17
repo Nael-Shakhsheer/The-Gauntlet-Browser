@@ -51,7 +51,7 @@ def summon_health(player, template):
     return math.ceil(template['hp']*factor)
 
 def refresh_summon_health(player, summon, template):
-    hp = summon_health(player, template)
+    hp = summon_health(player, template)+summon.get('trainingHp',0)
     if summon['maxHp'] != hp:
         fraction = summon.setdefault('gearHealthFraction', summon['hp']/summon['maxHp'])
         summon['hp'] = max(1, round(fraction*hp))

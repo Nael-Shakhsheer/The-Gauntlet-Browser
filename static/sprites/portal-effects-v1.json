@@ -1,0 +1,27 @@
+﻿{
+    "version":  1,
+    "cell":  160,
+    "frameDurationMs":  [
+                            750,
+                            170,
+                            130,
+                            200
+                        ],
+    "anchor":  [
+                   80,
+                   144
+               ],
+    "loop":  [
+                 false,
+                 true,
+                 false,
+                 false
+             ],
+    "columns":  4,
+    "rows":  [
+                 "charge",
+                 "channel",
+                 "depart",
+                 "arrive"
+             ]
+}

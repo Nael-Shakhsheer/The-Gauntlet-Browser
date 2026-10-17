@@ -91,6 +91,8 @@ console.log('All four summon renderers and isolated summon damage tints: OK');
 
 
 (async () => {
+  // Compare damage against the same animation frame, independent of wall time.
+  sandbox.Date={now:()=>4500};
   sandbox.heroSprites = {};
   sandbox.SPRITE_DIRECTIONS = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'];
   vm.runInContext(source.slice(source.indexOf('function drawImportedHero('), source.indexOf('async function api(')), sandbox);

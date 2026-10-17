@@ -3,6 +3,14 @@ import math
 import random
 import secrets
 import time
+import feedback
+
+
+def dimensions(room):
+    """Authoritative outdoor bounds; legacy stages and interiors keep their size."""
+    if room.get('mode') == 'adventure' and room.get('phase') != 'puzzle':
+        return room.get('areaSize', (960, 540))
+    return 960, 540
 
 
 def prepare(room):
@@ -54,7 +62,22 @@ def circle_hit(ax,ay,bx,by,x,y,radius):
 def shot_block(room,ax,ay,bx,by,radius=0):
     hits = [(t,o) for o in obstacles(room)
             if (t:=circle_hit(ax,ay,bx,by,o["x"],o["y"],o["radius"]+radius)) is not None]
+    hits += [(t,b) for b in (room.get('environment') or {}).get('barriers',[])
+             if b.get('blocksShots') and (t:=rect_hit(ax,ay,bx,by,b,radius)) is not None]
     return min(hits,key=lambda hit:hit[0],default=None)
+
+
+def rect_hit(ax,ay,bx,by,rect,radius=0):
+    near,far=0.0,1.0
+    for origin,delta,low,high in ((ax,bx-ax,rect['x']-radius,rect['x']+rect['width']+radius),
+                                (ay,by-ay,rect['y']-radius,rect['y']+rect['height']+radius)):
+        if abs(delta)<.000001:
+            if not low<=origin<=high:return None
+        else:
+            a,b=sorted(((low-origin)/delta,(high-origin)/delta))
+            near,far=max(near,a),min(far,b)
+            if near>far:return None
+    return near
 
 
 def line_clear(room,a,b):
@@ -62,10 +85,19 @@ def line_clear(room,a,b):
 
 
 def walkable(room,x,y,radius=12):
-    return all(math.hypot(x-o["x"],y-o["y"]) >= radius+o["radius"] for o in obstacles(room))
+    return (all(math.hypot(x-o["x"],y-o["y"]) >= radius+o["radius"] for o in obstacles(room)) and
+            all(not (b['x']-radius < x < b['x']+b['width']+radius and
+                     b['y']-radius < y < b['y']+b['height']+radius)
+                for b in (room.get('environment') or {}).get('barriers', [])))
+
+
+def ground_clear(room, ax, ay, bx, by):
+    steps = max(1, math.ceil(math.hypot(bx-ax, by-ay)/8))
+    return all(walkable(room, ax+(bx-ax)*i/steps, ay+(by-ay)*i/steps) for i in range(1, steps+1))
 
 
 def move(room,actor,x,y,*,avoid=False):
+    width, height = dimensions(room)
     if actor.get('rootUntil', 0) > time.monotonic():
         actor['moving'] = False
         return
@@ -80,7 +112,7 @@ def move(room,actor,x,y,*,avoid=False):
     dx,dy = x-start_x,y-start_y
     steps = max(1,math.ceil(math.hypot(dx,dy)/8))
     for _ in range(steps):
-        nx,ny = max(28,min(932,actor["x"]+dx/steps)),max(30,min(510,actor["y"]+dy/steps))
+        nx,ny = max(28,min(width-28,actor["x"]+dx/steps)),max(30,min(height-30,actor["y"]+dy/steps))
         if walkable(room,nx,actor["y"]): actor["x"] = nx
         if walkable(room,actor["x"],ny): actor["y"] = ny
     if avoid and math.hypot(actor["x"]-start_x,actor["y"]-start_y) < math.hypot(dx,dy)*.3:
@@ -88,7 +120,7 @@ def move(room,actor,x,y,*,avoid=False):
         side = 1 if sum(ord(c) for c in actor["id"])%2 else -1
         for sign in (side,-side):
             nx,ny = start_x-dy*sign,start_y+dx*sign
-            if 28<=nx<=932 and 30<=ny<=510 and walkable(room,nx,ny):
+            if 28<=nx<=width-28 and 30<=ny<=height-30 and ground_clear(room,start_x,start_y,nx,ny):
                 actor["x"],actor["y"] = nx,ny
                 break
 
@@ -98,7 +130,7 @@ def player_move(room,actor,dx,dy,speed,dt):
               for z in (room.get("environment") or {}).get("zones",[]))
     vx,vy = dx*speed,dy*speed
     if icy:
-        blend = min(1,dt*3.5)
+        blend = 1-math.exp(-dt*3.5)
         vx = actor.get("slideVx",0)+(vx-actor.get("slideVx",0))*blend
         vy = actor.get("slideVy",0)+(vy-actor.get("slideVy",0))*blend
     actor["slideVx"],actor["slideVy"] = vx,vy
@@ -106,8 +138,11 @@ def player_move(room,actor,dx,dy,speed,dt):
 
 
 def damage_cover(world,room,obstacle,amount):
+    # Permanent walls can stop a charge or projectile, but are not breakable cover.
+    if 'hp' not in obstacle: return
     if obstacle["hp"] <= 0: return
     obstacle["hp"] = max(0,obstacle["hp"]-max(1,amount))
+    feedback.emit(room, 'material', x=obstacle['x'], y=obstacle['y'], material=obstacle.get('kind', 'rock'))
     world._add_effect(room,"impact",obstacle["x"],obstacle["y"],"#d6af7b",duration=.25)
     if not obstacle["hp"]:
         world._add_effect(room,"burst",obstacle["x"],obstacle["y"],"#d6af7b",duration=.4)
@@ -146,4 +181,5 @@ def view(room,now):
     env = room.get("environment")
     if not env or room["phase"] not in ("combat","chest","stage_exit"): return None
     return {"obstacles":[dict(o) for o in env["obstacles"]],
+        "barriers":[dict(b) for b in env.get('barriers',[])],
         "zones":[dict(z,warning=bool(z.get("warnAt")),warningLeft=max(0,z.get("warnAt",0)-now)) for z in env["zones"]]}

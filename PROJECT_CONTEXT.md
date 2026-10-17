@@ -1,6 +1,1355 @@
 # The Gauntlet - project handoff
 
-Last updated: **2026-10-09**.
+Last updated: **2026-10-16**.
+
+## GitHub source release — October 16
+
+This source release consolidates the current Adventure systems, woodland/Dunmere
+story, opening battle, hero/Ascension progression, shrine/crystal travel,
+awareness/respawns, UI/artwork, audio/music and performance improvements.
+Publication is based on GitHub main `ee51514`, preserving its prior hosted fixes
+and history rather than replacing it with the older local main branch.
+
+The public snapshot includes runtime assets, code, tests, documentation and audio
+rebuild sources. Private data/, credentials, logs, reports, release packages and
+non-audio authoring artwork are excluded; local originals remain. The obsolete
+26 runtime exports are removed from the public static tree. Existing unrelated
+remote files are preserved. Full artwork sources remain local under art/.
+
+Fresh checks before publication: 364 Python tests passed, zero failures/errors/
+skips; all 26 JavaScript client suites passed and all static JavaScript syntax
+checks passed. Snapshot files were hash-verified and scanned for common credential
+patterns. These checks are not a new human multiplayer/balance/listening review.
+
+Render auto-deploy is off in render.yaml. This is a GitHub source update; the
+hosted game requires a separate deployment. No local game server restart or
+private-save upload is part of this publication.
+
+## Adventure systems pass — October 16 (latest)
+
+Implemented the 12-part request in attachment
+`4f09e856-3b76-40a2-94a8-7ef5216ca340`. Local development only; no GitHub/Render
+publication. This section supersedes earlier finite-outdoor/free-recall behavior.
+Do not redo the prior opening, woodland expansion, dungeon, UIv3, artwork, audio
+or demand-loading work. Private saves were never fixtures.
+
+- `enemy_awareness.py` owns transient unaware/investigating/alert/searching/
+  returning states, range+LOS, last-known positions, three-second search and brief
+  !/? cues. Adventure detection has .25s investigation; Gauntlet retains immediate
+  acquisition. Hidden/downed/offline actors and invalid taunts cannot acquire or
+  steer homing. Committed role/boss attacks retain recorded aim. Direct visible
+  LOS hits can alert; bleed/summon damage cannot expose a hidden owner's position.
+  Offensive casts break concealment; incidental hazards/projectiles still damage.
+- `exploration_movement.py` replaces Adventure's combat-only dash gate with explicit
+  eligibility. Roots, downing, dialogue/Guild/interiors, menus, cooldown, scene and
+  collision checks remain. Village dash uses <=6px swept steps with actual town
+  walkability; dungeon/river/cover uses existing terrain movement. Client matches
+  eligibility and specific rejection reasons. Gauntlet combat dash unchanged.
+- `dialogue_choices.py` adds server-validated ID/page/revision choices, region/
+  practical questions, distinct attitudes, back/leave, available runner accept/
+  report actions, and caretaker treatment. Action choices precede optional lore.
+  Saved personal `dialogueDecisions` v1 is separate from shared sequential chapter
+  facts. Object inspections stay plain. `static/chapter.js` uses existing journal
+  state for Available / Active+Ready / Completed tabs, actionable default and
+  retained focus/scroll. No second quest state model.
+- `hero_skills.py` keeps woodland safe-hub learning/equipping and existing eight
+  trees. All eight fresh heroes tested earning/spending starter points, equipping
+  and casting in the road. `magic_runes.py` now explicitly requires turned-in
+  `chapter_outcome` (Dunmere conclusion) plus15 current unspent Magic Runes for new
+  Ascension; previously Ascended saves are grandfathered. Skills explains ordinary
+  safety separately from Ascension. No ordinary XP/grind progression added.
+- `soul_crystal.py` v1: permanent personal20-cap tool, initial20; ordinary1,
+  eligible elite/mini-boss3, final boss5. Connected living humans within450px share
+  credit; downed humans need recent participation<=30s. Companions can contribute
+  kills; bots do not hold crystals. Stable origin→highest-generation receipts,
+  bounded1024, reject duplicate/replayed lives. No per-soul sound/particles.
+- `village_portals.py` and client travel UI now use discovered spatial map nodes,
+  inactive reasons/current position, selection panel, Previous/Next keyboard/touch
+  targets and existing wheel/zoom/pan. The compact crystal charge stays in the HUD;
+  Menu also offers Travel map. Free method requires a source shrine; crystal
+  method requires20 from EVERY connected human. Pending invitations wait while
+  teammates approach, expose names/readiness and then channel3s. Offline/bots do
+  not block. Movement/damage/locks/nearby enemies interrupt. Charge+area+landing
+  commit through one confirmed save with whole-room rollback on failure; HP/CD/
+  recovery stay unchanged. Legacy portalReturn facts preserved but arbitrary free
+  trail-return destinations no longer exposed. Cached details avoid50ms button
+  replacement that actual browser review caught. Old-server client mismatch gives
+  a readable restart notice rather than a JS exception.
+- `outdoor_respawns.py` v1:600s wall-clock due time after whole ordinary group dies,
+  checked at most every2s and only in unoccupied areas. Partial groups never reset.
+  Stable origin/lifeGeneration and templates persist. Old cleared authored groups
+  reconstruct only known defeat receipts, with a FUTURE timer on first revisit.
+  Exclude hunter wolves, camp guards, mill quest guards, shrine guards, bosses,
+  opening, dungeon waves and hubs. Repeat generation payout1 ordinaryRune/kill,
+  cap6/group/cycle; no unique loot/MagicRune/milestone duplication. Timing remains
+  prototype balance, not human-certified recharge/ten-minute pacing.
+- `cottage.py` v1 adds Mara,5 shared ordinaryRunes for personal living HP+mana.
+  Fullbothfree; revision/request receipts, authoritative proximity and save-failure
+  rollback prevent duplicate payment. No bed/CD/crystal/point changes. Existing
+  innkeeper artwork reused; house/service labels identify cottage recovery.
+- `acquisitions.py` publishes private item/pending/conversion/MagicRune notices
+  after confirmed Adventure storage; transient restore baselines prevent replay.
+  No steady-tick inventory deep-copy (focused regression). Client bounded24 queue,
+  one3.2s toast, coalesced related audio and existing restrained rune effect with
+  personal balance; muted/reduced settings respected. Shrine first attunement no
+  longer immediately opens a map over the acquired-rune toast.
+- `region_content.py` adds `eastern_threshold`1280×800 danger6, fields upper-east
+  exit .32/reversewest arrival; cellar hatch remains lower-east .67. Two territories,
+  authoritative shed footprint, existing granary art, sparse/bare scenery, cached
+  dry ground and optional `east_landmark` clue. Future Ashen Ridge explicitly closed;
+  not another completed biome. Irrigation retains green; fields/threshold foliage
+  gets bounded straw palette cache; at most2 ground canvases (~4MiB), no art-pack
+  regeneration. Restrained effects/following camera/mobilelandscape preserved.
+- `adventure.py`/`save_portability.py`: additive validated personal/generation fields
+  within existing Adventure worldv1 and portablev2. Old absent fields migrate;
+  unsupported records retain existing rejection/preservation protections. Awareness,
+  search clocks, UI/acquisition baselines and channels remain transient. Existing
+  save slots/export/import, world/character identity and Gauntlet compatibility
+  pass. Real cloud remains unconfigured; Render free disk remains temporary.
+
+Validation: **364 Python passed /0 failures/errors/skips (76.855s); 26 client suites
+and29 JS syntax checks passed.** Full isolated `tools/run_tests.py`; no private
+fixtures. Old steering/retarget tests now explicitly remove random cover when
+testing open-sightline behavior; LOS production checks were not weakened. Expected
+injected disk errors in log verify rollback/confirmed-notification behavior.
+Latest small old-server UI guard also reran systems/map-navigation suites+parse.
+See `reports/ADVENTURE_SYSTEMS_VALIDATION_2026-10-16.md` and SYSTEMS_* raw results.
+
+Actual ordinary-stat fresh Rogue UI: learned/equipped/cast woodland skill, road
+walking/dash/combat, retained14/80HP through charged recall, response attitude/back/
+accept and runner tabs. Late Dunmere access was helper-completed (normal Knight
+stats, no gear), not earned: cottage full-resource free treatment, following camera,
+fields→threshold walk, map selection, crystal depletion, restart recovery and free
+shrine travel at0 charge with offline host. Final latest-server browser repeat
+retained110/150HP across fields→threshold, reviewed imported granary/straw palette
+at844×390 and found no console warnings/errors. Desktop1366×768 also reviewed.
+Screenshots in `reports/screenshots/systems-*`. Human co-op, physical phone,
+perceptual audio, earned whole chapter and long respawn/recharge balance remain
+outstanding; clock-driven tests are labeled automated.
+
+Final isolated comparable seeded benchmark (`COMPLETION_PERFORMANCE_systems-final*`):
+tick means .083/.211/.097/.265ms (Brook1/Hollow4/Dunmere4/Cellar4); p95
+.152/.375/.195/.466ms. Compact payload medians11,184/16,781/16,498/14,509bytes,
+up627–1,001bytes from prior combined build for new live status/navigation.
+Explicit saves29.08–33.36ms means/max39.75ms; disk/locks retained. No FPS, network
+latency or long-session plateau certification. Documentation/report gives full
+comparison and existing remaining durability/serialization costs.
+
+Local activation completed20:34 EDT after verifying8 private save files in
+`data/backups/before-adventure-systems-20261016-203352`. No8000 listener was present
+at activation, so no unrelated process was stopped. New process24884 passed
+health/build/HTML/new-client-route checks: server `d5b02b1d62ad`, client
+`c08b45d73dbd`, protocol2 at http://127.0.0.1:8000/. See
+`reports/SYSTEMS_ACTIVATION_2026-10-16.json`. Refresh clients. QA listeners stopped
+and viewport override reset. Existing live-room/bed recovery rules still apply.
+
+The reattached request `daad780d-33b8-4580-b623-5729f2688303` has the same SHA256
+as the implemented request above. Reviewed current source and confirmed the live
+8000 build still matches `d5b02b1d62ad` / `c08b45d73dbd`. Fresh isolated recheck:
+19 Python tests (6 awareness/dash +13 Adventure systems),0 failures/errors/skips;
+5 client suites passed (systems, map navigation, movement, network recovery,
+landscape). Raw results use `SYSTEMS_REQUEST_RECHECK*`. No additional gameplay
+edits, private-save access for tests or server restart were necessary. The full
+364-test/26-client results and browser screenshots above remain prior validation,
+not a newly repeated full suite or human playtest.
+
+## Audio and score extension — October 16 (current)
+
+`art/audio/OVERHAUL_2026-10-16.md` supersedes the October 11 audio routing audit.
+198 Bfxr recipes retain DSP/vendor/license/manual-export protections; ordinary
+hits are quieter, actual projectile families/materials coalesce duplicate hits,
+and accepted UI/quest/skills/rune/Ascension outcomes have cues. `feedback.py`
+adds bounded launch/collision and committed-outcome metadata with cause IDs for
+reward coalescing; no combat damage/cooldown/movement rules changed. New
+`static/audio-routing.js` owns cue policy. Restrained visuals and stable scenery
+remain. Scene identity includes Adventure area/dungeon floor; travel/reconnect/
+hidden baselines discard old combat. Critical/personal cold loads have a
+cancellable 250 ms grace, never an unbounded replay queue.
+
+`static/music.js` adds ten original editable synthesized arrangements including
+Oakvale refuge, worn Dunmere and Caravan tension-to-refuge, with delayed combat
+engagement, five-second hold, crossfades and hidden/mute/disconnect/defeat stop.
+Sources/notes/permission are in `art/audio/music/`; WAVs/manifest in `static/music/`.
+Music does not replace Bfxr effects. Runtime needs no authoring dependencies;
+music/review authoring needs Python+NumPy (tested 2.3.5), effects need Node.
+`art/audio/WORKFLOW.md` has portable builds and manual-export protection.
+
+Settings v3 under gauntlet-audio preserve old preferences; defaults are master 1,
+music .16, effects .4, ambience .12, UI .3. Independent levels/previews, master
+mute, reduced decoration and shake remain browser-local. Effect decode cache is
+8 MiB; music cache <=two tracks/32 MiB; effects voices tiered 6/8/10. Sparse
+procedural/Bfxr atmosphere includes dry areas; no prop/actor idle loops. Server
+serves strict music files/new scripts; refresh clients after local activation.
+
+`art/audio/review.html` is the current playable reference. Validation: 338 Python
+tests and 24 client suites; synthetic 180-second trace with 12,988 events/peak eight
+voices, plus browser Caravan/dungeon/boss, Ascension and settings checks. See
+`reports/AUDIO_OVERHAUL_VALIDATION_2026-10-16.md` for exact evidence and limits.
+Actual listening and physical-phone/Bluetooth review remain outstanding; do not
+claim a complete soundtrack, realistic recordings or completed listening.
+No publication/deploy. Back up saves before restarting the real local server.
+
+Local activation completed October 16 after hash-verifying eight files in
+`data/backups/before-audio-music-overhaul-20261016-152217`. Server process 42988,
+HTTP health and new audio/music routes passed; server/client source fingerprints
+`db34f457077a` / `6a83de5a0a09`. See `reports/AUDIO_ACTIVATION_2026-10-16.json`.
+Existing in-memory rooms reset; saved recovery remains. Refresh other clients.
+
+## Completion and performance audit — October 16 (current)
+
+See `reports/COMPLETION_AUDIT_2026-10-16.md`: requirement-by-requirement statuses,
+implementation/evidence/remaining work, explicit prior-browser versus renderer/
+helper distinctions, raw measurements and prioritized follow-up. No GitHub/Render
+publication. Do not redo the completed expansion or UIv3/healer art that arrived
+concurrently with this audit.
+
+- Demand-load imported hero/enemy sheets/metadata, regional field/fork/ground
+  fallbacks, Adventure PNG packs, hero ability sheets, flight banks, NPC/chest and
+  enemy/cover atlases. Preserve existing village lazy loading and all source art.
+  Initial observed static menu resources169→47, encoded28,949,642→3,310,487 bytes.
+  PNG header RGBA estimate137,891,084→7,894,016 bytes; **not resident GPU memory**.
+- `game.state` full response remains backward compatible. `/api/state` negotiates
+  four immutable catalogs with the server fingerprint and skill UI with a token
+  covering build/class/progress/loadout/legacy/Ascension/safety/slot count.
+  `static/state-cache.js` reuses only matching same-room/player data; stale or
+  missing tokens force a full refresh. Dynamic simulation/acknowledgements,
+  cooldowns and eligibility always fresh. No change to50ms poll cadence/authority.
+  Seeded steady responses shrink56.8–66.8%; profiled state work25.3–45.2%.
+- WeakMap cache for stable scenery wrappers/bounds retains fade/depth behavior.
+  Package filters omit reports and authoring WAV previews in runtime mode, and
+  private env/key/log files in either mode. Sources/tests/licenses/rebuild files,
+  artwork/backups remain on disk. Same final safe files:53,080,027→49,713,341 bytes
+  uncompressed runtime contents. Whole-project size grew with concurrent art/Git/
+  reports; never equate development-storage savings with FPS.
+- Technical details now available in front-menu Settings with bounded timing and
+  same-origin static Resource Timing (no API query/save/player data). Two malformed
+  CSS glyphs corrected using Unicode escapes; preserved UIv3 styling.
+- Full isolated Python334 passed/0 failures/errors/skips (66.865s), client21 suites
+  and24 parse checks passed. Latest performance4 and HTTP3 subsets rerun, all pass.
+  Default sandbox HTTP rerun hit WinError10013; authorized localhost socket run
+  passed without weakening app locks/writes. Raw reports use COMPLETION_* names.
+- Actual fresh normal Knight browser: skipped intro explicitly, village arrival,
+  walking/release/menu stop, road combat/retreat and scrolling, overview/fogged
+  atlas/cave prompt at1366×768 and844×390. Console inspection before browser-tool
+  timeout had no game errors. Attempted Rootwater entry timed out in browser
+  automation; after recovery last state was road/prompt, so **not counted** as an
+  interior traverse. QA server8094 and its tab stopped; viewport reset. Prior
+  Later recovered the browser check: ordinary cave entry/map/retreat, HP89/150
+  retained across boundaries; wheel zoom125→188%. Another ordinary approach safely
+  avoided the packs. Fixed a screenshot-proven short-landscape interior-map issue:
+  compact two-column card leaves~220px of chart beside progress and expandable
+  notes. `audit-rootwater-map-fixed-844x390.png` and actual arrival captured.
+  A full cave/boss clear still was not performed. Prior
+  October15 ~96s Healer Caravan and earned Brook rune purchase remain prior actual
+  evidence; late Dunmere/Ascension remains helper-completed, not earned campaign.
+- Explicit durable saves31–39ms mean/max52ms; atomic replace/fsync/locks retained.
+  Browser ACK/render observations improved but focus/new artwork confound causal
+  FPS/latency claims. No long-session resident-memory plateau or multi-room load
+  certification. Physical phone, four-human co-op, full earned campaign pacing,
+  all8 human Ascended builds and audio listening remain outstanding. Cloud recovery
+  unconfigured/untested against real durable storage; no hosted durability claim.
+- Activated local8000 only after hash-verified6-file backup
+  `data/backups/before-completion-audit-20261016-100608/`. PID27584, server
+  **5fdcf71253f6**, client **5563a3e5732a**, protocol2. Live/source match;8 known
+  health/build/script/sprite routes200/no-store. One initial diagnostic guessed
+  an unused projectile filename404; all actual flight banks verified200. Restart
+  resets live rooms per established rule; existing saved facts/beds retained.
+
+Final combined activation supersedes that preliminary fingerprint/PID: further
+audio-routing/music and Ascended sprite edits arrived concurrently and were
+preserved. Full Python suite rerun after the last Python edit:334 passed,0 failures/
+errors/skips,77.441s (`COMPLETION_PYTHON_FINAL_2026-10-16.json`);21 client suites and
+27 JS parse checks pass (`COMPLETION_CLIENT_2026-10-16.json`). This does not certify
+perceptual audio comfort. Final server **c11cd7bcd313**, client **6fc4161ac92c**, PID39684
+at8000. Fresh verified6-file backup `data/backups/before-audit-final-20261016-103009/`;
+health/build/state-cache/music/audio-routing/ascended-sprites routes200/no-store,
+live/source hashes match (`COMPLETION_COMBINED_ACTIVATION_2026-10-16.json`). QA8094
+and owned tabs stopped; viewport reset. No publication/deployment.
+
+Combined menu snapshot server4664ec9f4e97/clientc66745f973fa:51 initial static requests,
+3,429,646 encoded bytes;78 /6,157,577 after Settings/audio. This has new concurrent
+audio work and is separate from the controlled October15 pair. Combined inventory
+477,194,325 project bytes,76,100,941 uncompressed runtime candidate,3,550,768 bytes
+omitted by the new package filter on those same files. New music/art accounts for
+content growth; nothing deleted. `COMPLETION_PERFORMANCE_combined-2026-10-16.json`
+has repeated same-fixture server measurements; earlier benchmark figures remain
+dated evidence. AST dependency inventory covers35 root Python modules, no external
+runtime imports. Node/canvas/audio vendor sources are authoring/test dependencies.
+
+The older section below describes the expansion activation before this audit;
+its fingerprints/PID are historical. Current audit is local only.
+
+## Last Caravan, expanded woodland, Dunmere and Ascension — October 15 (current)
+
+Both latest pasted requests are implemented locally. No GitHub publication or
+Render deployment. See `reports/WOODLAND_EXPANSION_VALIDATION_2026-10-15.md` for
+activation/build details, exact evidence and limitations. Earlier work-log pending
+notes and older handoff sections are historical; do not redo these features.
+
+Activated port8000 after a verified 6-file backup in
+`data/backups/before-woodland-dunmere-ascension-20261015-114429/`.
+Live server **8a2840e150ba**, client **f1fce0b19386**, protocol2; read-only health/
+new-client-route checks all returned200/no-store and fingerprints match source.
+Local Python3.12.14 validated; .python-version still targets3.13 for deployment. Owned
+QA servers/clients stopped and viewport reset. No private world used as fixture.
+
+- `static/world-scenery.js` fades complete overlapping decorative objects using
+  visible sprite bounds, short entry/exit hysteresis and a smooth transition.
+  Local hero, actors, warnings and interaction markers stay opaque. No rectangular
+  hero clipping/redraw. Portal/roof/dungeon/feature bounds match imported artwork.
+  Explicit deterministic scenery profiles keep Gauntlet arenas sparse (cap10),
+  bosses especially clear (cap6), and Adventure/village/route density independent.
+  Server-owned tactical cover, collision and projectile blocking are retained.
+- `opening.py` / `static/opening.js`: new Adventures start in The Last Caravan,
+  a finite controllable road battle with bounded guard support, distant dragon/
+  watch impact, withdrawal muster and Oakvale aftermath. Version1 ordered durable
+  facts discard transient clocks; retries reset only unfinished encounters, cost
+  no wipe currency and cannot farm arrival points. Skip introduction completes
+  the same facts without skipping the chapter. Old/imported worlds bypass it.
+  Connected humans gather; companions/offline players do not block. No-connected
+  parties pause. Mid-opening joins share the existing attempt.
+- `progression.py` explicitly distinguishes NPC dialogue, object inspection and
+  signs; unknown titles no longer acquire a human portrait/reply. Signs open and
+  discover directions only after E/tap. Rescue priority/exact-target validation
+  remain. Quest/report panels use their own compact presentation.
+- `chapter_flow.py` version1 provides11 shared sequential assignments: hunter,
+  bridge, water, shrine, watch, ruins, border, failed harvest, irrigation, cellar,
+  local conclusion. Accept/report explicitly with the Village Runner; ordinary
+  early evidence is cached. Border accepts in Oakvale and reports in Dunmere.
+  Main mechanisms/bosses explain accepted prerequisites. Old completed woodland
+  migrates to the border offer without replay or repeated historical shop payouts.
+  Completed cards show outcomes and next leads; tracking follows known routes.
+- `region_content.py` adds11 stable areas: brook, mill trail, logging yard, hollow,
+  burned watch, old network approach, border road, Dunmere, failed fields, ruined
+  mill and cellar. Authored larger spaces/paths/territories, recognizable landmarks,
+  loops and optional spring casket; no stage/town pressure. Ordinary outdoor
+  respawn generations were added by the later systems pass above.
+  Rootwater, Briarwatch, existing IDs and physical bridge shortcut remain intact.
+  Outdoor atlas extends discovered geography; cellar uses a separate interior map.
+- Three guarded travel shrines (Brook/Deepwood/Watch) separate permanent world
+  activation from once-per-character attunement rewards. Watch also needs its
+  register. Existing interruptible3s safe portal channel supports visited villages
+  and active shrines, requires connected-human gathering, rejects nearby danger/
+  seals, and preserves resources, recharge and the recovery bed. Late humans can
+  claim their own shrine receipts; shared chapter rewards reconcile once.
+- Dunmere has all existing hub services, a central portal and upstairs recovery
+  beds. Per-hub room/lock state preserves Oakvale. Fixed a new exit placement
+  collision with Dunmere's Guild (seed104731): select deterministic clear exit,
+  arrival and edge points and route full-width roads with existing collision rules.
+  24-seed accessibility regression passes; town generation itself is unchanged.
+- The playable Dunmere chain investigates3 field sites, clears2 channels/operates
+  the sluice, seals and defeats the Blighted Overseer in the mill cellar, recovers
+  the additive ledger and reports a local resolution. Restored water/green strip,
+  completed dialogue and permanent cellar-to-fields hatch show consequences.
+  An interrupted sealed fight restarts coherently; fixed kill/reward receipts and
+  wipe-once recovery remain. Legacy Adventure area/splash attacks now respect LOS
+  against these walls as well as older dungeon walls. Pumping works/Ashen Ridge
+  remain explicitly future leads, not playable regions.
+- `magic_runes.py` version1 adds personal Magic Runes, separate from shared shop
+  Runes. Ledger was written before reward implementation:8 guaranteed woodland,
+  1 optional spring casket,7 guaranteed Dunmere. Finite report/shrine/cache IDs,
+  retry receipts, expected ranks and confirmed-write rollback protect purchases.
+  Health/mana cost1, +5% unmodified class base per rank, additive/cap5 each, rounded
+  upward. Preserve current fractions/downing, old training and recharge on load/
+  purchase/class change. Ascension costs15 CURRENT unspent. Only16 exist in this
+  content: buying more than one ordinary rank prevents Ascension here; UI warns.
+- `ascension.py`: all8 heroes have a real signature,2 functional passives and
+  baseline +10% base HP/mana/+8% damage. Signatures commit for0.6s, cost mana/use
+  normal slot and ability recharge, obey LOS and reuse existing art/audio. Knight
+  committed strike/party barrier; Wizard controlled cluster; Archer piercing line;
+  Cleric cleansing mixture; Rogue collision-safe lunge; Druid roots/summon accord;
+  Bard interrupt/march; Healer rescue/barrier. Steady actor identifier, previews,
+  actual before/after stats and Ascension branch in Skills. Learn/equip/purchase
+  safely in either village. Guild changes retain Ascension and select the new kit;
+  respec cannot refund Magic Runes or bypass cooldowns. Gauntlet is unchanged.
+- Portable savev2/worldv1 extends additively with opening/chapter/region/hub/shrine/
+  personal progression records. Validate versions, costs, prerequisites, receipts,
+  world facts and bed geometry before importing. Originals/private identities are
+  preserved. Existing optional cloud projection uses the same records; no cloud
+  setup/credentials/uploads changed. Local disk only remains usable; Render free
+  filesystem is temporary. Save status still waits for confirmed storage.
+- Final isolated validation:330 Python PASS,0 failures/errors/skips (83.397s);
+  19 client suites PASS,0 failures;23 JS syntax checks PASS. Includes18 expansion,
+  8 opening and4 chapter tests, old saves/Gauntlet, one-time claims, rollback,
+  all8 casts/passives/stats, class/respec, dungeon retry, offline/late joins, portals,
+  LOS, hub geometry, export/recovery. No private saves used as fixtures.
+- Actual browser: ordinary Healer+Cleric caravan~96s; ordinary Knight+Rogue cleared
+  Brook, attuned, recalled and purchased earned Health150→158. Desktop1366×768/
+  landscape844×390 reviewed. A HELPER-completed world separately tested Dunmere,
+  3 personal attunements, exact15 Ascension, signature equip/cast and restart
+  recovery. It is not an earned chapter playthrough. Gauntlet Tester lobby/live
+  arena and returning to the preserved Adventure worked. Fresh game page recorded
+  no warnings/errors. Browser-tool telemetry403s are external to the game.
+- Automated ordinary probes:12 caravan party setups all93.25simsec;9 normal-stat
+  shop-kit encounters6.45–37.6simsec/zero downings. Functional fixtures, not human
+  balance certification. Four-palette wave/boss readability inspected in imported-
+  asset renderer fixtures. Human multiplayer/full chapter balance, physical-phone
+  play and perceptual sound listening remain outstanding. No new balance claims.
+
+## Adventure controls, distinct worlds and eight hero trees — October 13–14 (prior build)
+
+Local implementation only; no publication/deployment. Preserve the existing asset
+cleanup, lazy loading, dungeon/portal artwork, atlas, foreground cutback, collision,
+following camera, landscape gate, saves and Gauntlet loadouts. This pass supersedes
+the older movement values and Adventure pre-run/training presentation below.
+
+- Reproduced a concrete new-game failure: create/join responses included a private
+  recovery proof, but the client retained only room/player. Strict-session polling
+  then failed, leaving the lobby empty/disconnected. Full proof-bearing identities
+  now survive creation, Continue and browser recovery. `session_flow.py` introduces
+  explicit new-run/party-join operations, private idempotency receipts and boot
+  guards for ambiguous creation timeouts. New worlds/characters are distinct;
+  canceled or superseded responses cannot take over another screen/session.
+- Main actions are New Adventure / New Gauntlet run / Continue / Join / Settings.
+  Remembered cards query protected summaries. Main menu is distinct from checkpoint
+  recovery; Change mode opens a separate run, never converts a world. New Adventure
+  starts immediately in Oakvale; Gauntlet retains the classic lobby, host options
+  and three-from-six choice. New party members join in Oakvale with an unused hero;
+  returning characters use their private Continue identity, not just a room code.
+- Instrumented bounded anonymous render/request/state-age/dispatch/ack/release/
+  correction metrics and outermost RLock/tick/disk timings. Build fingerprints
+  distinguish live Python from refreshed JS/CSS; `/api/diagnostics` is proof-checked.
+  UI access: Menu → Technical details. No personal data is included in samples.
+- The single in-flight input request could block direction/release behind a lost
+  five-second request. `input-transport.js` cancels superseded input, uses ordered
+  sequences, a 450ms timeout and 180ms active heartbeat; server deadman is 650ms.
+  Scene/session epochs reject old input. Opening menus, rotation, disconnect and
+  switching worlds release inputs and cancel transient work. Prediction is bounded
+  to 200–350ms and correction speed to 8% of walking speed; authority is retained.
+  Anchored simulation deadlines remove work-plus-sleep drift. Avoided duplicate
+  interaction commits and transient-target saves, retaining atomic writes/locks.
+- `interactions.py` owns nearby target, action, range and eligibility. Revive
+  precedes props/exits, repeated hold cannot restart it, canceled hold tokens
+  reject late rescue requests, and stale exact targets reject instead of opening
+  another object. Explicit door/bed/stair/lock reasons replace silent failures.
+  Solo reconnect retains a safe current position; restart still uses inn/home.
+- Rootwater uses its existing lower-east Southern-road mouth (~78% height), now
+  with a cave sign, atlas entry detail and entrance-specific prompt/radius. Browser
+  entry without unrelated quests worked. Existing territorial combat, sealing,
+  party gathering and dungeon rules remain. New scenery hints reuse existing art.
+- `hero_skills.py` / `skill_casts.py`: all eight classes have **15 nodes each**:
+  six legacy abilities (basic + one special are starters), three genuinely new
+  actives, three two-rank modifiers and three passives, with costs/prerequisites.
+  Knight and Healer were implemented/verified first; the others have real cast,
+  passive and modifier hooks. Cleric retains mixtures/sacred splash/protection;
+  Healer has targeted barriers, healing over time and rescue support. New icons,
+  class animation strips and sound cues reuse established assets. Barrier pools
+  show a small HUD label and steady ring; placed zones use restrained ground rings.
+- Finite 20-point milestone ledger: arrival2, road1, inn1, hunter2, bridge2,
+  shrine2, alcove1, cave2, floor1=1, floor2=1, tower2, region3. No XP/respawns.
+  Basic + Active1 start equipped; Active2 opens on road exploration, Active3 after
+  one quest. Up to five combat actions: Hold / Q / R / F / X. Unlocks and equipment
+  are separate. Learn/equip/free respec only in Oakvale alive and out of dialogue.
+  Respec/swaps keep HP/mana, earned receipts and ability AND slot cooldowns; dismiss
+  live summons with normal after-death recharge. First Ultimate equip charges 15s.
+  Companions use the same budget and auto-select their tree/loadout when home.
+- Additive hero-progress v1 under portable save v2: validate node/cost/prerequisite,
+  loadout and relative cooldown records. Older equipped abilities become legacy
+  grants, earlier Vitality/Power/Focus stats remain, and unused old credit migrates
+  once (old inn credit reconciled with its new milestone). Guild changes refund
+  learned-node budget into the new hero while keeping receipts/slot recharge and
+  current health fraction. Live-summon restart creates normal 8/15s locks, including
+  the action slot. Unsupported data still rejects/preserves originals. No rewriting
+  of private saves for tests. Gauntlet save/loadout behavior remains unchanged.
+- Adventure has Map / Journal / Skills grouped at top; settings, save management,
+  invitations and leave/change actions are under Menu. Health/mana/abilities share
+  the bottom HUD. PC arrows remain hidden; mobile arrows/landscape requirement stay.
+  Actual 844×390 review caught/fixed E/notice overlap and a 120px dash-button minimum
+  overflowing its column. Final maximum-five-action fixture fits; dialogs scroll.
+- Final isolated regression results: **300 Python passed, 0 failures/errors/skips**
+  (64.853s), **19 client suites passed**, **21 static JS files parsed**, no client
+  suite/syntax failures. Includes 10 new control-flow and 8 hero-progression tests.
+  Covers old saves/export, point/claim retries, slot recharge/respec, companions,
+  all new active casts/modifiers/passive families, roots/ice/walls, input reordering,
+  lost-response release, multiplayer/dungeon/gathering/recovery and Gauntlet checks.
+  Logs and exact counts are under `reports/ADVENTURE_CONTROL_*`.
+- Actual ordinary-stat browser checks: Knight started fresh, learned/cast Shield
+  Rush, cleared the road group and Rootwater entrance pack, retreated, reloaded
+  and recovered through an isolated server restart with progress/skills intact.
+  Learned/equipped/cast Active2 Iron Wall. Distinct fresh Healer had no Knight
+  progress, learned/equipped/cast Life Barrier. Main menu/Continue returned to the
+  original Knight; Gauntlet Wizard classic loadout/Tester combat worked. Reviewed
+  desktop1366×768 and narrow844×390, Skills/Journal/atlas/interior map/settings.
+  The maximum-five-slot HUD used helper-completed quests with normal HP, explicitly
+  interface evidence rather than earned progression/balance. Fresh final tab had
+  no console errors/warnings. No private world actions were used for QA.
+- Measured baseline tick mean57.292ms → after50ms. Ordinary road/cave sample input
+  ack p95=19ms, dispatch=.3ms, state age47ms; controlled lost-response test stop
+  ack=8ms. Render p95=2.2ms. Samples differ in workload and browser scheduling;
+  **do not claim a measured FPS improvement**. Final hidden-tab check was heavily
+  background-throttled; one observed-release sample=66ms is not a latency percentile
+  guarantee. Atomic save p95~39ms/occasional lock holds remain. Human multiplayer,
+  physical-phone/network feel and all-eight-hero balance playthroughs are pending.
+  Details: `reports/ADVENTURE_CONTROL_VALIDATION_2026-10-14.md`.
+
+Activation: hash-verified **4 private save files** before starting Python:
+`data/backups/before-adventure-controls-skills-20261014-085907/`.
+The local server is active at `http://127.0.0.1:8000/`, Python
+`54fe6a42a4d5` / client `5c869de0289a`. `/healthz`, `/`, and all four new
+client routes returned HTTP 200. The hidden background process uses private
+`data/runtime/` logs. No private world was opened for activation checks. A
+sandboxed health request could not access localhost; its permission-enabled
+read-only retry passed. No hosted storage or cloud credentials changed.
+
+## Dungeon maps, new-content sprites and portal animations — 2026-10-13
+
+The Sprites pass is integrated and active locally. Built-in ImageGen produced
+seven selected sources: Rootwater and Briarwatch illustrated maps, separate calm
+cave/tower floor plates, twelve transparent props, four stone materials and a
+sixteen-frame portal effect sheet. `static/dungeon-sprites.js` is loaded before
+the Adventure renderer and explicitly served by `server.py`. Runtime exports are
+nine PNGs plus two atlas metadata files. Full authoring sources, exact prompts,
+fingerprints, reusable exporter and previews are in `art/dungeon-portal/WORKFLOW.md`.
+
+- Dungeon maps retain discovered-node/link gating, with fog, current-party and
+  explored/cleared labels and open/sealed passage badges. Existing zoom/Fit/pan
+  navigation now reads the SVG aspect ratio and accounts for horizontal centering.
+  Larger map viewports improve readability; the card list still scrolls on phones.
+- The seven chamber/floor layouts use new floor art and materials on the exact
+  server barrier rectangles. Dedicated cave mouths, tower doors, stairs, bells,
+  seals, survey markers, closed/spent supply crates and caches replace new-content
+  placeholders. Props and decoration do not change collision, AI or shot blocking.
+- The village shrine has a dedicated sprite. Portal participants display rune
+  charging, a helix, departure streaks in the final 0.52s of the existing 3s channel,
+  and a confirmed arrival burst after the server changes their positions. Movement
+  or damage interruption dissipates the effects. No gameplay timing changes.
+  Reduced motion uses a steady ring. Fresh/reconnected/hidden clients do not replay
+  old arrival events. Public portal views add participant IDs, anchor and duration;
+  the arrival event uses the existing ephemeral feedback stream, outside saves.
+- Definition/asset inventory found no missing PNGs among 26 items, 48 ability
+  icons, 3 curses, 8 heroes/4 summons, 9 enemy models, 12 town characters and 15
+  combat/puzzle/flight packs. Loading fallbacks remain. Future unopened regions
+  are not counted as implemented models.
+- The local Python server was restarted on 8000 after a hash-verified backup of
+  four private records: `data/backups/before-dungeon-portal-art-20261013-121842/`.
+  Static changes need a refresh. The concurrent visibility/movement updates below
+  are preserved. No publication performed.
+- Syntax parsing and 21 fresh browser artwork fixture renders completed; final
+  browser diagnostics were empty. No user-room actions, personal save changes,
+  regression suite or ordinary-stat multiplayer dungeon playthrough were run by
+  this art pass. `tools/render_dungeon_art.cjs` retains the client art fixture process.
+
+## Hero visibility, continuous movement and dungeon maps — 2026-10-13
+
+Local client pass; no publication or production Python changes by this pass, and
+no live-server restart performed here. The concurrently active **Sprites** chat
+activated its own dungeon/portal artwork update; the live renderer route was
+confirmed HTTP 200 before completion. Refresh now loads both compatible updates.
+Private saves, asset cleanup, lazy village loading and collision remain intact.
+
+- `GauntletWorldScenery.renderDepth` cuts back foreground pixels to 28% opacity
+  inside overlapping hero bounds. Trees/rocks, village dressing, roofs, portal
+  shrines, NPCs, enemies, summons and teammates use explicit bounds/depths; the
+  local hero is never faded. The inverse camera transform supplies the canvas
+  clipping extent, so labels/animation outside overlap bounds are not cropped.
+  Actor labels and combat warnings remain in their existing upper pass. Reuses
+  the art; no sprite pack was regenerated or collision weakened.
+- User reports movement lag **at all times**. Old exponential reconciliation
+  could cancel a normal walking frame when polling errors approached 10–12 pixels.
+  `movement.js` caps correction velocity at 25% of walking speed and permits
+  500–1000ms of bounded prediction for delayed polls. Normal-stat jitter probes
+  verify forward frames, bounded correction speed, position agreement and release;
+  existing roots, downing, ice, obstacles and large teleport checks pass. This
+  addresses the reproduced correction issue, not a certification of network/FPS
+  performance on every device.
+- Dungeon diagrams now have independent wheel zoom, +/−/Fit, swipe/scrollbar pan
+  and a scrolling card list. At Fit, wheel-down passes through to the list. Per-world
+  zoom/pan survive panel updates; disposed controllers release observers/handlers.
+  Stable outer-box fit preserves the earlier atlas anti-shake fix. The controller
+  is embedded in the already served `adventure.js` (no new Python route/restart).
+  Adventure panel signatures are committed after successful rendering, allowing
+  retry after an incomplete render. Client render exceptions now log their stack.
+- Added real canvas cutback tests (including imported woodland tree art), jitter
+  walking tests and dungeon wheel/navigation tests. Final **282 Python passed,
+  0 failures/errors/skips**; **19 client suites passed** and all static JS parsed.
+  First sandbox Python run: 281 passed, 1 localhost socket-permission error.
+  Successful full rerun used the isolated runner with localhost permissions;
+  production atomic writes/locks were untouched. Results:
+  `reports/CLIENT_FIX_PYTHON_2026-10-13.json`.
+- Actual browser review used disposable servers on 8019/8020: ordinary-stat village
+  portal overlap, held/released left/right movement, desktop wheel zoom (100→162%),
+  Fit, and list scrolling at 844×390 landscape. Fresh final clients showed no console
+  errors/warnings. Completed-dungeon map setup used helper-completed encounters;
+  it is UI evidence, not ordinary-stat dungeon combat or human multiplayer evidence.
+  After the concurrent illustrated-map integration, repeated wheel zoom, Fit,
+  scrolling and tower + buttons at 844×390; current SVG viewBox proportions are
+  covered by the navigation fixture. Fresh current-art browser tab had no errors.
+  Proof PNGs and detailed scope are in `reports/CLIENT_VISIBILITY_2026-10-13.md`.
+  Physical-phone and human multiplayer feel checks remain outstanding.
+- `tools/adventure_preview.py --scene portal` supplies a disposable central-shrine
+  fixture. Its writable `--temp-root` defaults to `.test-tmp/`, rejects private
+  `data/` and cleans fixtures on ordinary shutdown. No testing of the user's world.
+
+## Village validation, recovery slots and movement — 2026-10-13
+
+Local implementation only; no GitHub/Render publication. The asset archive and
+lazy village image loading below are preserved.
+
+- Investigated the cleanup's 27 Python errors. A reconstructed pre-pass generator
+  completed 10,000 deterministic seeds (0–199, then `Random(20261013)` 31-bit
+  seeds), with 1,553 rejected road candidates but **no exhausted generator**.
+  The exact historical failing seeds/full error trace are unavailable; do not
+  claim that the original `Could not generate a connected village` was reproduced.
+  A concrete mismatch did exist: accepted building gaps of 180/158 pixels were
+  narrower than the router's 184/159 footprint. Placement now matches that width.
+  Every accepted village also flood-fills doors, arrivals, villagers and the plaza
+  using the authoritative movement footprint, and samples entire road segments.
+  Exhausted jitter uses one deterministic authored fallback, validated by the same
+  rules, without increasing retries or suppressing errors. Tests exercise forced
+  exhaustion at five seeds, all seven layouts, service access and consecutive visits.
+- Villages reserve a central portal plaza while buildings/services/roads shuffle.
+  Design v2 reconstruction preserves old inn-room/bed IDs, character progress and
+  Adventure facts. Old Gauntlet checkpoints also resume safely after a wipe.
+  Adventure's **Village portal** recalls to discovered Oakvale, and its central
+  shrine returns to the departure area. All connected humans gather/confirm, then
+  stand still for three seconds; offline players/companions do not block it.
+  Nearby enemies, damage, movement, downing and sealed encounters prevent/cancel
+  recall. Travel retains HP, cooldowns and encounter damage/claims; summons dismiss
+  with their usual recharge. Gauntlet shrines are scenery; its campaign still uses
+  normal travel. The current region has one village, not invented extra destinations.
+- Movement prediction now stops during roots/dialogue/Guild locks, smooths latency
+  correction and uses frame-independent ice friction matching the server. Save
+  success appears briefly; failures stay visible. **Menu → Save files** opens details.
+- Each character has three recovery entries: current Adventure, previous confirmed
+  Adventure backup, and its latest Gauntlet inn checkpoint. Adventure files remain
+  coherent whole-party records in `data/adventures/` and `data/adventure-backups/`.
+  The local backup rotates under the existing record lock before confirmed current
+  replacement. Backup preview needs the private recovery identity; recovery creates
+  a separate world and leaves the original intact. Old files/browser identities
+  remain. No rolling cloud-backup activation or durable Render storage is claimed.
+- Enemy rendering uses each imported monster's idle/move/release strips and
+  charge/heavy/channel anticipation strips. Enemy elemental projectiles override
+  reused hero kit labels and retain their element after the owner dies. Offensive
+  support casts no longer show healing particles. Existing assets/character art stay.
+- `tools/run_tests.py` isolates all test storage (including the imported game
+  singleton), checks locked atomic replacement/socket access, temporarily redirects
+  TEMP/TMP/TMPDIR, restores settings and removes its disposable fixtures. It refuses
+  a temp root inside private `data/`. An early OneDrive-folder run logged intermittent
+  WinError 5 replacements; the clean writable non-OneDrive run did not. No atomic
+  writes, locks or recovery validation were weakened. Socket tests actually ran.
+- Final validation: **282 Python passed, 0 failures, 0 errors, 0 skips** (62.635 s);
+  **17 JavaScript suites passed**, all static JS syntax passed. Actual disposable
+  browser review checked the portal round trip, brief save notices, backup preview/
+  separate-copy recovery, keyboard movement and desktop/844×390 touch-control
+  layout, with no browser errors. This is not physical-phone/human multiplayer
+  movement or balance certification. See `reports/VALIDATION_2026-10-13.md` and
+  `reports/TEST_RESULTS_2026-10-13.json` for commands, limits and evidence.
+- Before local activation, hash-verified all three private save JSONs in
+  `data/backups/before-village-validation-20261013-112011/`. Restarted the authorized
+  local server on port 8000; `/healthz` returned `{"ok":true}`. Live unsaved rooms reset.
+
+## Runtime asset cleanup — 2026-10-13
+
+- Moved 26 unused runtime exports (11,389,589 bytes) from `static/sprites/`
+  to `art/unused-runtime-sprites/`: four regions' v1 village buildings,
+  interiors, upstairs and unused hunter sheets; original Dragon idle/windup
+  PNG/JSON; and ability/item/curse catalog PNG/JSON. Active Draco, adult Dragon,
+  individual icons and terrain fallbacks remain. The archive manifest records
+  original paths and verified SHA-256 hashes. Full source/art packages retain
+  the archive; runtime packages omit it through the existing art exclusion.
+- Village images now load once on first use by region and kind, rather than
+  eagerly downloading all 28 exports. This removes 12,566,691 bytes of eager
+  village requests: 11,067,524 bytes are deferred until needed and 1,499,167
+  bytes of never-drawn hunter sheets no longer download. Existing procedural
+  fallbacks and load-triggered terrain invalidation remain. No frame-rate or
+  measured wall-clock speedup is claimed.
+- Deleted 17 regenerable Python cache files (507,896 bytes). Package tooling
+  and Git ignore test temporary folders and common cache directories. Saved
+  games, backups, art sources, release packages, tests and build tools remain.
+- Updated authoring references for the relocated village and ability catalogs.
+  See `reports/CLEANUP_2026-10-13.json` and the archive README for details.
+- Validation: all 16 JavaScript test suites passed and `static/app.js` syntax
+  passed. The 271-test Python run had 27 errors: unchanged village generation
+  raises `Could not generate a connected village`, and sandbox permissions
+  affect temporary-file replacement/socket binding. The full Python suite is
+  **not green in that cleanup run**; those issues were not changed by the asset
+  cleanup. See the subsequent investigation and green validation above.
+- Refresh clients to use lazy loading. No server code or live rooms changed,
+  and no server restart was performed.
+
+## First-chapter quality pass — 2026-10-12 (latest)
+
+Local only; no GitHub/Render publication, purchases or private-save uploads.
+`save_portability.py` and `adventure_recovery.py` add portable v2 export/import,
+read-only previews, explicit older internal v1 migration and idempotent new-world
+confirmation. Exports allow-list progress and omit session/recovery/account IDs,
+chat and private telemetry. Validate untrusted sizes/types/IDs/abilities/known
+items and dungeon versions; normalize item effects to current definitions.
+Unsupported originals stay on disk. Import reconstructs the home village from
+its saved seed and verifies the complete public state before committing a file.
+The browser caught missing reconstruction during development; this is fixed and
+covered by an API-state regression. Restore validates progress before making a
+default room, preventing failed loads from becoming default autosaves.
+
+World UUID, creator character UUID and world-bound character UUIDs are independent
+of session room codes/hosts. New local records use UUID filenames; existing code
+filenames are preserved. RunStorage uses an OS-released per-record lock, atomic
+write and revision comparison; a competing/stale writer or unloaded original
+cannot be overwritten. Save time/revision advances only after confirmed success.
+New sessions use a private recovery proof for state/actions and protected claims;
+public player IDs cannot impersonate another new-session character. Legacy
+browser identities/checkpoints remain compatible. Menu departure disconnects
+Adventure hunters instead of deleting their progression or moving ownership.
+Continue displays browser recovery identities, progress, recovery point/storage,
+confirmed time/failure and export. File imports choose a character in a separate
+world; creators can share private recovery links for their other restored hunters.
+
+Optional `cloud_storage.py` is behind RunStorage, with secret-free `.env.example`
+and `migrations/001_adventure_cloud.sql`. No Supabase configuration is present.
+Auth is verified through the provider; service-role-only RPCs enforce creator
+ownership, world-character membership, CAS revisions and retry receipts. Account
+tokens remain in page memory. A public room code cannot claim guest gear. Local
+saves remain independent; cloud uploads run off the simulation lock with an exact
+retry journal, confirmed status and conflict stopping. Remote recovery joins an
+existing active party safely, or restores at home; conflicts/unloaded originals
+can be recovered as a separate copy after preview. Public-key configuration
+rejects a service-role/secret key in the browser-facing slot. **Cloud contracts
+have mocked tests only: SQL execution, Auth setup, server environment credentials
+and live ownership/restart/recovery verification are still unconfigured.** Use
+existing Supabase Auth accounts/provisioning. Do not claim durable hosted saves.
+Free Render filesystem storage remains temporary. No automatic cloud merge or
+cross-world equipment transfer exists.
+
+`adventure_rewards.py` offers personal pending choices at the alcove, cave boss,
+shrine, tower and finale. Cave: survival supplies; shrine: rescue/ward support;
+tower: class weapon/build item; finale: existing legendary armor/weapon usable by
+every hero. Journal shows real slot comparisons and already-owned gear; full
+pouches explicitly sell/replace an item or sell the reward for shared Runes.
+Pending/resolved choices survive travel, wipe/reconnect, disk restart and portable
+copies; repeat claims never pay again. Legacy awarded items/claims stay untouched.
+Rootwater keeps all geometry/encounters/routes, adding stable survey markings and
+short contextual notes. Tower floors explicitly preserve frontline/ranged roles,
+stagger initial windups, use deliberate trap-lane compositions and cap summit
+guards at two with a short opening. Stable encounter/kill IDs and completed waves
+remain; no broad HP/damage/cooldown change. Completion dialogue acknowledges the
+woodland, directs unfinished Journal activities, Ashen ridge and portable backup.
+
+Opt-in anonymous `chapter_observations.py` and `tools/chapter_probe.py` capture
+ordinary class/gear/resource/cooldown cases. Fixed identifiers/seeds make probes
+repeatable. Their one-bend navigation limitation caused a pillar timeout and was
+fixed in the probe, not by changing combat. `--ordinary-kit` and `--observations`
+on adventure_preview provide a disposable browser setup; `--fast-combat` remains
+an explicitly accelerated fixture. Recorded durations/resource deltas, downings,
+wipes/revives, consumables, abandonment and reward choices are not player tracking.
+The current 78 isolated Medium cases cover all eight solo heroes, two-to-four
+hunters and a companion lineup; all cleared. They are not campaign attrition,
+alternative-loadout testing or human multiplayer balance proof. See the report
+for short-boss/opening-Ultimate observations and the unprepared browser wipes.
+
+Sound changes are limited to quieter/rate-limited Light cues and low-priority
+ducking around boss warnings and completed revives. No sound bank/props/atlas were
+rebuilt. Visual/reduced-motion warnings remain. Listening tools were unavailable;
+README lists a reproducible cue/combat listening checklist. Do not certify comfort
+from playback or metrics. Human co-op, physical phones and listening remain open.
+
+Validation: **271 Python tests**, **15 JavaScript suites**, normal-stat repeatability
+checks and **78 ordinary-stat isolated probes**. Actual browser: cave entrance and
+gallery combat, optional alcove/choice, wipe survival, export → preview → new-world
+import → playable village → travel; tower floor-one wave and wipe recovery;
+desktop and 844×390 landscape Continue/HUD, portrait gate, return to landscape;
+no final browser diagnostics. The original user's world was never a fixture.
+See `reports/CHAPTER_QUALITY_VALIDATION_2026-10-12.md`. Private saves were copied
+and hash-verified before activation with `tools/backup_saves.py`; latest backup
+location is recorded in the validation report. Local server serves port 8000;
+client changes require refresh. SQL/live cloud activation remains separate work.
+Final verified private backup: `data/backups/before-chapter-quality-final-20261012-190332/`
+(3 JSON files). Final port-8000 health returned `ok:true`; no restore errors.
+
+## Finite Adventure dungeons and stable map — 2026-10-12
+
+Local implementation; no GitHub/Render publication. New `dungeons.py` owns
+authored layouts, the additive versioned state, fixed encounter IDs and an
+explicit `GameWorld._spawn_wave` adapter. It reuses the combat/warning/role tools
+but bypasses Gauntlet campaign schedules, chest, pressure and victory logic.
+Do not route Adventure dungeon floors through campaign stage advancement.
+
+Rootwater passage: Southern road east (lower trail) → cave_entry → cave_gallery
+→ cave_heart → clearing west (lower trail), with cave_cache north of the gallery.
+Four compact chambers have permanent stone rectangles, safe arrivals, three
+ordinary packs, entrance supplies and a Surveyor treasure/story branch. Ordinary
+exits remain open with enemies alive. Gathering at the den seal starts the
+Rootwater Cave Troll with cover manipulation and seals exits until victory.
+
+Briarwatch tower: camp east → tower_1 → tower_2 → tower_3 → bridge east bank.
+Each early floor has two waves; the summit has a Minotaur Captain and guards.
+Floor 2 uses two existing warning traps and two lanes. Bell activation gathers
+connected living humans, waves use a three-second sealed break, and cleared
+floors wait for manual party travel. Retreat is allowed before a floor starts
+and after it clears, through previous floors to camp. Final victory opens both
+ends permanently. Returning does not regenerate enemies, rewards or the boss.
+The tower uses a separate east-bank trail from camp and never repairs the river.
+Ordinary cave formations leave the full four-player arrival spread outside
+aggro range. Tower waves use fixed alternate anchors when hunters, bodies or
+summons occupy a default spawn point. Composition and reward IDs stay stable.
+
+`adventure.py` accepts all seven dungeon area IDs in discovery/save/restore,
+travel, danger and tracking. Exterior/interior routes have reciprocal directions
+and distinct exterior arrivals. Existing eight-area indices/layout seeds stay
+stable. Interior progress has separate schematic maps rather than crowding the
+woodland atlas; known dungeon entrances and unlocked routes have outdoor pins.
+Journal supports one tracked dungeon or woodland goal. HUD shows floor/wave,
+sealed/open status and short nearby prompts. Completed entrances gain a steady
+green pennant; NPC feedback names reopened routes. Woodland completion reveals
+the Ashen ridge story lead, with no additional biome implemented.
+
+Permanent collision rectangles match the visible stonework and client prediction.
+The camp tent's sides/back and ruins columns also have stable frame-zero footprints,
+derived into old cached areas without changing quests or enemy health. Tent/arch
+openings stay usable; the ruins trail now approaches the center of its arch.
+LOS, projectiles, splash, boss marks and support healing cannot pass through
+dungeon walls; charges stop safely at permanent stone instead of trying to damage
+it as breakable cover. Dungeons omit tall cosmetic foreground props to retain
+actor silhouettes. Native cavern/ruins ground and authored paths are reused.
+Existing following cameras, outdoor territories, animation restraint, pixel UI,
+landscape gate, personal equipment and shared Runes remain.
+
+Persistence: existing Adventure outer format v1 now contains `dungeons` records
+with version/id/type, entrances, visited rooms, completed encounter/wave keys,
+floors, treasures, boss/route facts and an optional active attempt. Old records
+without this section extend on load; unsupported records remain on disk with a
+logged error. Claimed loot and enemy Rune IDs are retained across retries. An
+interrupted sealed encounter drops partial bodies and resets its authored arena,
+then restarts the first unfinished wave in full when the bell/seal is activated.
+Completed waves/floors remain cleared. Restart/wipe returns to the existing
+inn/home checkpoint; a wipe applies its 40% loss once. Travel does not heal or
+reset abilities/dash; remaining recharge also saves, including the normal death
+recharge of a dismissed live summon. Companions occupy one of four existing
+party slots; offline/bot members do not block gathering. No humans means no
+simulation or companion-only completion. Free Render storage remains temporary.
+
+The atlas jitter was a ResizeObserver/scrollbar feedback loop. Fit now uses a
+stable outer viewport box with a scrollbar reserve, writes only changed sizes,
+and preserves zoom/pan on ordinary updates. The client regression models the
+narrow scrollbar threshold and checks repeated callbacks, zoom centering and Fit.
+
+Validation: 245 Python tests and all 15 client test files passed; static JS syntax
+parsed. Seventeen focused dungeon tests cover entry/retreat, finite floors, 1–4
+party scaling, companion gathering/pause, reconnect/host change, wall/shot/AoE/
+summon/charge behavior, conservative recharge, one-time rewards, old saves and
+interrupted/completed restart recovery. Actual isolated browser play traversed
+the cave branch, claimed both caches, fought the troll, emerged in the clearing
+and revisited its completed den; all tower floors were fought, floor 2 was
+abandoned before activation, and the completed summit route was traversed to
+the still-broken bridge and back. Desktop and 844×390 landscape review included
+maps, journal tracking, warning traps and boss cues; browser diagnostics were
+empty. These high-HP/damage flow fixtures are not human balance/physical-phone
+tests. Details: `reports/DUNGEON_VALIDATION_2026-10-12.md`.
+
+Disposable browser fixtures are `tools/adventure_preview.py --scene cave|tower
+--fast-combat` (with optional `--touch-controls`); `dungeons-complete` prepares
+a finished world for visual review. All use temporary saves. Never test by
+moving the user's saved adventure. Private saves must be backed up with
+`tools/backup_saves.py` before a necessary local restart.
+
+Final local activation: three private save files were copied and SHA-256 verified
+in `data/backups/before-adventure-dungeons-final-20261012-164926/`. The updated
+server is running at `http://127.0.0.1:8000/`; its health endpoint returns success.
+Disposable QA servers/tabs were closed. Refresh the client for the new UI;
+use the usual browser identity/room recovery flow.
+
+## Bxfr audio and confirmed combat feedback — 2026-10-11
+
+Local implementation only; no publication/deployment. The retained Bfxr DSP and
+licenses remain hash-identical. `art/audio/sounds.json` now has 95 seeded,
+explicit recipes: distinct class Light/Special/Ultimate/impact families,
+three Light variants, elemental summons/frost, danger/rescue, materials,
+transactions/objectives and quiet accents. Runtime WAVs total 1,612,618 bytes,
+52.7–590.3 ms, maximum peak 0.47998, no clipping or nonzero endpoint samples.
+`build-sounds.cjs` protects changed/unregistered exports and supports declared
+manual WAV/editor data; `--replace-modified` backs up intentional replacements.
+Routine rebuild: `node art/audio/build-sounds.cjs`,
+`node art/audio/build-preview.cjs`, `python tools/audio_inventory.py`.
+
+New `feedback.py` maintains an ephemeral 128-event / three-second stream with
+scene epochs, increasing IDs and relative ages. Casts emit only after acceptance;
+actual hits, damage, summons, healing/ward resolutions, down/revive, dash,
+equipment/purchases/chest outcomes and objectives use confirmed sources.
+Windup/recovery transitions are sampled at the existing server tick. Dungeon
+starts, waves, completion and live travel are covered; completion rewards no
+longer emit duplicate completion cues. Checkpoints exclude this stream.
+
+`static/audio.js` consumes IDs once, silently baselines first load, scene changes,
+refresh, reconnect gaps and hidden returns, and never queues failed/locked audio
+for later playback. Scene identity includes Adventure/dungeon location and
+interiors. The listener uses local hero world coordinates, independent of zoom;
+quadratic falloff reaches silence at 800 units. Tiered 6/8/10 voice limits,
+gentle panning, compressor and pack/summon rate buckets protect useful cues.
+Replacement voices start after the evicted voice's fade.
+
+Atmosphere uses a separate 16% bus, quiet filtered procedural beds and sparse
+accents for village, woodland, chambers, tower and boss spaces. A maximum of two
+bed sources crossfades; obsolete sources stop on mute/reset/hide. There is no
+realistic environmental audio or complete music soundtrack. Effects default to
+45%; old volume/mute settings migrate. Settings add cue previews, master mute,
+ambience volume, Off/Reduced/Normal shake and reduced decoration. Device reduced
+motion disables optional shake and reduces particles, preserving essential
+warnings and labels. New `static/feedback.js` has small confirmed impact/heal/
+ward/rarity/completion marks; choreography shares a particle budget. Existing
+stable scenery and combat/movement rules are preserved.
+
+Audit/all 48 ability mappings: `art/audio/EVENT_INVENTORY.md` and
+`event-manifest.json`. Rebuild/manual-export instructions: `WORKFLOW.md`.
+Local listening artifact: `art/audio/preview.html` and `mixed-combat.wav`.
+The 12-second mix is an authored reference using actual exports at approximate
+pre-compressor gains, not a recorded multiplayer session. **Actual listening is
+still outstanding**: this agent can verify browser playback but cannot hear it.
+Headphones, speakers, Bluetooth and physical-phone policies/performance need
+human review. Perceptual comfort is not certified from metrics.
+
+Checks/reports: `reports/AUDIO_VALIDATION_2026-10-11.md`, audio test transcripts,
+and `AUDIO_MULTIPLAYER_2026-10-11.json`. Final checks passed all 243 Python tests
+and all 15 client test files. Disposable QA helper:
+`python tools/audio_preview.py --players 4 --port 8013 --touch-controls` (or one
+player on 8014); it uses temporary saves and ordinary stats. Broader existing
+HTTP probes use explicitly synthetic high-HP reliability fixtures. Desktop and
+844×390 landscape browser checks are simulated, not physical-device listening.
+One dungeon regression fixture now supplies its camp source when entering the
+tower directly, so its tracking test has discovered the required entrance.
+
+Three private save records were hash-verified in
+`data/backups/before-audio-feedback-20261011-123233` before starting the updated
+local server on port 8000. Python changes require restart; client/audio changes
+require refresh. Preserve `data/` and the audio authoring sources on transfer.
+
+## Villages matched to the new world artwork — 2026-10-11
+
+The user requested villages matching the richer new world design. Woodland,
+ruins, cavern and frost now have replacement ImageGen building and interior
+atlases, matching upstairs materials, and a new regional gate/well/lantern/garden
+atlas. Six service buildings per region retain six roof color variants (144
+sprites). All 24 room interiors have open central service/door approaches.
+Upstairs floor/wall materials use the new inn art on the existing three-room
+plan; regional bed, door and stair sprites remain from the established packs.
+
+Village floors share the new world ground. Rounded, softly edged paths follow
+the existing server-generated townPaths. Seeded trees use the new world scenery,
+with extra understory, planting islands, gardens, lamps and common wells. Dressing
+respects building/door routes, the south party arrival and Adventure story NPCs.
+All seven village layouts remain supported. Scenery is cosmetic and adds no
+collision, concealment or enemy detection behavior.
+
+The client now sorts village buildings, foliage, villagers, heroes, gate and
+runner by depth. Adventure Oakvale story NPCs join that pass, while travel/vote
+cues and player names stay readable. Backend layout, services, training, guest
+occupancy, door/bed targets and save behavior are retained. Runtime changes are
+in existing static/app.js, town-sprites.js and adventure.js; thirteen v2 PNGs are
+under static/sprites/. Refresh the browser to receive these changes.
+
+Retained generated sources, nine exact built-in ImageGen prompts, crop/export
+manifest, fingerprints and PowerShell rebuilds are in art/village-redesign/.
+See WORKFLOW.md and preview.html. Keep this ignored authoring folder on transfer.
+tools/render_village_art.cjs captures actual-client local fixtures without
+creating rooms/actions/saves: all four themes in seven layouts, all 24 interiors,
+four upstairs rooms, canopy overlap examples and Adventure home/celebration.
+Final browser rendering diagnostics were empty; JavaScript syntax parsed.
+Gameplay regression suites were not requested or run for this artwork change.
+
+The local server was stopped when the task resumed. Three existing private save
+files were copied and hash-verified into
+data/backups/before-village-art-20261011-111919/ before starting it. The server is
+running at the README HTTP address. No Python change or save migration was needed.
+
+## Pixel interface and illustrated woodland atlas — 2026-10-10
+
+The user requested a complete pixel-game UI redesign and a more appealing game
+map. The existing browser UI now shares slate/brass pixel frames, stepped button
+highlights, hard shadows and an original locally embedded 5×7 display face.
+Entry/lobby, hero cards and loadouts, HUD/party/chat, pouch/equipment, merchant,
+training, dialogue, journal, settings and stats use this theme. Longer copy uses
+a readable system sans face. Larger HUDs show the current hero's portrait.
+Literal ability icons retain their circular red recharge and glowing green
+ready state. Loadout and Guild ability titles are no longer accidentally
+overwritten when their icon/description elements are populated.
+
+Adventure's Map is now a woodland atlas with a built-in ImageGen terrain image,
+river, woods and ridges. The client overlays the server's known locations and
+actual connections as winding dirt trails, using existing landmark sprites.
+Stepped fog covers uncharted territories; charting all eight reveals the full
+illustration. Unknown landmarks/connections are never drawn. Bridge/shrine icons
+and names still reflect completion. Selected landmarks show a detail panel and
+known connected trails. Party/goal focus, 1×–2.5× zoom, Fit and scroll/swipe pan are
+local view controls; selecting a landmark does not travel the party. The graph's
+exit directions remain authoritative; illustrated distances are approximate.
+Short landscape phones open their first map view zoomed around the party.
+
+Implementation is in the existing `static/style.css`, `index.html`, `app.js` and
+`adventure.js`. Terrain is `static/sprites/ui-woodland-atlas-v1.png`. This pass only
+needs a browser refresh. No server change/restart or save migration was needed.
+It is local; no remote publication was requested.
+
+Retained sources, exact ImageGen prompt, original bitmap-font builder, theme,
+rebuild script, fingerprints and visual previews: `art/pixel-ui/WORKFLOW.md` and
+`art/pixel-ui/preview.html`. Keep this ignored authoring folder when transferring
+the project. `tools/render_ui_art.cjs` renders the actual client using isolated
+fixture data without creating rooms/actions/saves. Artwork was reviewed at
+1280×800, 844×390 and 667×375, with full/repaired/partially charted maps and major
+menus. Browser rendering diagnostics were clean. This was an artwork review;
+gameplay regression suites were not run for this UI request.
+
+## Distributed woodland encounters — 2026-10-10
+
+Adventure's large road/crossroads/clearing now each have three separate authored
+territories (four ordinary enemies solo), spread near different trails/landmarks.
+Camp has two territories (three solo guards); bridge has two (two solo spiders).
+Co-op adds one enemy per extra active party member across the area's territories,
+with the bridge's extras confined to its roomy northern bank. Location damage,
+health scaling, bounded pursuit, open ordinary exits and no respawns remain.
+Seeded pack positions leave every four-player arrival clear and avoid cover/water.
+Home, shrine/boss encounters, camera, mobile landscape and Gauntlet are unchanged.
+
+Cached areas carry additive `encounterLayout: 2`. Surviving enemies in an old large
+area spread into separate territories once on entry, retaining IDs, damage/HP,
+roles and kill/reward facts. No enemies are added to an already visited area;
+cleared areas stay empty. Original compact saves keep their existing coordinates.
+Revisits and restart preserve the new positions. Quests still require clearing the
+camp/hunter guards; bridge repair and ordinary travel remain usable with mobs alive.
+
+Validation: 223 Python tests passed, including five new spatial/persistence tests.
+Four-player spawns were checked across 80 seeds in all five ordinary encounter
+areas. Actual disposable browser review showed the three road territories in room
+overview, local engagement and retreat; no console errors/warnings. This is agent
+review and automated co-op coverage, not human multiplayer balance testing.
+Local activation is on port 8000 with healthy `/healthz`. Three private save files
+were copied/hash-verified in `data/backups/before-scattered-encounters-20261010-222726/`
+before restart. `tools/backup_saves.py --label update` provides this verified backup
+workflow for future local restarts. No GitHub/Render publication occurred.
+
+## Woodland review, physical bridge and exploration feedback — 2026-10-10
+
+Local implementation only. This section supersedes older descriptions of fixed
+Sage Wand/Moonsteel rewards, signpost interaction and the decorative bridge.
+Python authority/browser architecture, Gauntlet, Adventure v1 state, cached area
+sizes, camera and landscape requirement remain. Tests use disposable storage;
+the user's current Adventure and checkpoints were not used or reset for testing.
+
+`stamp` is static by default; NPC loops opt in. Frame inspection found mismatched
+bridge/tent/fire silhouettes, so stable base frames and clipped/code overlays
+replace cycling whole environmental frames. Water/flame highlights, rare embers
+and shrine glow have independent phases; reduced-motion suppresses decoration
+without suppressing characters or combat warnings. Timber, ropes, stone banks,
+tent poles, bench/logs and campfire stones remain fixed. Exit waystones remain
+steady with static nearby/selected emphasis. Campfire is at (400,305), with
+scenery reservations and authored side paths kept clear. Available discovery
+artwork supplies wagon, leaf marker, burned watch and moss cache landmarks.
+
+The area graph keeps its IDs/connections, but camp is south of crossroads and
+east of bridge. All exit/reverse edges now agree; duplicate south crossroads
+and north shrine trails have distinct horizontal offsets and source-aware safe
+arrivals. Map curves leave/enter the actual exit edges. It is explicitly a
+schematic route map, with a bending crossroads–shrine connection. Authored
+paths replace center spokes, blend into terrain and continue through boundaries.
+Far destination labels are quieter; nearby prompts explain closure requirements.
+
+`BRIDGE_LAYOUT` drives artwork plus permanent rectangular terrain barriers in
+`combat_environment`; client movement prediction consumes those same public
+barriers. River crosses the full room; only repair opens its (235..285) span.
+East entry from camp/workbench and south ruins trail stay on the east bank;
+the north Southern road shortcut is on the west bank. Dash and swept AI detours
+cannot bypass water. Summons at blocked spawn offsets fall back to their owner's
+safe ground. On entry/repair, barriers derive from the persistent bridge fact,
+including older cached v1 areas. Restored names update heading/map/destinations.
+
+Signpost features are excluded from actionable proximity. Connected living
+humans within 120 units receive a passive direction board; tick reveals named
+trails once and saves only when discovery changes. Offline humans/bots do not
+read it; it closes on departure/interior/puzzle. It creates no dialogue or lock.
+The left/right southern branches are distinguished explicitly.
+
+Personal `trackedObjective` is an additive saved field, changed by validated
+`adventureTrack`. Known-location BFS recommends usable routes and avoids the
+locked shortcut. Journal separates active/completed/unrevealed goals, has a
+map star/next-exit highlight, and moves save explanations into a disclosure.
+The unrevealed ruins list remaining hunter/bridge/shrine requirements. All three
+stay available in any order. Runner/hunter/watch connect the dragon's earlier
+attack to the awakened Minotaur, without claiming a dragon fight in this region.
+
+Optional `cache` at road (175,355) pays 12 Runes + Healing Draught per hero;
+`watch` at clearing (700,365) pays 8 + Mana Draught. Coordinates scale with cached
+area size. `discovery:*` claimed IDs survive travel/retry/reconnect/save recovery;
+cache disappears after claiming, watch remains readable. Their journal entries
+are hidden until found. They do not mutate mandatory quests or respawn enemies.
+
+Shrine rewards use `CLASS_WEAPONS`; final rewards are Moonsteel Sword (Knight),
+Arcane Conductor (Wizard/Archer), Pursuit Blade (Rogue), Summoner's Staff (Druid),
+Dragonbone Armor (Cleric/Bard/Healer). Reward history records recipients, item
+names and full-pouch sale conversions; previously claimed rewards are preserved.
+Short arrival/world-change notices use bounded saved notification history.
+Travel readiness enumerates connected humans still gathering/confirming or
+blocked by dialogue/downing; offline players and companions remain excluded.
+Existing recovered hunter, restored altar/new plants, removed poison and village
+celebration remain visible consequences. Short landscape dialogue layout now
+fits narrow devices while keeping the established left/right arrangement.
+
+Validation: 218 Python regressions; 12 JS suites; all static JS syntax checks.
+Eleven new server regressions cover passive signs, topology, safe arrivals,
+water/dash/detours/summon spawns, additive old-cache migration, tracking/recovery,
+one-time optional finds, all hero rewards/full pouches, gathering/disconnect/
+reconnect and repaired bridge/restored shrine persistence. Actual canvas pixel
+comparisons verify fixed props and localized/reduced decoration. An old damage
+test was made deterministic by holding animation wall time while comparing
+damage tint; character rendering was not changed for that correction.
+Four-client 20s HTTP check: 2,290 requests, no captured errors, healthy ticks,
+p95 18.2ms, max tick 2.01ms. Browser fixtures reviewed 1280×800, 844×390, 667×375:
+sign dismissal/tracking/map, broken crossing, workbench repair and actual crossing,
+campfire/tent over time, both optional finds, receipts/journal, narrow dialogue
+and landscape touch UI. Human multiplayer and physical phones still need tests;
+synthetic reliability results do not establish balance. Detailed evidence is in
+`reports/ADVENTURE_REVIEW_VALIDATION_2026-10-10.md` and its HTTP JSON.
+
+All three private save files were copied and SHA-256 verified in
+`data/backups/before-adventure-review-20261010-220652/` before activation. Preserve
+these private records; their originals still match after the local restart and
+`/healthz` is OK on port 8000. Browser travel to Southern road and back retained
+the repaired crossing and restored heading. Current Render free storage remains temporary. Earlier
+validation sections below are historical, and other concurrent art edits are
+preserved rather than replaced by this pass.
+
+## Open-world artwork and richer regional scenery — 2026-10-10
+
+Local art/client integration only; no GitHub or Render publication. The current
+Adventure definitions and drawing paths were audited for new placeholders.
+Four transparent world packs supply 100 prop/NPC source phases, including
+bridge states, altar states, tent, furniture, fire, supply chests, clues,
+waystones, a unique courier and seated/recovered hunter. Four further unique
+landmarks cover the broken wagon, leaf waymarker, scorched watch and moss cache.
+The four newer equipment keys now have their own 64×64 icons, and map/journal
+markers use actual landmark thumbnails. Existing matching village interiors,
+combat cover/effects, heroes and ordinary enemies are reused.
+
+The shrine Guardian has a new carved gray stone/moss/rune body, separate from
+the Cave Troll and druid golem. Two 96×96-cell sheets contain idle/move/release
+and charge/slam/rock-channel actions in eight directions: five generated views
+plus deterministic NE/E/SE mirrors. Selection uses only `shrine-guardian`; its
+combat kind, damage and authoritative timing are unchanged. NPC pose loops
+play. Fixed structures stay still; water highlights and fire/embers animate
+within their fixed silhouettes, with reduced-motion support.
+
+The user's added area request replaces the small repeated central texture and
+edge-strip extension with four calmer 512×512 regional ground materials and
+sixteen foreground objects. `static/world-scenery.js` caches mirrored macro
+tiles at native pixel scale and soft route edges. It uses Adventure's current
+authored meandering routes, distinct location palette treatments and deterministic
+border/interior scenery clusters; larger fields contain more interior islands.
+Woodland uses oak/birch/ferns/logs; ruins use ivy arches/columns/flower ivy/masonry;
+cavern uses stalagmites/mushrooms/crystals/shale; frost uses snow pines/birches/
+shrubs/ice arches. Village ground uses these materials under existing town paths.
+
+Cosmetic objects never enter Python collision, enemy vision, line-of-sight or
+projectile blocking. Existing physical river barriers and destructible cover
+keep their server behavior. Actual routes, exits, objectives, interaction
+landmarks, river and rune apparatus are kept clear. `app.js` sorts scenery,
+enemy bodies, summons and heroes by feet, allowing characters to walk under
+canopies/overhead structures. Health/player labels, attack warnings and ultimate
+effects draw above this layer. Original terrain is retained as a loading fallback.
+Both `world-scenery.js` and the new art/flight modules are in the server whitelist.
+
+The prior projectile/readiness request is also completed: 23 dedicated flight
+designs × four frames, real basic/snare/large Deadeye arrows, actual descending
+Rain of Arrows, tumbling flasks, literal frost/thorns and animated affinity bolts.
+`static/projectile-animations.js` rotates to actual velocity and keeps shot age
+across polls. HUD icons remain in recharge/menu UI. Readiness CSS now gives
+usable Light/Special/Ultimate icons a green contour and ring; cooldown, mana,
+active summon and downed guards remain authoritative. The focused projectile
+checks and actual CSS fixture at 1280/390 widths passed. Full live Adventure/
+human multiplayer playthroughs were not run for this art pass.
+
+Built-in ImageGen was used. New sources, exact prompts, native nearest-neighbor
+exporters, crop/mirror/hash manifests and animated authoring previews are retained
+locally in `art/adventure-sprites/` and `art/projectile-animations/`. See their
+`WORKFLOW.md` files and the Adventure `AUDIT.md`. Run
+`pwsh -NoProfile -File art/adventure-sprites/build-all.ps1` for the complete world
+export. `node tools/preview_sprite_art.cjs --art-only` exports authoring previews
+without creating rooms/saves. These new ignored authoring folders should be
+preserved explicitly when moving editable artwork between machines. They are
+not in the older October 8 backup archive. Static updates require a browser
+refresh; newly whitelisted scripts require the authorized server restart.
+
+Local activation: checkpoint CEVKC/UTAE4 and the current Adventure record were
+copied and SHA-256 verified in `data/backups/before-world-sprites-20261010-220403/`
+before replacing the identified port-8000 server. `/healthz`, both scenery
+modules, the flight module and new runtime PNGs returned HTTP 200 afterward.
+Modified JavaScript and Python syntax parsed successfully. Live in-memory rooms
+reset on that restart; existing on-disk saves were retained.
+The actual game renderer was also visually inspected with client-only area and
+Guardian fixtures; no room/action APIs were used. That review caught a canopy
+overlapping the boss arena. Placement now reserves full object height as well
+as its foot position; the final Guardian preview leaves the fighting space clear.
+
+## Selected larger areas, following camera and mobile landscape — 2026-10-10
+
+Local update only; no GitHub/Render publication. The user clarified that only
+some rooms should become larger, and mobile gameplay should require horizontal
+orientation. Newly created road, crossroads and clearing areas use 1800×900,
+1920×1080 and 1440×900 respectively. The village, camp, shrine, bridge, ruins,
+interiors and puzzle rooms remain 960×540. Area state now carries `size` inside
+the compatible Adventure v1 record; cached older areas without it retain
+960×540, without relocating saved enemies/objectives. Unvisited areas can use
+the new size. New adventures receive the full expanded set.
+
+`combat_environment.dimensions` supplies server movement, role AI, companion
+dodge/detours, summon spawn and projectile bounds. Adventure exits/entries,
+groups and features use the actual area size. Leash radii, combat ranges, damage
+and difficulty are unchanged. Public snapshots include `areaSize`; movement
+prediction agrees with those bounds. `static/camera.js` keeps a browser-local
+view transform, follows the predicted local hero, clamps at field edges and
+preserves equal X/Y scaling. Native-size terrain/edge strips extend woodland
+art. Cached backdrop keys include area IDs and sizes. Target clicks and enemy
+pings use the same camera projection, including while zoomed out.
+
+In large fields, hold V or hold Area view for full-field overview; release returns
+to following. A short button tap previews for three seconds. Focus loss, travel,
+interiors and puzzles clear it. Compact rooms remain fully visible without a
+camera button. The canvas follows its CSS dimensions, removing the old unequal
+axis stretch. Mobile/touch-first devices must play in landscape; portrait has
+an opaque rotation prompt and makes the gameplay UI inert. Movement/held
+attack/revive/overview inputs release immediately; polling and the shared game
+continue. The lobby stays usable in portrait. Rotation back restores controls
+without stale input. Touch-capable mouse desktops do not get the phone gate.
+Short landscape layouts reposition Area view away from the touch pad and retain
+44px touch controls. No orientation/fullscreen permission request is needed.
+
+Validation: 207 Python tests (six new area-size regressions) and ten JavaScript
+suites passed. `tests/test_area_sizes.py` verifies large movement/dash, role AI,
+summons/projectiles beyond old bounds, travel/gather/reconnect, revisits/sizes,
+save recovery and compact old-cache/Gauntlet/puzzle behavior. Camera tests cover
+follow/clamp, round-trip target projection, hold/tap expiry, pointer identity,
+scene reset and aspect ratio; landscape tests verify input release/UI blocking,
+rotation recovery and mouse/lobby exemptions. Four-client HTTP fixtures handled
+2,450 requests over 20s; all four moved outside old bounds, errors were empty,
+health stayed good, localhost p95 15.97ms and longest tick 1.24ms.
+See `reports/AREA_CAMERA_MULTIPLAYER_2026-10-10.json` and the validation markdown.
+Browser QA used disposable road fixtures, desktop 1280×800, portrait 390×844 and
+landscape 844×390 / 667×375. It checked held touch movement, timed/held overview,
+target selection/pings in a panned field, the portrait-only prompt, returning to
+landscape, and compact Oakvale after a fixture wipe. Console checks were empty.
+Fixture touch exposure does not claim physical hardware emulation; human co-op,
+physical phones and encounter-density tuning in the bigger fields need playtests.
+
+Before local activation both original private checkpoint files were copied and
+SHA-256 verified in `data/backups/before-area-camera-20261010-201552/`.
+Private saves remain excluded from reports/releases; normal local activation
+serves the update on port 8000. Previous prototype validation below is historical.
+
+## First playable Adventure woodland region — 2026-10-10
+
+This is a **local implementation only**, as explicitly requested. Do not publish
+or deploy it without a separate user instruction. The hosted build described
+below remains the October 9 release. The Python authoritative server/browser
+architecture is preserved, and Gauntlet remains the default selectable mode.
+Old Gauntlet saves remain separate and compatible.
+
+Create a party, select Adventure in the host's Mode selector, choose three
+abilities and Begin Adventure. Challenge and the optional companion work; the
+Gauntlet run-length selector is hidden. Oakvale reuses the shuffled woodland
+village, shops, inn, Guild, interiors and beds. Its layout stays stable for this
+Adventure. The first runner dialogue gives the immediate missing-hunter objective;
+there is no mandatory first-village exit tutorial gate in Adventure.
+
+`adventure.py` owns explicit IDs, connections/entry points, area cache, territorial
+groups, quests, travel, rewards, recovery and save/view records. Areas: home,
+road, crossroads, camp, clearing, shrine, bridge, ruins. All links are bidirectional.
+Road/crossroads/camp/bridge form a loop after bridge repair; crossroads/clearing/
+shrine provide a second loop. The bridge opens a direct road shortcut. The old
+ruins unlock after hunter, bridge and shrine completion; their existing Minotaur
+King is the region's final fight. Completion shows dialogue and village
+celebration without ending exploration.
+
+Ordinary groups are placed once and persist defeated; enemy HP/environment state
+is captured on saves/travel. Enemies engage nearby intruders or attackers inside
+their leash, then return home without healing. Exits stay available during outdoor
+combat and the unsolved shrine puzzle. Guardian awakening explicitly seals exits.
+No compulsory waves, route pressure, town-visit pressure or accumulating stage
+scaling operate in Adventure. Location danger and chosen challenge govern combat;
+initial group/boss creation scales to the present party, including the companion.
+Summons are dismissed on area changes, while recharges otherwise carry across
+travel. Companion AI follows and fights engaged groups without voting/solving.
+
+Connected humans must physically gather and each confirm E/Interact at the same
+trail; offline players and bots do not count. Walking away clears confirmation.
+Presence updates release a pending exit even in the puzzle phase after a human
+disconnects. Reconnecting heroes join the party's current area, clear stale
+interiors and use safe arrival positions. The first reconnect after disk recovery
+keeps the saved upstairs bed placement. Cached quest NPC positions avoid shuffled
+buildings and the gate courtyard; accessibility was checked across 80 villages.
+
+Hunter: read tracks/sign, defeat clearing wolves and finish the hunter dialogue;
+the recovered hunter appears in Oakvale. Camp guards protect a shared repair-kit
+chest; the bridge workbench repairs boards and unlocks the shortcut. Shrine:
+existing solo or connected-human clue exchange puzzle, then a Stone Guardian;
+completion changes the altar and removes poison. Final ruins guardian completes
+the region. Ledger entries cover every enemy and reward, with one-time shared
+Rune/personal equipment or consumable rewards. Full pouches receive sale value.
+No new classes, crafting, survival or large skill tree were added.
+
+Persistence: separate **version 1** Adventure documents in
+`data/adventures/CODE.json`; old Gauntlet v1 remains `data/checkpoints/CODE.json`.
+`RunStorage.save_adventure/load_adventures/delete_adventure` is an atomic local
+backend interface suitable for a later durable provider. World discovery, areas,
+quest/reward/kill facts, bridge/boss completion, Runes, personal gear/loadout,
+class-change/training progress and overall statistics are saved after mutations
+and completed revives. Companion consumable use saves immediately too, even
+though its AI uses the internal action path. Unsupported records are preserved/logged; write failures
+produce a visible warning. Runtime clocks, HP/mana, positions, buffs, summons and
+unfinished puzzle attempts are not resumed. Restart recovers at the party's last
+upstairs inn bed, or Oakvale's gate if none was chosen. Beds choose recovery and
+heal; innkeeper dialogue only teaches existing training. A wipe keeps completed
+world objectives/items/routes, resets an unfinished guardian, restores at the
+recovery point and loses 40% of shared Runes once. Consumption/spending remains
+part of saved progression. Preserve all private data during transfers/restarts.
+Free Render storage is temporary; durable online saving was not implemented.
+
+Client: `static/adventure.js` integrates the location heading, compact Journal,
+discovered SVG map with known quest markers, trail prompts and landmark/world
+consequence rendering. Map labels retain readable size with horizontal panning
+at phone width. `movement.js` uses the area ID in its scene identity to prevent
+cross-area interpolation. Guide and leave/save text distinguish the two modes.
+Map/Journal sit above the desktop title hitbox; teammate HUD sits below them.
+The existing E/touch interaction and combat/revive/attack/dash controls are reused.
+An unrelated lobby reliability issue found in browser QA was fixed with the
+atomic `chooseAbility` action, so fast category clicks cannot overwrite another
+choice using a stale snapshot. Legacy `loadout` remains supported.
+
+Validation: **201 Python tests passed**, including **29 Adventure tests**.
+Validation uses disposable saves and parties. `tests/test_adventure.py` covers
+the full route in solo+companion and three-human parties, revisits, gathering,
+offline/companion rules, puzzle disconnects, correct reconnect area, territory,
+fixed danger, one-time rewards (including after restart), world changes, equipment
+and revive persistence, save errors/versions, bed recovery, unfinished bosses,
+wipe penalties and old-save coexistence. Enemy roles are assigned when an area
+is built, then retained across revisits, so a defeated support cannot be replaced
+by changing another enemy's role. Restoration installs a room only after all
+placement/validation succeeds; corrupt records leave no partial room behind.
+The full-route tests use authored
+positions/defeats and do not establish balance. Two older Gauntlet navigation
+tests were stabilized to stop at arrival instead of simulating random combat
+long enough to clear the destination stage.
+
+The latest four-client Adventure probe performed 3,442 HTTP requests in 30 seconds,
+kept all four clients moving, captured no simulation errors and stayed healthy;
+p95 localhost response was 18.78 ms, longest tick 1.44 ms. See
+`reports/ADVENTURE_MULTIPLAYER_2026-10-10.json`. Extra HP isolates reliability;
+these are automated local fixtures, not human/hosted/physical-phone tests.
+Browser QA covered ordinary creation/onboarding/travel/clues plus an actual solo
+shrine puzzle and held-attack guardian kill. Completed-world fixture views checked
+the recovered NPC, restored routes, final map/journal and continued exploration.
+1280×800 desktop and 390×844 narrow layouts were checked, including held pad
+movement, tap travel, journal and map panning. `tools/adventure_preview.py` makes
+only temporary saves; its `--touch-controls` option exposes the existing pad for
+narrow QA without claiming hardware touch emulation. Browser console checks had
+no runtime errors. All eight JavaScript regression scripts and static JS syntax
+checks passed. Human multiplayer, physical phones, long-run balance and portrait
+camera/aspect comfort remain to be evaluated; the inherited portrait renderer
+can stretch artwork. No extra hosted services or credentials were requested.
+
+The local server was restarted with this update and is serving the Adventure
+selector/script at http://127.0.0.1:8000 with healthy simulation ticks. Before
+restart, both existing private Gauntlet checkpoint JSON files were copied to
+`data/backups/before-adventure-20261010-171230/`. SHA-256 matches were verified
+before restart and the originals still matched afterward. Disposable preview
+servers/tabs were closed and the normal browser viewport restored. Live memory
+rooms reset on restart; real saved games were preserved. No GitHub/Render actions
+were performed for this update.
+
 
 ## Hosted multiplayer simulation crash, dash and language filter — 2026-10-09
 
@@ -152,8 +1501,9 @@ through player snapshots and ability_cast effects. Held Light attacks cannot
 erase a longer Special/Ultimate pose. Class, stage, status and scene changes
 guard stale animations; final-enemy kills can finish their brief cast into loot
 or exit. Actual affected recipient IDs drive teammate buff/heal/revive particles.
-Projectile visuals use existing literal ability art, including ice shards,
-arrows, bottles, thorns and musical notes. Cover-target shots also retain IDs.
+Projectile visuals now use the dedicated animated flight atlases described
+above, including ice shards, arrows, bottles, thorns and musical notes.
+Cover-target shots also retain IDs.
 
 The four Druid summons have circle emergence and lightning/fire/ice/stone attack
 particles. Enemy windup sheets still follow actual role/boss attack progress,

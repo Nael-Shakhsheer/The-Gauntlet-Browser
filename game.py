@@ -21,6 +21,14 @@ import enemy_roles
 import combat_encounters
 import ability_animations
 import language_filter
+import adventure
+import feedback
+import runtime_metrics
+import interactions
+import hero_skills
+import skill_casts
+import enemy_awareness
+import exploration_movement
 
 WIDTH = 960
 HEIGHT = 540
@@ -77,7 +85,7 @@ ABILITY_SETS = {
     "Rogue": [
         ("backstab", "Quick Cut", "A fast, bleeding strike against one foe.", "bleed", 1.0, 155, 0.38, "light"),
         ("fan_of_blades", "Fan of Blades", "A quick slash around you.", "area", 0.9, 140, 0.52, "light"),
-        ("vanish", "Vanish", "Become untargetable for 5 seconds.", "invisible", 1, 0, 7, "special"),
+        ("vanish", "Vanish", "Hide for 5 seconds. Offensive casts break concealment; committed attacks and hazards can still hit.", "invisible", 1, 0, 7, "special"),
         ("shadowstep", "Shadowstep", "Dash toward a foe and strike it.", "dash_strike", 1.8, 300, 8, "special"),
         ("death_bloom", "Death Bloom", "Blades strike every foe within 280px of you and apply a 5-second bleed.", "area", 2.3, 280, 30, "ultimate"),
         ("execution", "Shadow Execution", "A devastating strike against the nearest foe.", "bleed", 4.0, 300, 27, "ultimate"),
@@ -203,7 +211,8 @@ CURSES = [
 class GameWorld:
     def __init__(self, storage_dir=None, disconnect_timeout=None) -> None:
         self.rooms: dict[str, dict] = {}
-        self.lock = threading.RLock()
+        self.metrics=runtime_metrics.Metrics()
+        self.lock = runtime_metrics.MeasuredRLock(self.metrics)
         self.storage = RunStorage(storage_dir) if storage_dir is not None else None
         self.disconnect_timeout = disconnect_timeout
         self._tick_errors = {}
@@ -214,6 +223,11 @@ class GameWorld:
                     self.rooms[room["code"]] = room
                 except (KeyError, TypeError, ValueError):
                     logging.exception("Invalid checkpoint preserved: %s", room.get("code"))
+            for record in self.storage.load_adventures():
+                try:
+                    adventure.restore(self, record)
+                except (KeyError, TypeError, ValueError):
+                    logging.exception("Invalid Adventure preserved: %s", record.get("room", {}).get("code"))
 
     @staticmethod
     def _active_players(room):
@@ -229,6 +243,8 @@ class GameWorld:
 
     @staticmethod
     def _town_pressure(room):
+        if adventure.active(room):
+            return 0
         arrivals=room.get('townPressureStages',[])
         return max(0,room.get('townsVisited',0)-len(arrivals))+sum(max(0,min(1,(room['stage']-stage)/2)) for stage in arrivals)
 
@@ -237,10 +253,13 @@ class GameWorld:
         return bool(voters) and all(p["id"] in room["routeVotes"] for p in voters)
 
     def _prepare_restored_room(self, room):
+        room.pop('_feedback', None)
         room.update(phase="town", enemies=[], summons=[], projectiles=[], effects=[],
                     puzzle=None, routes=[], routeVotes={}, chest=None, waveStartsAt=0,
                     pings=[], combatStats=None, hazards=[], pausedAt=time.monotonic())
-        if not room.get("townPaths"):
+        if room.get('townDesignVersion')!=2:
+            room.update(town_layout.generate(room.get('townSeed',1)))
+        elif not room.get("townPaths"):
             room.update(town_layout.scenery(room["townLayout"], room.get("townSeed", 1)))
         room.update(nextTown=None, forkPending=False)
         room.setdefault("difficulty", "medium")
@@ -251,7 +270,7 @@ class GameWorld:
         for pid, saved in list(room["players"].items()):
             player = self._player(pid, saved["name"])
             for key in ("class", "maxHp", "maxMana", "abilities", "inventory", "utilitySlots",
-                        "toolSlots", "weapon", "armor", "curse", "shopStock", "classChangeUsed", "bot", "skillRanks", "skillPoints", "skillRewards", "trainingKnown", "questAccepted"):
+                        "toolSlots", "weapon", "armor", "curse", "shopStock", "classChangeUsed", "bot", "skillRanks", "skillPoints", "skillRewards", "trainingKnown", "questAccepted", "recoveryProof", "strictSession"):
                 if key in saved:
                     player[key] = saved[key]
             player.update(hp=player["maxHp"], mana=player["maxMana"], x=480, y=460, connected=False)
@@ -267,11 +286,15 @@ class GameWorld:
             room["privateNotices"][pid] = "Run restored at your saved inn checkpoint."
 
     def _save_checkpoint(self, room):
+        if adventure.active(room):
+            adventure.save(self, room)
+            return
         if not self.storage or room["phase"] != "town" or not room.get("checkpoint"):
             return
         if room["checkpoint"].get("townInstance", room.get("townInstance")) != room.get("townInstance"):
             return
         snapshot = copy.deepcopy(room)
+        snapshot.pop('_feedback', None)
         snapshot["checkpointSavedAt"] = time.time()
         try:
             self.storage.save(snapshot)
@@ -291,10 +314,12 @@ class GameWorld:
                       "chargeUntil", "activatesAt", "nextHitAt", "trackUntil", "recoverUntil",
                       "roleReadyAt", "roleRecoverUntil", "roleChargeUntil", "warnAt", "readyAt",
                       "terrainHitAt", "stunResistUntil", "aiDodgeUntil", "aiStrafeAt", "spawnAt", "endsAt",
-                      "rootUntil", "rootResistUntil", "pursuitUntil", "rescueGuardUntil", "rescueGuardReadyAt", "vulnerableUntil", "emergeUntil"}
+                      "rootUntil", "rootResistUntil", "pursuitUntil", "rescueGuardUntil", "rescueGuardReadyAt", "vulnerableUntil", "emergeUntil",
+                      "barrierUntil","beaconUntil","parryUntil","braceReadyAt","watchReadyAt","steelUntil","markUntil","venomUntil",
+                      "insightReadyAt","shardsReadyAt","rootsReadyAt","cadenceUntil","cadenceReadyAt","backbeatUntil","bloodReadyAt","lastActiveCast","weakenUntil"}
         if isinstance(value, dict):
             for key, item in value.items():
-                if key == "abilityCooldowns":
+                if key in ("abilityCooldowns","skillSlotCooldowns"):
                     for ability in item:
                         item[ability] += seconds
                 elif key in clock_keys and isinstance(item, (int, float)) and item:
@@ -310,6 +335,10 @@ class GameWorld:
         if room.get("pausedAt") is not None:
             self._shift_clocks(room, max(0, now - room.pop("pausedAt")))
         if not player.get("connected", True):
+            restored_bed = adventure.active(room) and room['adventure']['current'] in __import__('region_content').HUBS and player.pop('adventureRestoredAtBed', False)
+            if adventure.active(room) and not restored_bed:
+                player.update(townInterior=None, townInteraction=None, townReturn=None, dialogue=None,
+                              innFloor=1, adventureTravel=None)
             companions = [p for p in self._active_players(room) if p["id"] != player["id"] and p["status"] == "alive" and not p.get("townInterior")]
             if companions and room["phase"] in ("combat", "routes", "stage_exit", "chest"):
                 player["x"], player["y"] = companions[0]["x"], companions[0]["y"]
@@ -318,10 +347,18 @@ class GameWorld:
             player.update(lastMove=now, lastManaTick=now, dx=0, dy=0, attacking=False)
             if room["phase"] == "puzzle" and player["id"] not in room["puzzle"]["rooms"]:
                 room["puzzle"]["rooms"].update(new_puzzle([player["id"]])["rooms"])
+            if adventure.active(room) and not restored_bed:
+                companions = [p for p in self._voting_players(room) if p['id'] != player['id'] and
+                              p['status'] == 'alive' and not p.get('townInterior')]
+                if companions:
+                    player['x'], player['y'] = companions[0]['x'], companions[0]['y']
+                elif not terrain.walkable(room,player['x'],player['y']):
+                    player['x'], player['y'] = (480,460) if room['adventure']['current'] in __import__('region_content').HUBS else adventure.edge_point(room, 'south', entry=True)
         player["connected"], player["lastSeen"] = True, now
         telemetry.participant(room, player, now, ABILITY_SETS)
 
     def _disconnect_player(self, room, player):
+        player['inputEpoch']=player.get('inputEpoch',0)+1
         player.update(connected=False, dx=0, dy=0, attacking=False, reviving=None, townExitReady=False)
         room.get("routeVotes", {}).pop(player["id"], None)
         self._dismiss_summons(room, player["id"])
@@ -333,13 +370,15 @@ class GameWorld:
                     continue
                 if player.get("connected", True) and now - player.get("lastSeen", now) > self.disconnect_timeout:
                     self._disconnect_player(room, player)
-                if now - player.get("lastInputAt", now) > 2:
+                if now - player.get("lastInputAt", now) > .65:
                     player["dx"], player["dy"], player["attacking"] = 0, 0, False
         active = self._active_players(room)
         humans = [p for p in active if not p.get("bot")]
         if humans and not room["players"].get(room["host"], {}).get("connected", False):
             room["host"] = humans[0]["id"]
         if room.get("puzzle") and active:
+            if adventure.active(room):
+                active = [p for p in active if not p.get('bot')]
             assign_clues(room["puzzle"], [p["id"] for p in active], {p["id"]: p["name"] for p in active})
         if not active:
             room.setdefault("pausedAt", now)
@@ -355,6 +394,8 @@ class GameWorld:
 
     def _new_puzzle(self, room):
         active = self._active_players(room)
+        if adventure.active(room):
+            active = self._voting_players(room)
         return new_puzzle([p["id"] for p in active], {p["id"]: p["name"] for p in active})
 
     def _ping(self, room, player, payload):
@@ -404,6 +445,7 @@ class GameWorld:
             "activeSummons": {}, "skillPoints": 0, "skillRanks": {key: 0 for key in progression.SKILLS},
             "skillRewards": [], "trainingKnown": False, "questAccepted": False, "dialogue": None, "innFloor": 1,
             "connected": True, "lastSeen": time.monotonic(), "lastInputAt": time.monotonic(), "lastPing": -10,
+            "recoveryProof": secrets.token_urlsafe(32),
         }
 
     def create_room(self, name: str) -> tuple[str, str]:
@@ -425,6 +467,7 @@ class GameWorld:
                 "puzzlesCompleted": 0, "puzzleStages": [], "townsTarget": 0, "townsVisited": 0, "townStages": [],
                 "pings": [], "hazards": [], "stageReports": [], "runStats": {}, "runId": secrets.token_hex(8),
                 "difficulty": "medium", "totalStages": 25,
+                "mode": "gauntlet",
             }
             room["players"][player_id] = self._player(player_id, name or "Player")
             progression.defaults(room)
@@ -444,7 +487,7 @@ class GameWorld:
             room["players"][player_id] = self._player(player_id, name or "Player")
             return code.upper(), player_id
 
-    def state(self, code: str, player_id: str) -> dict:
+    def state(self, code: str, player_id: str, *, include_catalog=True, known_skill_revision=None) -> dict:
         with self.lock:
             room = self.rooms.get(code.upper())
             if not room or player_id not in room["players"]:
@@ -452,6 +495,7 @@ class GameWorld:
             self._touch_player(room, room["players"][player_id])
             self._update_presence(room, time.monotonic())
             own = room['players'][player_id]
+            skill_revision=hero_skills.revision(room,own) if adventure.active(room) else None
             now = time.monotonic()
             speed = CLASSES.get(own['class'], {}).get('speed', 140)
             if room['phase'] == 'combat' and not room.get('waveStartsAt'):
@@ -461,8 +505,9 @@ class GameWorld:
             for player in room["players"].values():
                 class_data = CLASSES.get(player["class"], {})
                 players.append({
-                    "id": player["id"], "name": player["name"], "class": player["class"], "bot": player.get("bot", False),
+                    "id": player["id"], "name": player["name"], "class": player["class"], "bot": player.get("bot", False), "ascended": adventure.active(room) and __import__('ascension').active(player),
                     "hp": player["hp"], "maxHp": player["maxHp"], "x": round(player["x"], 1),
+                    "barrier":player.get('skillBarrier',0) if player.get('barrierUntil',0)>now else 0,
                     "damageTaken": player.get("damageTaken", 0),
                     "y": round(player["y"], 1), "status": player["status"], "reviving": bool(player.get("reviving")),
                     "color": class_data.get("color", "#e7e2d8"),
@@ -474,17 +519,21 @@ class GameWorld:
                     "animation": player.get("animation", "idle"),
                     "animationUntil": player.get("animationUntil", 0),
                     "abilityAnimation": ability_animations.view(player, now, room['stage']),
+                    "basicPreparation": ability_animations.preparation(room,player,now),
                 "abilityCount": len(player["abilities"]),
                     "invisible": player["invisibleUntil"] > time.monotonic(),
                     "indoors": bool(player.get("townInterior")),
                     "townExitReady": bool(player.get("townExitReady")),
                     "connected": player.get("connected", True),
                 })
-            return {
+            result = {
+                "feedback": feedback.view(room, player_id),
+                "mode": room.get("mode", "gauntlet"), "adventure": adventure.view(self, room, own),
                 "code": room["code"], "host": room["host"], "you": player_id,
+                "areaSize": list(terrain.dimensions(room)),
                 "activePartySize": len(self._active_players(room)),
                 "activeVoterCount": len(self._voting_players(room)),
-                "difficulty": room.get("difficulty", "medium"), "difficulties": DIFFICULTIES,
+                "difficulty": room.get("difficulty", "medium"),
                 "totalStages": room.get("totalStages", 25), "pouchCapacity": POUCH_CAPACITY,
                 "testerMode": room.get("totalStages") == 9, "balanceStage": self._effective_stage(room),
                 "npcCompanion": any(p.get("bot") for p in room["players"].values()),
@@ -493,8 +542,14 @@ class GameWorld:
                 "checkpointStage": (room.get('checkpoint') or {}).get('stage'),
                 "dialogue": progression.dialogue(room["players"][player_id]),
                 "movementLocked": progression.locked(room, room["players"][player_id]),
+                "interaction":interactions.public(self,room,own),
                 "movement": {"x":own['x'], "y":own['y'], "age":max(0,now-own['lastMove']),
+                    "epoch":own.get('inputEpoch',0),
+                    "scene":interactions.scene(room,own),
+                    "inputX":own['dx'],"inputY":own['dy'],"attacking":own['attacking'],
                     "speed":speed, "slideVx":own.get('slideVx',0), "slideVy":own.get('slideVy',0),
+                    "rooted":own.get('rootUntil',0)>now,
+                    "locked":room['phase']=='town' and own.get('townInteraction')=='guildmaster',
                     "sequence":own.get('inputSequence',0)},
                 "story": copy.deepcopy(room.get("story", {})),
                 "questAccepted": room["players"][player_id].get("questAccepted", False),
@@ -504,7 +559,6 @@ class GameWorld:
                 "trainingKnown": room["players"][player_id].get("trainingKnown", False),
                 "skillPoints": room["players"][player_id].get("skillPoints", 0),
                 "skillRanks": copy.deepcopy(room["players"][player_id].get("skillRanks", {})),
-                "skills": progression.SKILLS,
                 "firstTownTrainingRequired": room.get("townsVisited") == 1 and any(not p.get("trainingKnown") for p in self._active_players(room) if not p.get("bot")),
                 "phase": room["phase"], "stage": room["stage"], "wave": room["wave"], "region": room.get("region", "woodland"),
                 "bossesDefeated": room["bossesDefeated"], "bossesTotal": 3,
@@ -522,12 +576,13 @@ class GameWorld:
                 "chestReward": dict(room["players"][player_id]["chestReward"]) if room["players"][player_id]["chestReward"] else None,
                 "curse": dict(room["players"][player_id]["curse"]) if room["players"][player_id]["curse"] else None,
                 "privateNotice": room.get("privateNotices", {}).pop(player_id, ""),
-                "runes": room["runes"], "players": players, "classes": CLASSES,
+                "runes": room["runes"], "players": players,
+                "skillZones": [dict(id=z.get('id'),ownerId=z['ownerId'],kind=z['kind'],x=z.get('xTarget',z['x']),y=z.get('yTarget',z['y']),radius=z['radius'],duration=z.get('duration',0),elapsed=now-z.get('startedAt',now),remaining=z['expiresAt']-now) for z in room.get('skillZones',[]) if z['expiresAt']>now],
                 "mana": round(room["players"][player_id]["mana"], 1),
                 "maxMana": room["players"][player_id]["maxMana"],
                 "dashCooldown": max(0, math.ceil(room["players"][player_id].get("dashCooldownUntil", 0) - now)),
                 "dashCooldownRemaining": max(0, room["players"][player_id].get("dashCooldownUntil", 0) - now),
-                "dashCooldownDuration": 5,
+                "dashCooldownDuration": 5, "dashBlockedReason": exploration_movement.reason(room, own, now),
                 "inputSequence": room["players"][player_id].get("inputSequence", 0),
                 "enemies": [
                     {k: enemy[k] for k in ("id", "name", "kind", "affinity", "color", "x", "y", "hp", "maxHp")}
@@ -535,6 +590,8 @@ class GameWorld:
                        "bossAttack": enemy_roles.attack_view(enemy.get("pendingAttack"), time.monotonic()),
                        "roleAttack": enemy_roles.attack_view(enemy.get("roleAttack"), time.monotonic()),
                        "combatRole": enemy.get("combatRole"),
+                       "awareness": enemy.get("awareness", "unaware"),
+                       "awarenessCue": enemy.get("awarenessCue") if enemy.get("awarenessCueUntil",0)>now else None,
                        "rooted": enemy.get("rootUntil", 0) > time.monotonic(),
                        "bleeding": enemy.get("bleedUntil", 0) > time.monotonic(),
                        "vulnerable": enemy.get("vulnerableUntil", 0) > time.monotonic(),
@@ -589,8 +646,9 @@ class GameWorld:
                 "townInterior": room["players"][player_id].get("townInterior"),
                 "nearbyNpc": self._nearby_npc(room, room["players"][player_id]) if room["phase"] in ("town", "peace") else None,
                 "townNpcs": self._town_npcs(room, room["players"][player_id]) if room["phase"] == "town" else {},
-                "townHouses": copy.deepcopy(room.get("townLayout", [])) if room["phase"] == "town" else [],
+                "townHouses": [dict(h,name="Cottage · Recovery 5 Runes") if adventure.active(room) and h["id"]=="cottage" else copy.deepcopy(h) for h in room.get("townLayout", [])] if room["phase"] == "town" else [],
                 "townPaths": copy.deepcopy(room.get("townPaths", [])) if room["phase"] == "town" else [],
+                "townPortal": copy.deepcopy(room.get("townPortal")) if room["phase"] == "town" else None,
                 "townVillagers": copy.deepcopy(room.get("townVillagers", [])) if room["phase"] == "town" else [],
                 "townDecor": copy.deepcopy(room.get("townDecor", {})) if room["phase"] == "town" else {},
                 "townSeed": room.get("townSeed", 0),
@@ -599,13 +657,19 @@ class GameWorld:
                 "townExitTotal": len(self._voting_players(room)) if room["phase"] == "town" else 0,
                 "nearRoute": self._near_route(room, room["players"][player_id]) if room["phase"] == "routes" else None,
                 "chest": dict(room["chest"], opened=bool(player_id in room["chest"]["decisions"] or room["players"][player_id]["chestReward"])) if room["phase"] == "chest" and room["chest"] else None,
-                "canResumeAtCheckpoint": bool(room["checkpoint"]),
-                "abilityOptions": {name: [ability_record(ability) for ability in options] for name, options in ABILITY_SETS.items()},
+                "canResumeAtCheckpoint": bool(room["checkpoint"]) and not __import__('opening').active(room),
                 "selectedAbilities": list(room["players"][player_id]["abilities"]),
                 "abilitySlots": self._ability_slots(room["players"][player_id]),
+                "heroSkillsRevision": skill_revision,
                 "utilitySlots": [dict(item) if item else None for item in room["players"][player_id]["utilitySlots"]],
                 "toolSlots": [dict(item) if item else None for item in room["players"][player_id]["toolSlots"]],
             }
+            if include_catalog:
+                result.update(classes=CLASSES,difficulties=DIFFICULTIES,skills=progression.SKILLS,
+                    abilityOptions={name:[ability_record(a) for a in options] for name,options in ABILITY_SETS.items()})
+            if not adventure.active(room):result['heroSkills']=None
+            elif skill_revision!=known_skill_revision:result['heroSkills']=hero_skills.view(room,own)
+            return result
 
     def run_stats(self, code: str, player_id: str) -> list:
         with self.lock:
@@ -613,6 +677,24 @@ class GameWorld:
             if not room or player_id not in room["players"]:
                 raise ValueError("Room or player not found.")
             return telemetry.overall(room)
+
+    def adventure_summary(self, room, player):
+        import save_portability
+        a=save_portability.identity(room)
+        storage=self.storage.status(a['worldId']) if self.storage else dict(type='memory',label='Disposable memory; no disk saving',cloudConfigured=False)
+        return dict(worldId=a['worldId'],name=a['name'],savedAt=a.get('savedAt'),revision=a['revision'],
+            location=adventure.area_name(room,a['current']),characterName=player['name'],
+            error=a.get('saveError'),hero=player['class'],items=len(player['inventory']),
+            gear=[i['name'] for i in player['toolSlots'] if i],maxHp=player['maxHp'],
+            training=sum(player.get('skillRanks',{}).values()),runes=room['runes'],
+            completed=sum(v=='complete' for v in a['quests'].values()),locations=len(a['visited']),
+            recovery='Caravan encounter checkpoint · no Rune loss' if __import__('opening').active(room) else 'Upstairs inn bed' if a['checkpoint'].get('bed') else 'Oakvale gate',storage=storage,
+            creator=player['characterId']==a['creatorCharacter'])
+
+    def adventure_access(self, code, pid):
+        room=self.rooms.get(code.upper())
+        if not room or pid not in room['players'] or not adventure.active(room):raise ValueError('Adventure recovery identity not found. Original saves are unchanged.')
+        return room,room['players'][pid]
 
     def _configure_companion(self, room, enabled):
         bots = [p for p in room["players"].values() if p.get("bot")]
@@ -656,10 +738,25 @@ class GameWorld:
             room = self.rooms.get(code.upper())
             if not room or player_id not in room["players"]:
                 raise ValueError("Room or player not found.")
+            if payload.get('action')=='input' and payload.get('epoch',0)!=room['players'][player_id].get('inputEpoch',0):return
             self._touch_player(room, room["players"][player_id])
+            save_attempt=room.get('_saveAttempt',0)
+            observed=None
+            if room.get('_chapterProbe'):
+                p=room['players'][player_id];item=next((i for i in p['inventory']+p['utilitySlots'] if i and i['id']==payload.get('item')),None)
+                reward=payload.get('reward');chosen=payload.get('item')
+                observed=dict(item=item['key'] if item else chosen if payload.get('action')=='adventureReward' else None,
+                    retry=bool(reward in p.get('resolvedRewards',{})),alreadyOwned=any(i and i['key']==chosen for i in p['inventory']+p['toolSlots']),
+                    delivery=payload.get('delivery','pouch'))
+            __import__('acquisitions').prime(room)
+            audio_before=None if payload.get('action') in ('input','ping','chat','revive','stopRevive','target','disconnect') else feedback.action_state(room,room['players'][player_id])
             self._action(code, player_id, payload)
             room = self.rooms.get(code.upper())
-            if room and payload.get("action") not in ("input", "ping", "chat", "revive", "stopRevive", "disconnect"):
+            if room and player_id in room['players']:
+                feedback.accepted_action(room,room['players'][player_id],payload,audio_before)
+            if room and room.get('_chapterProbe') and payload.get('action') in ('useItem','sellItem','adventureReward'):
+                __import__('chapter_observations').event(room,payload['action'],**observed)
+            if room and room.get('_saveAttempt',0)==save_attempt and payload.get("action") not in ("input", "ping", "chat", "revive", "stopRevive", "disconnect","target","guildPreview","guildBack","closeShop"):
                 self._save_checkpoint(room)
 
     def _action(self, code: str, player_id: str, payload: dict) -> None:
@@ -668,6 +765,32 @@ class GameWorld:
             if not room or player_id not in room["players"]:
                 raise ValueError("Room or player not found.")
             action = str(payload.get("action", ""))
+            if action == 'magicPurchase':
+                if not adventure.active(room):raise ValueError('Magic Runes belong to Adventure.')
+                __import__('magic_runes').transact(self,room,room['players'][player_id],payload)
+                return
+            if action in ('chapterAccept','chapterReport'):
+                if not adventure.active(room):raise ValueError('Adventure assignments only.')
+                __import__('chapter_flow').action(self,room,room['players'][player_id],payload)
+                return
+            if action=='openingRetry':
+                if not adventure.active(room):raise ValueError('No Adventure opening is active.')
+                __import__('opening').retry(self,room)
+                return
+            if action in ('skillUnlock','skillEquip','skillRespec'):
+                if not adventure.active(room):raise ValueError('Hero trees are available in Adventure. Gauntlet uses its lobby loadout.')
+                hero_skills.action(self,room,room['players'][player_id],payload)
+                return
+            if action == 'villageTeleport':
+                __import__('village_portals').request(self,room,room['players'][player_id],str(payload.get('destination','')),payload.get('method'))
+                return
+            if action == 'cancelTeleport':
+                if room.get('portalChannel'):__import__('village_portals').cancel(self,room,'Village portal cancelled.')
+                return
+            if action == 'adventureReward':
+                if not adventure.active(room):raise ValueError('Adventure rewards only.')
+                __import__('adventure_rewards').claim(self,room,room['players'][player_id],payload)
+                return
             if action == "disconnect":
                 self._disconnect_player(room, room["players"][player_id])
                 self._update_presence(room, time.monotonic())
@@ -676,12 +799,19 @@ class GameWorld:
                 self._ping(room, room["players"][player_id], payload)
                 return
             if action == "leaveRoom":
+                if adventure.active(room):
+                    # Leaving a session cannot delete a persistent character/world
+                    # or transfer its creator ownership to a replacement host.
+                    self._disconnect_player(room,room['players'][player_id])
+                    self._update_presence(room,time.monotonic())
+                    return
                 self._dismiss_summons(room, player_id)
                 del room["players"][player_id]
                 if not any(not member.get("bot") for member in room["players"].values()):
                     self._finish_stage_stats(room, "abandoned")
                     if self.storage:
-                        self.storage.delete(room["code"])
+                        if adventure.active(room): self.storage.delete_adventure(room["code"])
+                        else: self.storage.delete(room["code"])
                     del self.rooms[code.upper()]
                     return
                 if room["host"] == player_id:
@@ -701,14 +831,30 @@ class GameWorld:
                 self._say(room, "system", "The Gauntlet", "A player returned to the main menu.")
                 return
             player = room["players"][player_id]
+            if action == 'adventureTravel':
+                if not adventure.active(room): raise ValueError('Adventure travel is unavailable in this mode.')
+                adventure.travel(self, room, player, str(payload.get('destination', '')))
+                return
+            if action == 'adventureTrack':
+                if not adventure.active(room): raise ValueError('Objective tracking is only available in Adventure.')
+                adventure.track(self, room, player, payload.get('objective'))
+                return
+            if action == "dialogueChoice":
+                if not adventure.active(room):raise ValueError("Choices belong to Adventure conversations.")
+                __import__("dialogue_choices").choose(self,room,player,payload)
+                return
             if action == "dialogueNext":
                 progression.advance(self, room, player, payload)
             elif action == "trainSkill":
+                if adventure.active(room):raise ValueError('Use Adventure → Skills. Earlier stat training is retained; new milestone points belong to your hero tree.')
                 progression.train(self, room, player, payload.get("branch"), CLASSES)
             elif action == "runOptions":
                 if room["phase"] != "lobby" or player_id != room["host"]:
                     raise ValueError("Only the host can change options before the run.")
                 difficulty = payload.get("difficulty", room.get("difficulty", "medium"))
+                mode = payload.get('mode', room.get('mode', 'gauntlet'))
+                if mode not in ('gauntlet', 'adventure'):
+                    raise ValueError('Choose Gauntlet or Adventure mode.')
                 enabled = payload.get("companion", any(p.get("bot") for p in room["players"].values()))
                 if not isinstance(difficulty, str) or difficulty not in DIFFICULTIES or not isinstance(enabled, bool):
                     raise ValueError("Choose Easy, Medium or Hard and a valid companion option.")
@@ -716,7 +862,7 @@ class GameWorld:
                 if not isinstance(stages,int) or isinstance(stages,bool) or stages not in (9,20,25,30):
                     raise ValueError('Choose Tester (9 stages), or a 20, 25 or 30 stage run.')
                 self._configure_companion(room, enabled)
-                room.update(difficulty=difficulty, totalStages=stages,lengthChosen='stages' in payload or room.get('lengthChosen',False))
+                room.update(mode=mode, difficulty=difficulty, totalStages=stages,lengthChosen='stages' in payload or room.get('lengthChosen',False))
             elif action == 'target':
                 target_id=payload.get('targetId')
                 if target_id is not None and (room['phase']!='combat' or not any(e['id']==target_id for e in room['enemies'])):
@@ -754,6 +900,16 @@ class GameWorld:
                     raise ValueError("Choose one Light, one Special, and one Ultimate ability.")
                 player["abilities"] = [next((item for item in selected if category_by_id[item] == category), None)
                                         for category in ("light", "special", "ultimate") if any(c == category for c in categories)]
+            elif action == 'chooseAbility':
+                # Choose one category against current server state. Fast clicks in
+                # other categories cannot overwrite each other with a stale poll.
+                aid = payload.get('ability')
+                options = {a[0]:a[7] for a in ABILITY_SETS.get(player['class'], [])}
+                if room['phase'] != 'lobby' or not isinstance(aid, str) or aid not in options:
+                    raise ValueError('Choose an ability for your selected hero before starting.')
+                selected = [a for a in player['abilities'] if options[a] != options[aid]]
+                if aid not in player['abilities']: selected.append(aid)
+                self._action(code, player_id, {'action':'loadout', 'abilities':selected})
             elif action == "chat":
                 message = str(payload.get("message", "")).strip()[:240]
                 if message:
@@ -792,8 +948,12 @@ class GameWorld:
                 player["hp"] = max(1, min(player["maxHp"], round(player["maxHp"] * health_fraction)))
                 player["abilities"] = [next(a for a in selected if options[a]["attackType"] == category)
                                        for category in ("light", "special", "ultimate")]
-                player["abilityCooldowns"] = {}
-                player["dashCooldownUntil"] = 0
+                if adventure.active(room):
+                    hero_skills.ensure(room,player)
+                    __import__('magic_runes').refresh(player)
+                else:
+                    player["abilityCooldowns"] = {}
+                    player["dashCooldownUntil"] = 0
                 for key in ("invisibleUntil", "tauntUntil"):
                     player[key] = 0
                 player["classChangeUsed"] = True
@@ -805,6 +965,7 @@ class GameWorld:
                 room.setdefault("privateNotices", {})[player_id] = f"You are now a {chosen}. Your class change for this run has been used."
                 self._say(room, "system", "Guildmaster", f"{player['name']} changed from {old_class} to {chosen}.")
             elif action == "input":
+                if payload.get('scene') is not None and payload['scene']!=interactions.scene(room,player):return
                 if 'sequence' in payload:
                     sequence = int(payload['sequence'])
                     if sequence <= player.get('inputSequence',0): return
@@ -819,6 +980,7 @@ class GameWorld:
                     return
                 dx = max(-1, min(1, float(payload.get("x", 0))))
                 dy = max(-1, min(1, float(payload.get("y", 0))))
+                if not math.isfinite(float(payload.get('x',0))) or not math.isfinite(float(payload.get('y',0))):raise ValueError('Movement must be finite.')
                 length = math.hypot(dx, dy)
                 if length > 1:
                     dx, dy = dx / length, dy / length
@@ -831,8 +993,9 @@ class GameWorld:
                     self._attack(room, player)
             elif action == "dash":
                 now = time.monotonic()
-                if room["phase"] != "combat" or player["status"] != "alive":
-                    raise ValueError("Dash is available during combat while standing.")
+                reason=exploration_movement.reason(room,player,now)
+                if reason:raise ValueError(reason)
+                if payload.get("scene") and payload["scene"]!=interactions.scene(room,player):raise ValueError("The scene changed. Try again.")
                 if player.get("dashCooldownUntil", 0) > now:
                     raise ValueError(f"Dash recharges in {math.ceil(player['dashCooldownUntil'] - now)} seconds.")
                 dx, dy = player.get("dx", 0), player.get("dy", 0)
@@ -841,10 +1004,12 @@ class GameWorld:
                 length = max(0.001, math.hypot(dx, dy))
                 dx, dy = dx / length, dy / length
                 start_x, start_y = player["x"], player["y"]
-                terrain.move(room, player, player["x"] + dx * 116, player["y"] + dy * 116)
+                exploration_movement.move(self,room,player,dx*116,dy*116)
                 player["facingX"], player["facingY"] = dx, dy
                 player["dashCooldownUntil"] = now + 5
+                feedback.emit(room, 'dash', actor=player)
                 tactical.dashed(player, now, math.hypot(player['x']-start_x, player['y']-start_y))
+                if adventure.active(room) and math.hypot(player['x']-start_x,player['y']-start_y)>10:skill_casts.dashed(room,player,now)
                 self._add_effect(room, "dash", start_x, start_y, CLASSES.get(player["class"], {}).get("color", "#ffffff"),
                                  player["x"], player["y"], 0.32, attack_class=player["class"] or "")
             elif action == "attack":
@@ -852,10 +1017,21 @@ class GameWorld:
             elif action == "revive":
                 self._revive(room, player)
             elif action == "stopRevive":
-                player['reviving'] = None
-                player['rescueGuardUntil'] = 0
+                token=payload.get('holdToken')
+                if isinstance(token,str):
+                    cancelled=player.setdefault('_cancelledRevives',[]);cancelled.append(token[:80]);del cancelled[:-64]
+                if not token or token==player.get('_reviveHoldToken'):
+                    player['reviving'] = None
+                    player['rescueGuardUntil'] = 0
             elif action == "interact":
+                if payload.get('holdToken') in player.get('_cancelledRevives',[]):return
+                target=interactions.select(self,room,player)
+                if payload.get('target') and (not target or target['id']!=payload['target']):raise ValueError('The nearby target changed. Check the current prompt and try again.')
+                request=payload.get('requestId');receipts=player.setdefault('_interactionRequests',[])
+                if request and request in receipts:return
                 self._interact(room, player)
+                if target and target['kind']=='revive':player['_reviveHoldToken']=payload.get('holdToken')
+                if request:receipts.append(str(request)[:100]);del receipts[:-32]
             elif action == "routeVote":
                 if player.get("bot"):
                     return
@@ -890,6 +1066,7 @@ class GameWorld:
                 if room["checkpoint"] and room["checkpoint"].get("townInstance", room["townInstance"]) == room["townInstance"]:
                     room["checkpoint"]["shopStock"][player_id] = copy.deepcopy(player["shopStock"])
                 self._say(room, "system", "The Gauntlet", f"{player['name']} bought {ITEMS[item_key]['name']}.")
+                feedback.emit(room, 'purchase', actor=player, privateTo=player_id)
             elif action == "shopSell":
                 if room["phase"] != "town":
                     raise ValueError("Items can be sold in town.")
@@ -916,10 +1093,12 @@ class GameWorld:
                     if player["hp"] >= player["maxHp"]:
                         raise ValueError("You are already at full health.")
                     player["hp"] = min(player["maxHp"], player["hp"] + item.get("heal", 40))
+                    feedback.restored(room, player, 'heal')
                 elif item["kind"] == "ward":
                     if room["phase"] != "combat" or player["status"] != "alive":
                         raise ValueError("A warding item can be used during combat.")
                     player["wardUntil"] = time.monotonic() + item.get("duration", 30)
+                    feedback.restored(room, player, 'ward')
                     player["wardFactor"] = item.get("factor", 0.6)
                     player["wardSource"] = player["id"]
                 elif item["kind"] == "hint":
@@ -951,6 +1130,7 @@ class GameWorld:
                     player["specialAttackFactor"] = item.get("factor", 1.5)
                 else:
                     raise ValueError("That item cannot be used here.")
+                if adventure.active(room):skill_casts.potion(self,room,player,item['kind'])
                 if item in player["inventory"]:
                     player["inventory"].remove(item)
                 else:
@@ -984,6 +1164,7 @@ class GameWorld:
                     if summon['ownerId']==player['id']:
                         tactical.refresh_summon_health(player, summon, SUMMON_TYPES[summon['abilityId']])
                 self._say(room, "system", "The Gauntlet", f"{player['name']} equipped {item['name']}.")
+                feedback.emit(room, 'equip', actor=player, privateTo=player_id)
             elif action == "unequipItem":
                 slot_kind = str(payload.get("slotKind", ""))
                 slot_index = int(payload.get("slot", -1))
@@ -1006,10 +1187,11 @@ class GameWorld:
                 self._vote_town_exit(room, player)
             elif action == "ability":
                 slot_index = int(payload.get("slot", 0)) - 1
-                if room["phase"] != "combat" or player["status"] != "alive" or not 0 <= slot_index < 3:
+                if room["phase"] != "combat" or player["status"] != "alive" or not 0 <= slot_index < len(player['abilities']) or progression.locked(room,player):
                     raise ValueError("Use an ability slot during combat while standing.")
                 self._cast_ability(room, player, slot_index)
             elif action == "checkpointResume":
+                if __import__('opening').active(room):raise ValueError('Use the caravan retry checkpoint. No Rune penalty is charged.')
                 if player_id != room["host"] or room["phase"] != "defeat" or not room["checkpoint"]:
                     raise ValueError("The host can return the party to its last inn after a wipe.")
                 self._dismiss_summons(room)
@@ -1036,6 +1218,11 @@ class GameWorld:
                 room["hazards"] = []
                 for key in ("townPaths", "townVillagers", "townDecor"):
                     room[key] = copy.deepcopy(room["checkpoint"].get(key, room.get(key, [] if key != "townDecor" else {})))
+                if room["checkpoint"].get("townDesignVersion") != 2:
+                    room.update(town_layout.generate(room["townSeed"]))
+                else:
+                    for key in ("townPortal", "townDesignVersion"):
+                        room[key] = copy.deepcopy(room["checkpoint"][key])
                 room.update(nextTown=None, forkPending=False)
                 room["enemies"] = []
                 room["waveStartsAt"] = 0
@@ -1070,6 +1257,7 @@ class GameWorld:
                     raise ValueError("Walk up to the chest before opening it.")
                 if player_id in room["chest"]["decisions"] or player["chestReward"]:
                     raise ValueError("You have already made your chest choice.")
+                loot_rarity, loot_cursed = 'common', False
                 if not room["chest"]["runesAwarded"]:
                     chest_runes = random.randint(5, 12)
                     room["runes"] += chest_runes
@@ -1080,6 +1268,7 @@ class GameWorld:
                     curse = dict(random.choice(CURSES))
                     curse["remainingStages"] = 5
                     player["curse"] = curse
+                    loot_cursed = True
                     room["chest"]["decisions"][player_id] = "opened"
                     room.setdefault("privateNotices", {})[player_id] = f"CURSED: {curse['name']} — {curse['description']} See the curse slot in your pouch."
                     self._say(room, "system", "The Gauntlet", f"A hidden curse latched onto {player['name']}! It will fade after five combat or puzzle stages.")
@@ -1100,6 +1289,7 @@ class GameWorld:
                         self._say(room, "system", "The Gauntlet", f"{player['name']} opened a restoration chest and recovered {healed} HP.")
                     else:
                         item = self._make_item(self._roll_chest_item_key())
+                        loot_rarity = item['rarity']
                         if len(player["inventory"]) < POUCH_CAPACITY:
                             player["inventory"].append(item)
                             room["chest"]["decisions"][player_id] = "opened"
@@ -1109,6 +1299,8 @@ class GameWorld:
                             player["chestReward"] = item
                             room.setdefault("privateNotices", {})[player_id] = f"Chest loot: {item['rarity']} {item['name']}. Swap a pouch item to claim it."
                             self._say(room, "system", "The Gauntlet", f"{player['name']} found {item['rarity']} loot, but their pouch is full. They must swap an item to claim it.")
+                feedback.emit(room, 'curse' if loot_cursed else 'loot', actor=player,
+                              privateTo=player_id, rarity=loot_rarity)
                 self._finish_chest_if_ready(room)
             elif action == "chestClaim":
                 if room["phase"] != "chest" or not room["chest"] or not player["chestReward"]:
@@ -1135,12 +1327,17 @@ class GameWorld:
                     raise ValueError("Choose a class before starting.")
                 if any(not p["class"] for p in room["players"].values() if not p.get("bot")):
                     raise ValueError("Every player must choose a class first.")
+                if room.get('mode')=='adventure':
+                    self._choose_companion_hero(room);adventure.start(self,room);return
                 if any(len(p["abilities"]) != 3 or
                        {next(ability[7] for ability in ABILITY_SETS[p["class"]] if ability[0] == selected)
                         for selected in p["abilities"]} != {"light", "special", "ultimate"}
                        for p in room["players"].values() if not p.get("bot")):
                     raise ValueError("Every player must select one Light, one Special, and one Ultimate ability.")
                 self._choose_companion_hero(room)
+                if room.get('mode') == 'adventure':
+                    adventure.start(self, room)
+                    return
                 room["stage"] = 1
                 room["wave"] = 1
                 room["bossesDefeated"] = 0
@@ -1366,10 +1563,10 @@ class GameWorld:
     @staticmethod
     def _ability_slots(player: dict) -> list[dict]:
         now = time.monotonic()
-        abilities = {ability[0]: ability_record(ability) for ability in ABILITY_SETS.get(player["class"], [])}
+        abilities = hero_skills.catalog(player) if player.get('heroProgress') else {ability[0]: ability_record(ability) for ability in ABILITY_SETS.get(player["class"], [])}
         return [
-            {**abilities[ability_id], "cooldownLeft": math.ceil(max(0, player["abilityCooldowns"].get(ability_id, 0) - now)),
-             "cooldownRemaining": max(0, player["abilityCooldowns"].get(ability_id, 0) - now),
+            {**abilities[ability_id], "barSlot":hero_skills.slot(player,ability_id), "cooldownLeft": math.ceil(max(0, hero_skills.ready_at(player,ability_id) - now)),
+             "cooldownRemaining": max(0, hero_skills.ready_at(player,ability_id) - now),
              "summonAlive": ability_id in player.get("activeSummons", {})}
             for ability_id in player["abilities"] if ability_id in abilities
         ]
@@ -1379,15 +1576,17 @@ class GameWorld:
         if room["phase"] == "peace":
             return {"wounded": {"x": 480, "y": 250}}
         if not player.get("townInterior"):
+            if adventure.active(room) and room['adventure']['current']=='dunmere':return {}
             return {"gate": {"x": TOWN_GATE[0], "y": TOWN_GATE[1]}}
         house = next((entry for entry in room.get("townLayout", []) if entry["id"] == player["townInterior"]), None)
         service = house.get("service") if house else None
+        if adventure.active(room) and house and house["id"]=="cottage":return {"caretaker":{"x":480,"y":220}}
         if service == "innkeeper":
             return progression.npcs(room, player)
         return {service: {"x": TOWN_SERVICE_POSITION[0], "y": TOWN_SERVICE_POSITION[1]}} if service else {}
 
     def _nearby_npc(self, room: dict, player: dict) -> dict | None:
-        npc_names = {"wounded": "Wounded Hunter", "stairs_up": "Stairs upstairs", "stairs_down": "Stairs downstairs", "merchant": "Merchant", "alchemist": "Alchemist", "innkeeper": "Innkeeper", "guildmaster": "Guildmaster", "gate": "Trail Gate"}
+        npc_names = {"caretaker":"Mara · Cottage recovery","wounded": "Wounded Hunter", "stairs_up": "Stairs upstairs", "stairs_down": "Stairs downstairs", "merchant": "Merchant", "alchemist": "Alchemist", "innkeeper": "Innkeeper", "guildmaster": "Guildmaster", "gate": "Trail Gate"}
         close = [(math.hypot(player["x"] - pos["x"], player["y"] - pos["y"]), key, pos["x"], pos["y"])
                  for key, pos in self._town_npcs(room, player).items()]
         if not close:
@@ -1428,14 +1627,16 @@ class GameWorld:
 
     @staticmethod
     def _town_walkable(room: dict, x: float, y: float) -> bool:
-        return not any(abs(x - house["x"]) < 69 and house["y"] - 78 < y < house["y"] + 35
-                       for house in room.get("townLayout", []))
+        return town_layout.clear(room.get('townLayout',[]),x,y)
 
     @staticmethod
     def _new_town_layout() -> list[dict]:
         return town_layout.generate(random.randrange(1, 1_000_000))["townLayout"]
 
     def _vote_town_exit(self, room: dict, player: dict) -> None:
+        if adventure.active(room):
+            adventure.travel(self, room, player, 'road')
+            return
         if player.get("bot"):
             return
         voters = self._voting_players(room)
@@ -1531,6 +1732,14 @@ class GameWorld:
 
     def _interact(self, room: dict, player: dict) -> None:
         player_id = player["id"]
+        target=interactions.select(self,room,player)
+        if not target:
+            if room['phase']=='puzzle':self._tick_puzzle(room);return
+            raise ValueError('Nothing is within reach. Move closer to a door, person, object, signpost or trail.')
+        if not target['available']:raise ValueError(target['reason'])
+        if target['kind']=='revive':self._revive(room,player);return
+        if adventure.active(room) and target['kind'] not in ('door','npc','bed','stairs','totem') and adventure.interact(self, room, player,target['point']):
+            return
         if room["phase"] == "chest":
             self.action(room["code"], player_id, {"action": "openChest"})
             return
@@ -1595,7 +1804,15 @@ class GameWorld:
             npc_id = npc["id"]
             player["townInteraction"] = npc_id
             player["dx"], player["dy"] = 0, 0
-            if npc_id == "alchemist":
+            if npc_id == "caretaker":
+                progression.start_dialogue(player,"adventure_caretaker")
+            elif npc_id == "alchemist":
+                if adventure.active(room):
+                    gifts = player.setdefault('adventureGifts', [])
+                    if 'alchemist' in gifts:
+                        room.setdefault('privateNotices', {})[player_id] = 'Your welcome potion has already been claimed. The merchant sells more supplies.'
+                        return
+                    gifts.append('alchemist')
                 if len(player["inventory"]) < POUCH_CAPACITY:
                     gift = random.choice(("healing_draught", "mana_draught", "quickstep_elixir"))
                     player["inventory"].append(self._make_item(gift))
@@ -1606,7 +1823,7 @@ class GameWorld:
                     room.setdefault("privateNotices", {})[player_id] = "The alchemist restores 40 health and mana; your pouch was full."
             elif npc_id == "innkeeper":
                 if not player.get("trainingKnown"):
-                    progression.start_dialogue(player, "training")
+                    progression.start_dialogue(player, "adventure_training" if adventure.active(room) else "training")
             elif npc_id == "stairs_up":
                 player.update(innFloor=2, x=710, y=435, townInteraction=None)
             elif npc_id == "stairs_down":
@@ -1667,6 +1884,8 @@ class GameWorld:
 
     @staticmethod
     def _effective_stage(room: dict) -> int:
+        if adventure.active(room):
+            return max(1, adventure.AREAS[room['adventure']['current']]['danger'])
         stage = room['stage']
         return min(25, 1+3*(stage-1)) if room.get('totalStages') == 9 and stage > 0 else stage
 
@@ -1681,6 +1900,9 @@ class GameWorld:
         return ramp
 
     def _spawn_wave(self, room: dict, preserve_players: bool = False) -> None:
+        if adventure.active(room) and adventure.dungeons.inside(room):
+            adventure.dungeons.spawn_wave(self,room)
+            return
         room["hazards"] = []
         terrain.prepare(room)
         if not preserve_players:
@@ -1925,10 +2147,11 @@ class GameWorld:
         late = max(mistakes - 4, 0) * 0.02
         return min(0.15, early + middle + late)
 
-    def _damage_enemy(self, room: dict, player: dict, enemy: dict, damage: int, summon_id: str | None = None, *, boost_source=None, boost_factor=None) -> None:
+    def _damage_enemy(self, room: dict, player: dict, enemy: dict, damage: int, summon_id: str | None = None, *, boost_source=None, boost_factor=None, impact_element=None, direct=True) -> None:
         if enemy not in room["enemies"]:
             return
         now = time.monotonic()
+        if adventure.active(room) and direct:damage=skill_casts.outgoing(room,player,enemy,damage,summon_id,now)
         if enemy.get('vulnerableUntil', 0) > now:
             damage = round(damage*1.35)
         if boost_factor is None:
@@ -1940,6 +2163,13 @@ class GameWorld:
         telemetry.add(room, player["id"], "summonDamage" if summon_id else "heroDamage", min(enemy["hp"], max(1, damage)))
         enemy["hp"] -= max(1, damage)
         enemy["damageTaken"] = enemy.get("damageTaken", 0) + 1
+        feedback.emit(room, 'hit', actor=player, x=enemy['x'], y=enemy['y'],
+                      targetId=enemy['id'], summon=bool(summon_id), affinity=enemy.get('affinity'),
+                      element=impact_element or next((s['affinity'] for s in room.get('summons',[]) if s['id']==summon_id),
+                                   {'Druid':'Nature','Wizard':'Arcane'}.get(player['class'])),
+                      material='stone' if enemy.get('structure') else 'metal' if enemy.get('armor',0) else 'flesh',
+                      periodic=not direct, significant=bool(direct and not summon_id and damage>=max(30,enemy.get('maxHp',100)*.2)), heavy=False)
+        if direct and not summon_id and enemy_awareness.visible(player,now) and terrain.line_clear(room,enemy,player):enemy_awareness.attacked(enemy,player,now)
         if (enemy.get('boss') and enemy['kind']=='dragon' and enemy.get('bossPhase', 1)==1 and
                 not enemy.get('armorWarned') and enemy['hp'] <= enemy['maxHp']*.35):
             enemy['armorWarned'] = True
@@ -1950,8 +2180,14 @@ class GameWorld:
             boss_ai.second_phase(self, room, enemy, time.monotonic())
             return
         room["enemies"].remove(enemy)
+        feedback.emit(room,'enemy_defeat',actor=player,x=enemy['x'],y=enemy['y'],boss=bool(enemy.get('boss')))
         room["hazards"] = [h for h in room.get("hazards", []) if h["ownerId"] != enemy["id"]]
         telemetry.count(room, player["id"], "kills")
+        if adventure.active(room):
+            __import__('soul_crystal').grant(room,enemy)
+            skill_casts.killed(room,player,enemy,now)
+            adventure.on_kill(self, room, enemy)
+            return
         room["runes"] += random.randint(2, 5)
         self._say(room, "system", "The Gauntlet", f"{enemy['affinity']} {enemy['name']} defeated. Runes collected.")
         if not room["enemies"] and combat_encounters.can_complete(room,time.monotonic()):
@@ -1967,13 +2203,15 @@ class GameWorld:
                   "color": color, "until": time.time() + duration, "text": text, "class": attack_class}
         room["effects"].append(effect)
         room["effects"] = room["effects"][-80:]
+        if effect_type in ('ambush', 'puzzle_solved'):
+            feedback.emit(room, {'ambush':'boss_phase', 'puzzle_solved':'complete'}.get(effect_type, effect_type), x=x, y=y)
 
     def _launch_projectile(self, room: dict, *, side: str, owner_id: str, target_id: str,
                            x: float, y: float, damage: int, color: str, attack_class: str,
                            effect_kind: str = "damage", speed: float = 270, splash: int = 0, summon_id: str | None = None,
                            radius: float = 7, turn_rate: float | None = None, ability_id: str = "") -> None:
         target_pool = room["enemies"] + terrain.obstacles(room) if side == "hero" else self._combat_targets(room)
-        aimed = next((item for item in target_pool if item["id"] == target_id), None)
+        aimed = next((item for item in target_pool if item["id"] == target_id and (side!="enemy" or enemy_awareness.visible(item,time.monotonic()))), None)
         target_x = aimed["x"] if aimed else x + 1
         target_y = aimed["y"] if aimed else y
         if side == "enemy" and aimed:
@@ -1983,16 +2221,23 @@ class GameWorld:
         dx, dy = target_x - x, target_y - y
         distance = max(0.001, math.hypot(dx, dy))
         room["projectiles"].append({"id": secrets.token_hex(4), "side": side, "ownerId": owner_id,
+            "ownerKind":next((e['kind'] for e in room['enemies'] if e['id']==owner_id),None) if side=='enemy' else None,
+            "affinity":next((e.get('affinity') for e in room['enemies'] if e['id']==owner_id),None) if side=='enemy' else None,
             "targetId": target_id, "x": x, "y": y, "vx": dx / distance * speed, "vy": dy / distance * speed,
             "expiresAt": time.monotonic() + 4, "damage": max(1, damage), "color": color,
             "class": attack_class, "effectKind": effect_kind, "speed": speed, "splash": splash, "abilityId": ability_id,
             "lastTick": time.monotonic(), "summonId": summon_id, "radius": radius,
             "turnRate": (.65 if side == "enemy" else 0) if turn_rate is None else turn_rate,
-            "trackUntil": time.monotonic()+1.1,
+            "trackUntil": time.monotonic()+1.1 if aimed else 0,
             "boostSource": room["players"].get(owner_id,{}).get("damageBoostSource") if side == "hero" else None,
             "boostFactor": room["players"].get(owner_id,{}).get("damageBoost",1) if side == "hero" and room["players"].get(owner_id,{}).get("damageBoostUntil",0)>time.monotonic() else 1})
         if side == 'hero' and owner_id in room['players']:
             tactical.decorate_projectile(room['players'][owner_id], room['projectiles'][-1])
+            if adventure.active(room):skill_casts.projectile(room['players'][owner_id],room['projectiles'][-1])
+        shot=room['projectiles'][-1]
+        feedback.emit(room,'projectile_launch',x=x,y=y,ownerId=owner_id,heroClass=attack_class,
+                      family=feedback.projectile_family(shot),side=side,abilityId=ability_id,
+                      summon=bool(summon_id),ascended=room['players'].get(owner_id,{}).get('magicRunes',{}).get('ascended',False))
 
     def _damage_player(self, room: dict, enemy: dict, target: dict, amount: int) -> None:
         if target.get('objectiveWard'):
@@ -2008,6 +2253,7 @@ class GameWorld:
         curse = 1.25 if (target.get("curse") or {}).get("effect") == "frail" else 1
         warded = max(1, round(max(1, amount-armor)*curse*(target['wardFactor'] if target['wardUntil']>now else 1)))
         damage = max(1, round(warded*tactical.rescue_factor(room, target, now)))
+        if adventure.active(room):damage=skill_casts.incoming(self,room,target,enemy,damage,now)
         telemetry.add(room, target['id'], 'protectionGiven', max(0, min(target['hp'],warded)-min(target['hp'],damage)))
         telemetry.add(room, target["id"], "heroDamageTaken", min(target["hp"], damage))
         telemetry.add(room, target["id"], "damagePrevented", max(0, amount - damage))
@@ -2017,32 +2263,42 @@ class GameWorld:
             telemetry.add(room, target.get("wardSource",target["id"]), "protectionGiven", saved)
         target["hp"] -= damage
         target["damageTaken"] = target.get("damageTaken", 0) + 1
+        feedback.emit(room, 'blocked' if damage<=0 else 'hurt', actor=target, warded=target['wardUntil'] > now, heavy=bool(enemy.get('boss')))
         if target["hp"] <= 0:
             target["hp"] = 0
             target["status"] = "downed"
+            __import__('chapter_observations').event(room,'downing')
+            feedback.emit(room, 'down', actor=target)
             target["downedUntil"] = 0
             target["dx"], target["dy"] = 0, 0
             self._say(room, "system", "The Gauntlet", f"{target['name']} is down! Enemies turn toward the standing hunters.")
 
     def _summon_companion(self, room: dict, player: dict, ability_id: str, damage: int, now: float) -> None:
+        width, height = terrain.dimensions(room)
         template = SUMMON_TYPES[ability_id]
         summon_hp = tactical.summon_health(player, template)
+        training_hp=hero_skills.catalog(player).get(ability_id,{}).get('summonBonus',0)+(25 if hero_skills.rank(player,'druid_kindred') else 0) if adventure.active(room) else 0
+        if adventure.active(room) and __import__('ascension').active(player):training_hp+=35
+        summon_hp+=training_hp
         summon_id = secrets.token_hex(6)
         offset = -32 if len(player.get("activeSummons", {})) == 0 else 32
-        summon = {**template, "id": summon_id, "ownerId": player["id"], "abilityId": ability_id,
+        summon = {**template, "id": summon_id, "ownerId": player["id"], "abilityId": ability_id,"trainingHp":training_hp,
                   "summon": True, "status": "alive", "hp": summon_hp, "maxHp": summon_hp,
                   "color": AFFINITIES[template["affinity"]], "damage": max(1, damage), "damageTaken": 0,
-                  "x": max(28, min(WIDTH - 28, player["x"] + offset)),
-                  "y": max(30, min(HEIGHT - 30, player["y"] - 28)),
+                  "x": max(28, min(width - 28, player["x"] + offset)),
+                  "y": max(30, min(height - 30, player["y"] - 28)),
                   "facingX": player.get("facingX", 1), "facingY": player.get("facingY", 0),
                   "moving": False, "animationUntil": 0, "lastTick": now, "lastAttack": now,
                   "emergeUntil": now + 1.1}
+        if not terrain.walkable(room, summon['x'], summon['y']):
+            summon['x'], summon['y'] = player['x'], player['y']
         telemetry.tick(room, now)
         room.setdefault("summons", []).append(summon)
         telemetry.summon_spawn(room, summon, now)
         player.setdefault("activeSummons", {})[ability_id] = summon_id
         player["abilityCooldowns"].pop(ability_id, None)
         self._add_effect(room, "aura", summon["x"], summon["y"], summon["color"], duration=0.6)
+        feedback.emit(room, 'summon', actor=player, x=summon['x'], y=summon['y'], affinity=summon['affinity'], targetId=summon['id'])
 
     def _remove_summon(self, room: dict, summon: dict, now: float | None = None) -> None:
         if summon not in room.get("summons", []):
@@ -2056,6 +2312,7 @@ class GameWorld:
         if owner:
             owner.setdefault("activeSummons", {}).pop(summon["abilityId"], None)
             owner["abilityCooldowns"][summon["abilityId"]] = now + summon["recharge"]
+            if adventure.active(room):hero_skills.commit_cooldown(owner,summon['abilityId'],now+summon['recharge'])
         self._add_effect(room, "impact", summon["x"], summon["y"], summon["color"], duration=0.4)
 
     def _dismiss_summons(self, room: dict, owner_id: str | None = None) -> None:
@@ -2108,6 +2365,7 @@ class GameWorld:
                 light_damage = max(1,round(round(base*boost*curse)*summon["lightPower"]))
                 summon["damage"] = max(1,round(light_damage*summon["damageScale"]))
             summon["animationUntil"] = time.time() + 0.3
+            feedback.emit(room, 'summon_attack', actor=owner, x=summon['x'], y=summon['y'], affinity=summon['affinity'])
             if summon["kind"] == "bird":
                 self._launch_projectile(room, side="hero", owner_id=owner["id"], target_id=target["id"],
                     x=summon["x"], y=summon["y"] - 8, damage=summon["damage"], color=summon["color"],
@@ -2131,7 +2389,7 @@ class GameWorld:
                 continue
             if projectile["side"] == "enemy" and now < projectile.get("trackUntil", 0):
                 aimed = next((p for p in self._combat_targets(room)
-                              if p["id"] == projectile["targetId"] and p["status"] == "alive"), None)
+                              if p["id"] == projectile["targetId"] and enemy_awareness.visible(p,now) and terrain.line_clear(room,projectile,p)), None)
                 if aimed:
                     angle = math.atan2(projectile["vy"], projectile["vx"])
                     desired = math.atan2(aimed["y"]-projectile["y"], aimed["x"]-projectile["x"])
@@ -2139,6 +2397,7 @@ class GameWorld:
                     limit = projectile.get("turnRate", .65)*dt
                     angle += max(-limit, min(limit, delta))
                     projectile["vx"], projectile["vy"] = math.cos(angle)*projectile["speed"], math.sin(angle)*projectile["speed"]
+                else:projectile["trackUntil"]=0
             start_x, start_y = projectile["x"], projectile["y"]
             projectile["x"] += projectile["vx"] * dt
             projectile["y"] += projectile["vy"] * dt
@@ -2160,15 +2419,21 @@ class GameWorld:
             first = min(hits, key=lambda pair: pair[0], default=None)
             block = terrain.shot_block(room, start_x, start_y, projectile["x"], projectile["y"], projectile.get("radius", 7))
             if block and (not first or block[0] <= first[0]):
-                terrain.damage_cover(self, room, block[1], projectile["damage"])
+                if 'hp' in block[1]:terrain.damage_cover(self, room, block[1], projectile["damage"])
+                feedback.emit(room,'projectile_impact',x=projectile['x'],y=projectile['y'],ownerId=projectile['ownerId'],
+                              family=feedback.projectile_family(projectile),side=projectile['side'],material=block[1].get('material',block[1].get('kind','stone')))
                 continue
             target = first[1] if first else None
             if target is None:
-                if (now < projectile["expiresAt"] and -24 <= projectile["x"] <= WIDTH + 24
-                        and -24 <= projectile["y"] <= HEIGHT + 24):
+                width, height = terrain.dimensions(room)
+                if (now < projectile["expiresAt"] and -24 <= projectile["x"] <= width + 24
+                        and -24 <= projectile["y"] <= height + 24):
                     remaining.append(projectile)
                 continue
             self._add_effect(room, "impact", target["x"], target["y"], projectile["color"], duration=0.3, attack_class=projectile["class"])
+            feedback.emit(room,'projectile_impact',x=target['x'],y=target['y'],ownerId=projectile['ownerId'],
+                          family=feedback.projectile_family(projectile),side=projectile['side'],targetId=target['id'],
+                          material='metal' if target.get('armor',0) else 'stone' if target.get('structure') else 'flesh')
             if projectile["side"] == "hero":
                 owner = room["players"].get(projectile["ownerId"], room["players"][room["host"]])
                 targets = [target]
@@ -2189,14 +2454,15 @@ class GameWorld:
                         struck["bleedOwner"] = owner["id"]
                         struck["bleedBoostSource"] = projectile.get("boostSource")
                         struck["bleedBoostFactor"] = projectile.get("boostFactor",1)
-                    self._damage_enemy(room, owner, struck, projectile["damage"], projectile.get("summonId"), boost_source=projectile.get("boostSource"), boost_factor=projectile.get("boostFactor",1))
+                    self._damage_enemy(room, owner, struck, projectile["damage"], projectile.get("summonId"), boost_source=projectile.get("boostSource"), boost_factor=projectile.get("boostFactor",1), impact_element='Ice' if projectile.get('abilityId')=='frost_lance' else None)
                 self._chain_projectile(room, owner, projectile, target, targets)
             else:
                 struck = [target]
                 if projectile["splash"]:
                     struck += [p for p in self._combat_targets(room) if p is not target
                                and p["status"] == "alive"
-                               and math.hypot(p["x"]-target["x"], p["y"]-target["y"]) <= projectile["splash"]]
+                               and math.hypot(p["x"]-target["x"], p["y"]-target["y"]) <= projectile["splash"]
+                               and (not adventure.active(room) or terrain.line_clear(room,target,p))]
                 for ally in struck:
                     self._damage_player(room, projectile, ally, projectile["damage"])
                 if self._check_party_wipe(room):
@@ -2221,6 +2487,8 @@ class GameWorld:
             anchor = target
 
     def _tick_enemy(self, room, enemy, target, now):
+        if adventure.active(room) and enemy.get("_awarenessTick")!=now and adventure.leash(self, room, enemy, target, now):
+            return
         if enemy.get('structure'): return
         if enemy.get("targetId") != target["id"]:
             enemy.update(targetId=target["id"], moveDecisionAt=0, bossMoveAt=0)
@@ -2248,6 +2516,7 @@ class GameWorld:
         ranged = role in ("Wizard", "Archer", "Cleric", "Druid", "Bard", "Healer")
         enemy["lastAttack"] = now
         enemy["animationUntil"] = time.time() + 0.45
+        feedback.emit(room, 'release', actor=enemy, boss=bool(enemy.get('boss')), attack='basic')
         self._add_effect(room, "enemy_attack", enemy["x"], enemy["y"], enemy["color"],
                          target["x"], target["y"], 0.35, attack_class=role)
         if role == "Bard":
@@ -2279,6 +2548,8 @@ class GameWorld:
                 self._add_effect(room, "bleed", target["x"], target["y"], "#cf6674", duration=0.8, attack_class=role)
 
     def _complete_encounter(self, room: dict) -> None:
+        if adventure.active(room):
+            return
         players = len(self._active_players(room))
         encounter_type = room["encounterType"]
         reward = 5 + 2 * players
@@ -2340,17 +2611,19 @@ class GameWorld:
     def _cast_ability(self, room: dict, player: dict, slot_index: int) -> None:
         now = time.monotonic()
         ability_id = player["abilities"][slot_index]
-        ability = next((ability_record(entry) for entry in ABILITY_SETS[player["class"]] if entry[0] == ability_id), None)
+        ability = hero_skills.catalog(player).get(ability_id) if adventure.active(room) else next((ability_record(entry) for entry in ABILITY_SETS[player["class"]] if entry[0] == ability_id), None)
         if not ability:
             raise ValueError("That ability is not available to this class.")
         if ability_id in player.get("activeSummons", {}):
             raise ValueError(f"{ability['name']} is still alive. Recharge begins when it dies.")
-        ready_at = player["abilityCooldowns"].get(ability_id, 0)
+        ready_at = hero_skills.ready_at(player,ability_id)
         if ready_at > now:
             raise ValueError(f"{ability['name']} is ready in {math.ceil(ready_at - now)} seconds.")
+        if adventure.active(room) and ability['kind'] in skill_casts.KINDS:
+            skill_casts.cast(self,room,player,ability);return
         kind, reach, power = ability["kind"], ability["range"], ability["power"]
         nearby = [enemy for enemy in room["enemies"] if math.hypot(enemy["x"] - player["x"], enemy["y"] - player["y"]) <= reach]
-        if kind in ("damage", "stun", "bleed", "dash_strike", "pierce", "target_area"):
+        if kind in ("damage", "stun", "bleed", "dash_strike", "pierce", "target_area") or adventure.active(room):
             nearby = [e for e in nearby if terrain.line_clear(room, player, e)]
         preferred=player.get('preferredTarget')
         choose=lambda candidates: min(candidates,key=lambda e:(e['id']!=preferred,math.hypot(e['x']-player['x'],e['y']-player['y'])),default=None)
@@ -2375,6 +2648,9 @@ class GameWorld:
         if player["mana"] < ability["manaCost"]:
             raise ValueError(f"{ability['name']} needs {ability['manaCost']} mana.")
         player["mana"] -= ability["manaCost"]
+        enemy_awareness.break_concealment(player,kind)
+        feedback.emit(room, 'ability', actor=player, abilityId=ability['id'],
+                      attackType=ability['attackType'], abilityKind=ability['kind'])
         cast_origin = (player['x'], player['y'])
         cast_target = choose(nearby) or player
         cast_target_position = (cast_target['x'], cast_target['y'])
@@ -2383,6 +2659,7 @@ class GameWorld:
             telemetry.add(room, player["id"], "ultimateCasts", 1)
         if ability["kind"] != "summon":
             player["abilityCooldowns"][ability_id] = now + ability["cooldown"]
+            if adventure.active(room):hero_skills.commit_cooldown(player,ability_id,now+ability['cooldown'])
         player["animation"] = ability["attackType"]
         player["animationUntil"] = time.time() + 0.45
         base_damage = CLASSES[player["class"]]["damage"]*(1+.03*player.get("skillRanks", {}).get("power", 0)) + sum(item.get("damage", 0) for item in player["toolSlots"] if item)
@@ -2470,14 +2747,17 @@ class GameWorld:
                 for enemy in sorted(nearby, key=lambda item: (item["id"]!=preferred, math.hypot(item["x"] - player["x"], item["y"] - player["y"])))[:3]:
                     self._damage_enemy(room, player, enemy, round(base_damage * power))
         elif kind == "self_ward":
-            player["wardUntil"] = now + 8
+            player["wardUntil"] = now + ability.get('duration',8)
+            feedback.restored(room, player, 'ward')
             player["wardFactor"] = power
             player["wardSource"] = player["id"]
         elif kind == "team_ward":
             for member in room["players"].values():
                 if not reach or math.hypot(member["x"] - player["x"], member["y"] - player["y"]) <= reach:
                     if member["wardUntil"] <= now or power <= member.get("wardFactor", 1):
-                        member["wardUntil"], member["wardFactor"], member["wardSource"] = now+8, power, player["id"]
+                        member["wardUntil"], member["wardFactor"], member["wardSource"] = now+ability.get('duration',8), power, player["id"]
+                        if ability.get('cleanse'):member['rootUntil']=0
+                        feedback.restored(room, member, 'ward', sourceId=player['id'])
                         cast_recipient_ids.append(member['id'])
         elif kind == "self_damage":
             player["damageBoostUntil"], player["damageBoost"] = now + 8, power
@@ -2493,11 +2773,15 @@ class GameWorld:
                 member["hp"] += healed
                 if healed > 0:
                     cast_recipient_ids.append(member['id'])
+                    feedback.restored(room, member, 'heal', amount=healed, sourceId=player['id'])
                 telemetry.add(room, player["id"], "healingGiven", healed)
+                if ability.get('cleanse'):member['rootUntil']=0
+                if adventure.active(room) and hero_skills.rank(player,'healer_overflow') and power>healed:skill_casts.shield(room,member,min(12,power-healed))
         elif kind == "revive":
             fallen = [member for member in room["players"].values() if member["status"] in ("downed", "fallen") and math.hypot(member["x"] - player["x"], member["y"] - player["y"]) <= reach]
             target = min(fallen, key=lambda member: math.hypot(member["x"] - player["x"], member["y"] - player["y"]))
-            self._restore_ally(room, player, target, 0.45)
+            self._restore_ally(room, player, target, ability.get('reviveFraction',0.45))
+            if ability.get('barrier'):skill_casts.shield(room,target,ability['barrier'])
             cast_recipient_ids.append(target['id'])
             self._say(room, "system", "The Gauntlet", f"{player['name']} quickly revived {target['name']}.")
         elif kind == "team_revive":
@@ -2512,7 +2796,7 @@ class GameWorld:
             player["speedBoostUntil"], player["speedBoost"] = now + 6, power
         elif kind == "team_speed":
             for member in room["players"].values():
-                member["speedBoostUntil"], member["speedBoost"] = now + 6, power
+                member["speedBoostUntil"], member["speedBoost"] = now + ability.get('duration',6), power
                 cast_recipient_ids.append(member['id'])
         elif kind == "invisible":
             player["invisibleUntil"] = now + 5
@@ -2524,6 +2808,7 @@ class GameWorld:
             light_damage = max(1, round(base_damage * light_power))
             self._summon_companion(room, player, ability_id, round(light_damage * power), now)
             room["summons"][-1].update(lightPower=light_power,damageScale=power)
+            if ability.get('barrier'):skill_casts.shield(room,player,ability['barrier'])
         elif kind == "blink":
             enemy = min(room["enemies"], key=lambda entry: math.hypot(entry["x"] - player["x"], entry["y"] - player["y"]), default=None)
             if enemy:
@@ -2533,6 +2818,7 @@ class GameWorld:
                 terrain.move(room, player, player["x"]+dx/distance*reach, player["y"]+dy/distance*reach)
                 tactical.dashed(player, now, math.hypot(player['x']-start_x, player['y']-start_y))
         ability_animations.record(room, player, ability, cast_origin, cast_target_position, cast_recipient_ids)
+        if adventure.active(room):skill_casts.after_cast(room,player,ability,now)
         if ability['attackType'] != 'light':
             self._say(room, "system", "The Gauntlet", f"{player['name']} used {ability['name']}.")
 
@@ -2571,6 +2857,7 @@ class GameWorld:
         rescuer["reviving"] = target["id"]
         rescuer["reviveStarted"] = time.monotonic()
         now = time.monotonic()
+        if adventure.active(room):skill_casts.revive_start(room,rescuer,now)
         if 'rescuer' in tactical.effects(rescuer) and rescuer.get('rescueGuardReadyAt', 0) <= now:
             rescuer.update(rescueGuardUntil=now+2, rescueGuardReadyAt=now+8)
 
@@ -2580,19 +2867,23 @@ class GameWorld:
             telemetry.count(room, player["id"], "deaths")
             player["deathRecorded"] = True
 
-    @staticmethod
-    def _restore_ally(room: dict, rescuer: dict, target: dict, health_fraction: float) -> None:
+    def _restore_ally(self, room: dict, rescuer: dict, target: dict, health_fraction: float) -> None:
         if target["status"] not in ("downed", "fallen"):
             return
         telemetry.count(room, rescuer["id"], "revives")
         target.update(status="alive", hp=max(1, round(target["maxHp"] * health_fraction)),
                       downedUntil=0, deathRecorded=False)
         telemetry.add(room, rescuer["id"], "healingGiven", target["hp"])
+        feedback.emit(room, 'revive', actor=target, rescuerId=rescuer['id'])
+        if adventure.active(room):skill_casts.revived(room,rescuer,target)
+        if adventure.active(room): adventure.save(self, room)
 
     def _tick_puzzle(self, room: dict) -> None:
         if not room.get("puzzle"):
             return
         active = self._active_players(room)
+        if adventure.active(room):
+            active = self._voting_players(room)
         if not active:
             return
         assign_clues(room["puzzle"], [p["id"] for p in active], {p["id"]: p["name"] for p in active})
@@ -2608,8 +2899,8 @@ class GameWorld:
                 all_ready = False
                 if len(active) == 1 and standing and now - puzzle_room["wrongAt"] >= 2.5:
                     puzzle_room["wrongAt"] = now
-                    room["strainMistakes"] += 1
-                    self._say(room, "system", "The Gauntlet", f"{player['name']} stands on the wrong rune. The run grows slightly more dangerous.")
+                    if not adventure.active(room): room["strainMistakes"] += 1
+                    self._say(room, "system", "The Gauntlet", "That rune does not match the clue." if adventure.active(room) else f"{player['name']} stands on the wrong rune. The run grows slightly more dangerous.")
         if not all_ready:
             # Only evaluate a complete group answer; individual rune feedback would
             # let each player solve their chamber without exchanging clues.
@@ -2617,8 +2908,11 @@ class GameWorld:
                 attempt = tuple(room["puzzle"]["rooms"][p["id"]]["standing"] for p in active)
                 if all(attempt) and attempt != room["puzzle"].get("lastAttempt"):
                     room["puzzle"]["lastAttempt"] = attempt
-                    room["strainMistakes"] += 1
+                    if not adventure.active(room): room["strainMistakes"] += 1
                     self._say(room, "system", "The Gauntlet", "The group answer does not match. Exchange your totem clues and try again.")
+            return
+        if adventure.active(room):
+            adventure.puzzle_solved(self, room)
             return
         room["puzzlesCompleted"] += 1
         self._advance_curses(room)
@@ -2634,6 +2928,9 @@ class GameWorld:
         active = self._active_players(room)
         if room["phase"] != "combat" or not active or any(p["status"] == "alive" for p in active):
             return False
+        if adventure.active(room):
+            adventure.wipe(self, room)
+            return True
         for player in active:
             self._record_death(room, player)
         self._finish_stage_stats(room, "defeat")
@@ -2647,10 +2944,14 @@ class GameWorld:
 
     def tick(self) -> None:
         now = time.monotonic()
+        previous=getattr(self,'_measured_tick_at',None)
+        if previous is not None:self.metrics.add('tickIntervalMs',(now-previous)*1000)
+        self._measured_tick_at=now
         with self.lock:
             for room in list(self.rooms.values()):
                 try:
-                    self._tick_room(room, now)
+                    with self.metrics.time('roomTickMs'):self._tick_room(room, now)
+                    feedback.sample(room)
                 except Exception:
                     # Preserve live rooms and keep other parties moving. Log the first
                     # failure and at most one repeat per 30 seconds per room.
@@ -2663,6 +2964,7 @@ class GameWorld:
                     self._tick_errors.pop(room["code"], None)
 
     def _tick_room(self, room, now):
+        __import__('acquisitions').prime(room)
         if not self._update_presence(room, now):
             return
         telemetry.tick(room, now)
@@ -2673,6 +2975,7 @@ class GameWorld:
             return
         boss_ai.tick_areas(self, room, now)
         terrain.tick(self, room, now)
+        if adventure.active(room):skill_casts.tick(self,room,now)
         combat_encounters.tick(self,room,now)
         self._check_party_wipe(room)
         if room["phase"] == "defeat":
@@ -2705,8 +3008,9 @@ class GameWorld:
                     if player.get("townExitReady"):
                         player["townExitReady"] = False
                 else:
-                    next_x = max(28, min(WIDTH - 28, player["x"] + player["dx"] * speed * dt))
-                    next_y = max(30, min(HEIGHT - 30, player["y"] + player["dy"] * speed * dt))
+                    width, height = terrain.dimensions(room)
+                    next_x = max(28, min(width - 28, player["x"] + player["dx"] * speed * dt))
+                    next_y = max(30, min(height - 30, player["y"] + player["dy"] * speed * dt))
                     if room["phase"] == "routes":
                         if self._on_fork_path(next_x, player["y"]):
                             player["x"] = next_x
@@ -2735,7 +3039,7 @@ class GameWorld:
             self._tick_travel(room)
         if room["phase"] == "chest":
             self._finish_chest_if_ready(room)
-        if room["phase"] == "town":
+        if room["phase"] == "town" and not adventure.active(room):
             active = self._voting_players(room)
             can_leave = not (room.get("townWelcome") and not room["townWelcome"].get("done")) and (room.get("townsVisited") != 1 or all(p.get("trainingKnown") for p in active if not p.get("bot")))
             if active and can_leave and all(p.get("townExitReady") and not p.get("townInterior") and
@@ -2746,8 +3050,10 @@ class GameWorld:
         if room["phase"] == "puzzle":
             self._tick_puzzle(room)
             if room["phase"] != "combat":
+                if adventure.active(room): adventure.tick(self, room, now)
                 return
         if room["phase"] != "combat":
+            if adventure.active(room): adventure.tick(self, room, now)
             return
         if room.get("waveStartsAt"):
             if now < room["waveStartsAt"]:
@@ -2784,6 +3090,7 @@ class GameWorld:
                 rescuer["reviving"] = None
                 continue
             duration = 0.8 if rescuer["class"] == "Healer" else 1.8
+            if rescuer.get('beaconUntil',0)>now:duration*=.6
             if now - rescuer["reviveStarted"] >= duration:
                 self._restore_ally(room, rescuer, target, 0.3)
                 rescuer["reviving"] = None
@@ -2798,30 +3105,22 @@ class GameWorld:
                 enemy["lastBleedTick"] = now
                 owner = room["players"].get(enemy.get("bleedOwner"), room["players"][room["host"]])
                 self._damage_enemy(room, owner, enemy, enemy.get("bleedDamage", 0),
-                    boost_source=enemy.get("bleedBoostSource"), boost_factor=enemy.get("bleedBoostFactor",1))
+                    boost_source=enemy.get("bleedBoostSource"), boost_factor=enemy.get("bleedBoostFactor",1),direct=False)
                 if room["phase"] != "combat":
                     break
                 if enemy not in room["enemies"]:
                     continue
             if enemy.get("stunUntil", 0) > now:
                 continue
-            available = [p for p in self._combat_targets(room) if p["status"] == "alive"]
-            if not available:
-                break
-            taunting = [p for p in available if p["status"] == "alive" and p.get("tauntUntil", 0) > now]
-            visible = [p for p in available if p["status"] == "alive" and p.get("invisibleUntil", 0) <= now]
-            targets = taunting or visible or [p for p in available if p["status"] == "alive"]
-            if not targets:
-                continue
-            target = min(targets, key=lambda p: math.hypot(p["x"] - enemy["x"], p["y"] - enemy["y"]))
+            target=enemy_awareness.choose(self,room,enemy,now)
             wards=combat_encounters.ward(room)
-            if wards and not taunting and sum(map(ord,enemy['id']))%2==0: target=wards[0]
-            squadron = room.get("encounterName") == "Mini-boss Squadron"
-            if squadron:
-                target_pool = taunting or visible or targets
-                target = target_pool[enemy_index % len(target_pool)]
+            if wards and sum(map(ord,enemy['id']))%2==0 and terrain.line_clear(room,enemy,wards[0]):
+                target=wards[0];enemy['allowAcquire']=True
+            if target is None:continue
             self._tick_enemy(room, enemy, target, now)
         self._check_party_wipe(room)
+
+        if adventure.active(room): adventure.tick(self, room, now)
 
 
 WORLD = GameWorld(storage_dir=Path(__file__).parent / "data", disconnect_timeout=15)

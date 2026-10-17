@@ -1,0 +1,18 @@
+Original music for The Gauntlet — 2026-10-16
+
+The compositions, note scores, synthesized instrument formulas and rendered
+recordings in this music collection were created for this project. No external
+recordings, sample libraries or third-party compositions are included.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this music and associated source files, to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies, and to permit persons to whom it is
+furnished to do so, subject to including this notice with substantial copies.
+
+THE MUSIC AND SOURCE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY ARISING FROM ITS USE.
+
+This permission covers only this original score. Bfxr effects retain their
+separate vendor MIT/Apache notices in art/audio/vendor/.

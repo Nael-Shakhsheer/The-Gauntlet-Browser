@@ -7,10 +7,13 @@ BUILDINGS = [("inn", "Inn", "innkeeper"), ("store", "Store", "merchant"),
              ("lab", "Alchemy Lab", "alchemist"), ("guild", "Guild", "guildmaster"),
              ("cottage", "Cottage", None), ("lodge", "Lodge", None)]
 ROOFS = ["#a94f3d", "#426f78", "#c56643", "#906451", "#b6773f", "#66518c"]
+PORTAL = (480, 270)
+ROAD_MARGIN = 23
+SPAWNS = [(417,460),(459,460),(501,460),(543,460),(480,500),(480,345)]
 
 # Different silhouettes, rather than merely swapping services on a two-row grid.
 LAYOUTS = {
-    "market_ring": [(170, 120), (480, 110), (790, 120), (170, 345), (370, 290), (790, 350)],
+    "market_ring": [(170, 120), (480, 110), (790, 120), (100, 280), (270, 425), (790, 350)],
     "two_hamlets": [(140, 125), (340, 115), (190, 335), (640, 120), (840, 130), (780, 350)],
     "winding_street": [(140, 120), (380, 150), (650, 110), (820, 285), (200, 350), (620, 305)],
     "staggered_lanes": [(180, 105), (740, 105), (310, 275), (650, 275), (100, 425), (860, 425)],
@@ -35,7 +38,7 @@ def _route(houses, start, goal, rng):
         for dx, dy in steps:
             point = (x + dx, y + dy)
             if (point not in parent and 30 <= point[0] <= 930 and 30 <= point[1] <= 510
-                    and clear(houses, *point, 23)):
+                    and clear(houses, *point, ROAD_MARGIN)):
                 parent[point] = (x, y)
                 queue.append(point)
     if goal not in parent:
@@ -63,7 +66,8 @@ def _network(houses, rng):
                   if clear(houses, x, y, 23)]
     if not candidates:
         raise ValueError("Village has no clear crossroads")
-    hubs = [rng.choice(candidates)]
+    # A clear central shrine is the fixed landmark; services still shuffle around it.
+    hubs = [PORTAL if clear(houses, *PORTAL, 70) else min(candidates, key=lambda p: math.dist(p, PORTAL))]
     for _ in range(2 if style == "loop" else 1):
         distant = [point for point in candidates if all(math.dist(point, h) > 170 for h in hubs)]
         if len(hubs) == 2:
@@ -115,6 +119,7 @@ def scenery(houses, seed):
         if not (65 <= x <= 895 and 100 <= y <= 475):
             continue
         if (clear(houses, x, y, 28) and math.hypot(x - 480, y - 480) > 80
+                and math.dist((x,y),plazas[0]) > 90
                 and all(math.hypot(x-h["x"], y-h["y"]-47) > 48 for h in houses)
                 and all(math.hypot(x-v["x"], y-v["y"]) > 38 for v in villagers)):
             villagers.append({"x": x, "y": y, "shirt": rng.choice(["#ba7777", "#8fb583", "#759fbf", "#d0b475", "#b59bcd"]),
@@ -135,16 +140,55 @@ def scenery(houses, seed):
             if len(trees) == tree_count:
                 break
     return {"townPaths": paths, "townVillagers": villagers,
+            "townPortal": {"x":plazas[0][0], "y":plazas[0][1]},
             "townDecor": {"trees": trees, "plazas": [list(p) for p in plazas], "roadStyle": style}}
 
 
 def _valid_positions(positions):
     houses = [{"x": x, "y": y} for x, y in positions]
+    if not clear(houses, *PORTAL, 70): return False
     # All four party spawns, the exit and the welcoming runner's approach.
-    if not all(clear(houses, x, y, 23) for x, y in [(417, 460), (459, 460), (501, 460), (543, 460), (480, 500), (480, 345)]):
+    if not all(clear(houses, x, y, ROAD_MARGIN) for x, y in SPAWNS):
         return False
-    return all(abs(x-a) >= 180 or abs(y-b) >= 158
+    # 69+69+2*23=184 horizontally; 78+35+2*23=159 vertically.
+    # Previous 180/158 admitted gaps narrower than the road routing footprint.
+    return all(abs(x-a) >= 184 or abs(y-b) >= 159
                for i, (x, y) in enumerate(positions) for a, b in positions[:i])
+
+
+def accessible(houses, targets):
+    """Connected flood fill with the same solid footprint as runtime movement.
+
+    Ten-pixel grid, with sampled edges and a final short door approach. It tests
+    actual hunter access separately from the wider drawn-road footprint.
+    """
+    root=(480,500);queue=deque([root]);seen={root}
+    while queue:
+        x,y=queue.popleft()
+        for dx,dy in ((10,0),(-10,0),(0,10),(0,-10)):
+            point=(x+dx,y+dy)
+            if point not in seen and 30<=point[0]<=930 and 30<=point[1]<=510 and clear(houses,*point) and clear(houses,x+dx/2,y+dy/2):
+                seen.add(point);queue.append(point)
+    def reachable(target):
+        for x,y in seen:
+            if math.dist((x,y),target)<=15 and all(clear(houses,x+(target[0]-x)*i/6,y+(target[1]-y)*i/6) for i in range(7)):return True
+        return False
+    return all(reachable(target) for target in targets)
+
+
+def validate(village):
+    houses=village['townLayout']
+    doors=[(h['x'],h['y']+47) for h in houses]
+    portal=village['townPortal']
+    targets=SPAWNS+doors+[(portal['x'],portal['y'])]+[(v['x'],v['y']) for v in village['townVillagers']]
+    if not accessible(houses,targets):raise ValueError('Village services, arrivals or NPCs are disconnected')
+    # Full polylines, not just their endpoints, must remain outside the solids.
+    for path in village['townPaths']:
+        for a,b in zip(path,path[1:]):
+            steps=max(1,math.ceil(math.dist(a,b)/5))
+            if not all(clear(houses,a[0]+(b[0]-a[0])*i/steps,a[1]+(b[1]-a[1])*i/steps) for i in range(steps+1)):
+                raise ValueError('Village road crosses solid scenery')
+    return village
 
 
 def generate(seed, previous_layout=None):
@@ -172,9 +216,19 @@ def generate(seed, previous_layout=None):
         houses = [{"id": key, "name": name, "service": service, "x": x, "y": y, "roof": roofs[i]}
                   for i, ((key, name, service), (x, y)) in enumerate(zip(BUILDINGS, positions))]
         try:
-            village = {"townLayout": houses, "townSeed": seed, **scenery(houses, seed)}
+            village = {"townLayout": houses, "townSeed": seed, "townDesignVersion":2, **scenery(houses, seed)}
             village["townDecor"]["layout"] = kind
-            return village
+            return validate(village)
         except ValueError:
             continue
-    raise RuntimeError("Could not generate a connected village")
+    # Deterministic safety net, independent of how the rejected jitter consumed
+    # RNG state. Keep service/roof shuffling, then run the exact same validators.
+    fallback=random.Random(seed)
+    positions=[(140,100),(480,100),(820,100),(290,260),(820,320),(140,425)]
+    if mirrored:positions=[(960-x,y) for x,y in positions]
+    if not _valid_positions(positions):raise RuntimeError('Invalid authored village fallback')
+    fallback.shuffle(positions);roofs=ROOFS.copy();fallback.shuffle(roofs)
+    houses=[dict(id=key,name=name,service=service,x=x,y=y,roof=roofs[i]) for i,((key,name,service),(x,y)) in enumerate(zip(BUILDINGS,positions))]
+    village={"townLayout":houses,"townSeed":seed,"townDesignVersion":2,**scenery(houses,seed)}
+    village['townDecor'].update(layout=kind,fallback=True)
+    return validate(village)

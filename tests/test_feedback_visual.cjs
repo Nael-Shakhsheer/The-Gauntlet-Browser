@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+let now=1000,queue=[],reduced=false,shake='normal',hidden=false;
+const listeners={},audio={sceneKey:r=>r.code,drainVisuals:()=>queue.splice(0),visualSettings:()=>({reduced,shake})};
+const node=()=>({children:[],dataset:{},setAttribute(){},append(...els){this.children.push(...els)},replaceChildren(){this.children=[]},classList:{add(){},remove(){}}});
+const s={setTimeout:()=>1,clearTimeout(){},window:{GauntletAudio:audio,addEventListener:(k,f)=>listeners[k]=f},document:{createElement:node,body:node(),get hidden(){return hidden;},addEventListener:(k,f)=>listeners[k]=f},performance:{now:()=>now}};
+vm.createContext(s);vm.runInContext(fs.readFileSync('static/feedback.js','utf8'),s);
+const f=s.window.GauntletFeedback,room={code:'TEST',you:'me',players:[{id:'me',x:30,y:30}]};
+queue=Array.from({length:100},(_,i)=>({id:i,kind:'hit',x:30,y:30,age:0}));f.observe(room);assert.equal(f.diagnostics().marks,24);
+queue=[{id:101,kind:'hurt',ownerId:'me',x:30,y:30,heavy:true,age:0}];f.observe(room);now+=30;assert.notEqual(f.offset()[0],0);shake='off';assert.equal(f.offset()[0],0);shake='normal';reduced=true;assert.equal(f.offset()[0],0);
+let particles=0;const ctx={save(){},restore(){},fillRect(){particles++;},beginPath(){},ellipse(){},stroke(){},fillText(){}};f.draw(ctx,room);assert.ok(particles<=24,'reduced feedback particle budget');
+hidden=true;listeners.visibilitychange();assert.equal(f.diagnostics().marks,0);assert.equal(f.offset()[0],0);
+const app=fs.readFileSync('static/app.js','utf8');assert.ok(app.indexOf('GauntletFeedback?.draw')<app.lastIndexOf('GauntletCombatEnvironment.warnings'),'essential danger drawn above optional feedback');
+console.log('Visual feedback: bounded marks/particles, essential warnings above accents, shake off/reduced and hidden-tab cleanup passed.');

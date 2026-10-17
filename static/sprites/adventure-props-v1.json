@@ -1,0 +1,54 @@
+{
+  "frames": 4,
+  "rows": [
+    {
+      "width": 66,
+      "row": 0,
+      "description": "a torn burgundy cloak fragment beside a short trail of human bootprints and two small dried red drops on transparent ground; four slight cloth flutter phases, footprints fixed",
+      "id": "hunter_tracks",
+      "height": 37
+    },
+    {
+      "width": 68,
+      "row": 1,
+      "description": "a weathered wooden direction signpost with three arrow-shaped sign boards pointing north east south, tiny carved leaf symbols instead of text, moss at its foot; four subtle hanging leaf movement phases",
+      "id": "woodland_sign",
+      "height": 72
+    },
+    {
+      "width": 86,
+      "row": 2,
+      "description": "a woodland carpenter workbench, rough timber table with hammer, hand saw, rope coil and neatly stacked replacement boards; four small warm metal-glint phases, table fixed",
+      "id": "workbench_stocked",
+      "height": 61
+    },
+    {
+      "width": 86,
+      "row": 3,
+      "description": "the SAME carpenter workbench after repairs, hammer and hand saw still on table but replacement board stack gone, a small green woven completion ribbon; four gentle ribbon flutter phases",
+      "id": "workbench_used",
+      "height": 61
+    },
+    {
+      "width": 108,
+      "row": 4,
+      "description": "a rough woodland log bench with two tree-stump feet, a rolled beige bedroll and brown leather satchel; four gentle loose strap movement phases, bench fixed",
+      "id": "camp_bench",
+      "height": 43
+    },
+    {
+      "width": 66,
+      "row": 5,
+      "description": "a small ring of gray stones with charred logs and a modest orange campfire, four visibly different flame and ember phases; keep stone ring fixed",
+      "id": "camp_fire",
+      "height": 53
+    }
+  ],
+  "anchor": [
+    64,
+    96
+  ],
+  "source": "art/adventure-sprites/source/props-v1.png",
+  "cell": 128,
+  "columns": 4
+}

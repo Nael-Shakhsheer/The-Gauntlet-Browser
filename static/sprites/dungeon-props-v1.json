@@ -1,0 +1,24 @@
+﻿{
+    "version":  1,
+    "cell":  160,
+    "sprites":  [
+                    "cave_mouth",
+                    "tower_door",
+                    "stairs_up",
+                    "stairs_down",
+                    "watch_bell",
+                    "cave_seal",
+                    "survey_marker",
+                    "supplies_closed",
+                    "supplies_open",
+                    "survey_cache_closed",
+                    "survey_cache_open",
+                    "portal_shrine"
+                ],
+    "anchor":  [
+                   80,
+                   132
+               ],
+    "columns":  4,
+    "rows":  3
+}

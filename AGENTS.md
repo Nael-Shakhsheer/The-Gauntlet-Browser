@@ -18,9 +18,13 @@ carry the handoff context for The Gauntlet between computers and new chats.
   drive letters and Python installation path must not become requirements.
 - Run `python server.py` from the project folder and use the HTTP address in
   `README.md`. Opening `static/index.html` directly causes API connection errors.
-- Live rooms run in memory; upstairs inn beds set checkpoints in `data/checkpoints/`
+- Live rooms run in memory. In Gauntlet mode, upstairs inn beds set checkpoints in `data/checkpoints/`
   and restore at that bed after a restart. Talking to the innkeeper does not save.
   Progress after leaving the saved village, and runs before their first bed
-  checkpoint, are not persisted. Preserve `data/` when transferring
+  checkpoint, are not persisted. Adventure mode instead automatically saves world
+  and player progression in separate versioned `data/adventures/` records; inn
+  beds choose its recovery point. Restart/wipe recovery returns to that bed (or
+  the home gate), keeping completed Adventure objectives. See README.md for the
+  exact save limits and temporary hosted storage. Preserve `data/` when transferring
   saved games. Static client/sprite changes need a refresh; Python changes need
   a server restart. See README.md for browser identity and reconnect details.

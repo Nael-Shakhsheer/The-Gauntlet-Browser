@@ -1,0 +1,69 @@
+{
+  "columns": 4,
+  "overrides": "art/projectile-animations/source/overrides-v1.png",
+  "source": "art/projectile-animations/source/spells-v1.png",
+  "cell": 96,
+  "rows": [
+    {
+      "description": "a sharp violet white arcane dart with a compact bright core and curling purple plasma tail; the tail twists and pulses across the four frames",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "arc_bolt",
+      "nativeLength": 35,
+      "row": 0
+    },
+    {
+      "description": "one literal long blue crystalline ice shard pointed forward, white faceted spear tip, small frost crystals shedding from the back as facets shimmer",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "frost_lance",
+      "nativeLength": 40,
+      "row": 1
+    },
+    {
+      "description": "a small golden musical note carried on three compact amber sound-wave streaks, note bobbing and waves pulsing as it travels forward",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "quickstring_note",
+      "nativeLength": 29,
+      "row": 2
+    },
+    {
+      "description": "a small bright teal white life-energy spark with a pointed traveling core, two teal wisps spiraling behind it, pulsing brighter then dimmer",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "life_spark",
+      "nativeLength": 27,
+      "row": 3
+    },
+    {
+      "description": "a narrow jagged electric blue and white lightning bolt traveling forward, branching arcs flickering backward and sparks shifting along the bolt",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "bird_lightning",
+      "nativeLength": 38,
+      "row": 4
+    },
+    {
+      "description": "a tiny pointed ivory golden light bolt with a bright core and short streaming holy sparks; the core flares and the trail changes",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "holy_bolt",
+      "nativeLength": 29,
+      "row": 5
+    }
+  ],
+  "frames": 4
+}

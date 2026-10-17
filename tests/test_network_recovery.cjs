@@ -1,39 +1,16 @@
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
-const path = require('node:path');
-const source = fs.readFileSync(path.join(__dirname,'../static/app.js'),'utf8');
-const timers = [], requests = [], cleared = [];
-const session = {room:'TEST',player:'hero'};
-const context = {
-  AbortController, window:{location:{protocol:'http:'}},
-  setTimeout(fn, ms) { timers.push({fn,ms}); return timers.length; },
-  clearTimeout(id) { cleared.push(id); },
-  fetch(url, options) {
-    requests.push({url,...options});
-    if (requests.length === 1) return new Promise((resolve,reject) => {
-      options.signal.addEventListener('abort',()=>reject(Object.assign(new Error('timeout'),{name:'AbortError'})));
-    });
-    return Promise.resolve({ok:true,json:async()=>({ok:true})});
-  },
-  session, inputBusy:false, pendingInput:{session,direction:{x:1,y:0,attack:false}}, inputSequence:0,
-};
-vm.createContext(context);
-vm.runInContext(source.slice(source.indexOf('async function api('),source.indexOf('function sendAction(')),context);
-vm.runInContext(source.slice(source.indexOf('function flushMovement('),source.indexOf('window.addEventListener("keydown"')),context);
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const sandbox={window:{},AbortController};vm.runInNewContext(fs.readFileSync('static/input-transport.js','utf8'),sandbox);
+let clock=0;const calls=[],metrics=[];
+const transport=sandbox.window.GauntletInput.create({now:()=>clock,metric:(...v)=>metrics.push(v),request:(data,signal)=>new Promise((resolve,reject)=>{calls.push({data,signal,resolve,reject});signal.addEventListener('abort',()=>reject(Error('Aborted')));})});
 (async()=>{
-  context.flushMovement();
-  assert.equal(context.inputBusy,true);
-  context.pendingInput = {session,direction:{x:0,y:0,attack:false}};
-  context.flushMovement();
-  assert.equal(requests.length,1,'Only one input request is in flight');
-  assert.equal(timers[0].ms,5000);
-  timers[0].fn();
-  await new Promise(setImmediate);
-  assert.equal(requests.length,2,'A stuck request must not block movement forever');
-  assert.equal(JSON.parse(requests[1].body).x,0,'The latest release supersedes stale movement');
-  assert.equal(JSON.parse(requests[1].body).sequence,2);
-  assert.equal(context.inputBusy,false);
-  assert.deepEqual(cleared,[1,2]);
-  console.log('Timed-out movement requests release the queue and send the newest input.');
-})().catch(error=>{console.error(error);process.exitCode=1;});
+ const a={room:'A',player:'a',recovery:'private-a'},b={room:'B',player:'b',recovery:'private-b'};
+ transport.session(a);transport.send({x:1,y:0,attack:false},'A:road');assert.equal(calls.length,1);
+ clock=20;transport.send({x:0,y:0,attack:false},'A:road');assert.equal(calls.length,2,'A release immediately overtakes a stalled move, without waiting for any timeout');
+ assert.ok(calls[0].signal.aborted);assert.equal(calls[1].data.x,0);assert.ok(calls[1].data.sequence>calls[0].data.sequence);
+ clock=28;calls[1].resolve({ok:true});await new Promise(setImmediate);assert.equal(metrics.find(v=>v[0]==='releaseAckMs')[1],8);
+ clock=30;transport.send({x:-1,y:1},'A:road');transport.session(b);transport.send({x:0,y:1},'B:home');
+ assert.ok(calls[2].signal.aborted);assert.equal(calls[3].data.room,'B');assert.equal(calls[3].data.recovery,'private-b');
+ calls[2].resolve({ok:true});await new Promise(setImmediate);transport.send({x:0,y:1},'B:home');assert.equal(calls.length,4,'Old response cannot release the new session queue');
+ transport.cancel();assert.ok(calls[3].signal.aborted);transport.session(null);transport.send({x:1,y:0},'old');assert.equal(calls.length,4);
+ console.log('Lost response release: immediate dispatch, ordered sequences, 8ms controlled acknowledgement; stale session/scene work is cancelled: OK');
+})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,90 +1,144 @@
-# The Gauntlet sound effects
+# The Gauntlet · Bxfr audio workflow
 
-"BXFR" was interpreted as **Bfxr**, verified against https://www.bfxr.net/.
-This bank uses Bfxr's actual DSP, rather than a newly written approximation.
-No account, editor, audio API key or external connection is needed to play.
+Current: October 16, 2026. The user calls Bfxr “Bxfr.” Effects retain the actual
+Bfxr DSP, seeded parameters and vendor notices. The small original musical score
+uses a separate editable note/instrument renderer; it does not replace Bfxr effects.
+The runtime remains the Python server and browser client.
 
-## Rebuild and tune
+## Rebuild and review
 
-Run `node art/audio/build-sounds.cjs` from the project folder. Node is needed
-only for rebuilding, not for the Python server or players. The builder uses
-the standard library and the retained Bfxr sources; no npm install is needed.
-It resolves every path from its own location so copying the project is enough.
+Run from the project folder. Runtime playback needs no Node, NumPy, editor or key.
+Authoring needs Node, Python and NumPy (validated with NumPy 2.3.5):
 
-`sounds.json` holds explicit Bfxr parameters and individual deterministic noise
-seeds. Adjust a recipe, rebuild, and refresh the HTTP game page. `metrics.json`
-records duration, RMS and byte size. Exported WAVs are mono 44.1 kHz / 16 bit,
-trimmed, peak bounded to 0.65 and given short fades to avoid boundary clicks.
-The entire bank is about 400 KB. Sounds range from 63 to 590 milliseconds.
+```text
+node art/audio/build-sounds.cjs
+python art/audio/build-music.py
+python art/audio/build-review.py
+python tools/audio_inventory.py
+```
 
-To refine a sound manually in the Bfxr web editor, use the corresponding
-parameters as a starting point and export a WAV to `static/audio/NAME.wav`.
-Retain the editor's sound data alongside this manifest. A builder run replaces
-the shipped WAVs, so incorporate intentional edits into the recipe first, or
-back up manually exported replacements. These recipes use Bfxr2 JSON parameter
-names; they are not legacy `.bfxr` serialized files.
+Open `art/audio/review.html` locally. It contains ten tracks, representative cues
+and 30/40/60-second town/exploration/combat references. It has no autoplay, plays
+one item at a time and pauses on hiding. References apply conservative default
+bus gains but do not reproduce live compression, spatial attenuation or timing.
+`review-metrics.json` retains the schedules and measurements. `preview.html`
+forwards to this review; the older `build-preview.cjs` and 12-second reference are
+historical October 11 artifacts, not the current review workflow.
 
-## Runtime feedback
+`sounds.json` retains 198 editable recipes, seeds, Bfxr2 parameter names and notes.
+Routine rebuilding uses that file. `design-bank.cjs` and `refine-bank.cjs` are
+optional authoring passes; do not routinely rerun design-bank, which resets
+nonmanual tuning. Edit recipes for individual changes. New material, projectile,
+interaction and Ascension cues use the same retained DSP.
 
-`static/audio.js` owns Web Audio playback and settings. `app.js` observes each
-fresh server snapshot once, independently of canvas drawing and interpolation.
-Accepted hero animation timestamps distinguish class Light, Special and
-Ultimate sounds. The existing damage counter (with HP fallback), status
-transitions, effect IDs, chest outcome notices and town state provide the other
-cues. No new gameplay action, save field, event protocol or server rule is used.
-This is a snapshot-based first audio pass; extremely brief events between polls
-can be missed, rather than guessed from inputs.
+All effects are mono 44.1 kHz PCM16. Current bank: 3,085,562 bytes, 36.4–833.6 ms,
+peak 0.16702–0.47998, RMS -27.2 to -12.85 dBFS, zero clipped samples and zero
+nonzero boundary samples. `metrics.json` contains per-file durations, size, RMS,
+peak, exact silence, adjacent steps and hashes. `before-overhaul-metrics.json`
+retains the 95-cue baseline. Zero endpoint samples do not prove inaudible joins;
+noise steps and spectral fatigue require listening.
 
-| Feedback | Bank cues |
-| --- | --- |
-| Knight / Rogue Light | blade |
-| Archer / Wizard / Druid Light | bow / magic |
-| Cleric / Bard / Healer Light | potion / bard / heal |
-| Specials / Ultimates | special / ultimate |
-| Dash / hits / local damage | dash / hit / hurt |
-| Healing / downing / rescue | heal / down / revive |
-| Chest outcomes / curse | loot / curse |
-| UI / town / checkpoint | select / interact / heal |
-| Stage clear / victory / puzzle | clear |
-| Ambush / dragon phase two | warning |
-| Projectile and terrain impacts | impact |
+## Protect manual work
 
-Nearby sounds attenuate with distance and pan gently where supported; local
-hero damage/abilities get higher priority. Ten simultaneous voices, per-cue
-rate limits and a compressor bound crowded party audio. Mute stops active
-voices and the master gain ramps changes. There is no soundtrack or ambience
-loop in this pass.
+`exports.json` fingerprints generated/installed effects. A modified or
+unregistered existing WAV aborts the build before runtime files change.
+`node art/audio/build-sounds.cjs --replace-modified` explicitly backs modified
+files into `manual-backups/` before replacement. Never discard those backups.
+For an intentional manual Bfxr export retain both source WAV and editor data:
 
-Sound settings are accessible from the main menu and in-game Menu. Default
-effects volume is 45%; mute and volume persist per browser/site under
-`gauntlet-audio`. Test sound respects mute and zero volume. A trusted pointer or
-key gesture creates/resumes the audio context and loads the WAVs. Rejected
-autoplay, unavailable Web Audio, storage restrictions or failed assets cannot
-block gameplay. The settings report their state. Before activation, on a fresh
-room/stage, after a gap over 750ms and when the page hides/loses focus, no old
-sounds are queued or replayed. Browser refreshes load changed assets.
+```json
+"manual": {"source": "manual/my-cue.wav", "editorData": "manual/my-cue.bfxr"}
+```
 
-## Source and licenses
+Paths must stay inside art/audio. Source WAV must be canonical mono 44.1 kHz
+PCM16 with a standard 44-byte header and safe boundaries. The builder copies it
+rather than resynthesizing. Keep the exact editor's data; automatic recipes use
+Bfxr2 JSON parameters, not legacy serialized .bfxr data.
 
-The five unchanged JavaScript files in `vendor/` were retrieved on 2026-10-07
-from https://github.com/osiriswd/bfxr2-cli (main archive). They contain the
-Bfxr 1.0.4 DSP, parameter model and sample-buffer code. `vendor-hashes.json`
-pins the retained source contents. The Gauntlet builder uses an isolated VM
-with a minimal in-memory AudioBuffer and seeded PRNG, instead of executing the
-upstream CLI or installing its MP3 dependencies. It uses square, sine,
-triangle and white-noise waves only; the optional sampled wave tables are
-not included or used.
+Music has a separate SHA preflight in `build-music.py`; intentional replacement
+uses `--replace-modified` and backs up changed WAVs to `music/manual-backups/`.
+`music/composition.json` retains motif, arrangements and optional note overrides;
+`music/scores.json` records rendered notes. Renderer code retains the synthesized
+instruments. `music/metrics.json` and `static/music/manifest.json` retain hashes,
+credits, loops and measurements. Ten stereo 22.05 kHz PCM16 files total 24,507,192
+bytes. Peak is at most 0.30, with zero clipped samples and zero measured loop
+endpoint delta. This is a modest original synthesized score, not an acoustic
+performance or a complete adaptive soundtrack. No third-party samples are used.
+Permission and credits are in `music/LICENSE.txt`.
 
-The upstream MIT license credits Stephen Lavelle. `Bfxr_DSP.js` also retains
-Thomas Vian's Apache 2.0 notice for the ported SfxrSynth code. Both license
-texts are retained in `vendor/`; source headers remain unchanged.
+## Runtime policy
 
-## Checks
+See `OVERHAUL_2026-10-16.md` and `event-manifest.json` for the audit and routes.
+`feedback.py` retains at most 128 ephemeral events for three seconds. Stable
+scene epoch/IDs deduplicate confirmations; no event history is saved. Successful
+casts come from accepted server actions. Short-lived actual launches, collisions,
+restoration, warnings and outcomes are explicit events. First load, refresh,
+reconnect gaps, scene changes and hidden returns baseline silently. An accepted
+critical/personal cue may finish a cold load for at most 250 ms, within the
+750 ms event-age bound; travel, hiding and mute invalidate pending playback.
 
-`node tests/test_audio.cjs` exercises activation, confirmed attack changes,
-deduplication, dash/damage/down/revive/loot, silent reconnects, hidden tabs,
-mute and burst limits, and validates each WAV's format, size and peak bounds.
-`node --check static/audio.js` checks syntax. Existing client and Python tests
-still apply. Human headphone listening and real phone audio-policy checks are
-needed for final mix decisions; automation cannot judge musical taste or
-speaker loudness.
+Distance uses the local player's world position, with quadratic falloff to zero
+at 800 units and pan limited to 0.65, independent of overview zoom. Ordinary
+attacks, impact packs, periodic damage and summons have shared limits. Tiered
+voice limits are 6/8/10; warnings and rescue can displace ordinary voices. Effects
+use gentle compression and a master overload shoulder above 0.85. Effects decode
+cache is 8 MiB; four normal/six urgent loads and eight pending confirmations are
+bounded. Music is lazy, at most two cached decoded tracks/32 MiB and one loader,
+with stale decode results discarded. Music crossfades normally over 1.6 seconds;
+combat engages after sustained activity and holds five seconds. Caravan's road
+intro plays once and then its refuge section loops. Mute/hidden/disconnect/defeat
+stop score sources. No idle class or per-prop sound loops are added.
+
+Atmosphere uses quiet procedural filtered beds and sparse Bfxr accents for
+village, woods, underground, tower, boss and dry areas. At most two bed sources
+crossfade; nearby landmarks share one positional accent. These are stylized
+textures, not realistic environmental recordings. Combat suppresses optional
+accents. Existing stable scenery is preserved.
+
+Settings persist per browser/site under `gauntlet-audio`, version 3. Defaults:
+master 100%, music 16%, effects 40%, ambience 12%, UI 30%. Old effects/volume,
+ambience and mute preferences migrate unchanged. Master mute stops every bus.
+The settings dialog offers independent levels, previews, shake Off/Reduced/Normal
+and reduced decorative effects. Device reduced-motion disables optional shake.
+Essential warnings, silhouettes, health and revive targets remain visible.
+Trusted gestures activate Web Audio; autoplay/storage/asset failures never gate
+gameplay. Menus do not pause the world.
+
+## Checks and local fixtures
+
+```text
+node tests/test_audio.cjs
+node tests/test_audio_build.cjs
+node tests/test_audio_routing.cjs
+node tests/test_audio_stress.cjs
+node tests/test_music.cjs
+node tests/test_feedback_visual.cjs
+python tools/run_tests.py --report reports/audio-python-local.json
+python tools/audio_preview.py --scene cave --players 4 --port 8013 --touch-controls
+python tools/audio_preview.py --scene boss --players 4 --port 8014
+python tools/audio_preview.py --scene caravan --players 1 --port 8015
+python tools/audio_preview.py --scene ascension --players 1 --port 8016
+```
+
+Fixtures use memory-only disposable worlds and accepted actions with ordinary
+combat stats. Ascension grants fixture receipts; it is not an earned playthrough.
+The broader multiplayer probe uses explicitly synthetic reliability fixtures.
+Reports distinguish those from browser UI checks and real-device testing.
+Before restarting the real server, run `python tools/backup_saves.py --label
+audio-music-overhaul`; preserve data when transferring. Refresh clients after
+activation. No publishing or deployment is part of this work.
+
+**Actual listening remains incomplete.** Browser source playback, export metrics
+and tests do not establish headphone/speaker comfort, intelligibility or musical
+quality. Listen to the review and an ordinary four-person session, including
+physical mobile/Bluetooth audio, before treating this as perceptually validated.
+See `reports/AUDIO_OVERHAUL_VALIDATION_2026-10-16.md` for exact evidence and limits.
+
+## Retained Bfxr licenses
+
+Five unchanged JavaScript files in vendor were retrieved October 7 from
+https://github.com/osiriswd/bfxr2-cli. `vendor-hashes.json` pins the Bfxr 1.0.4 DSP,
+parameter and sample-buffer source. The isolated VM provides a seeded PRNG and
+minimal AudioBuffer; square, sine, triangle and white-noise waves use no sampled
+wave tables. MIT license credit to Stephen Lavelle and Thomas Vian's Apache 2.0
+notice for the ported SfxrSynth code, both texts and source headers remain intact.

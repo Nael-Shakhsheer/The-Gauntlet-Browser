@@ -1,0 +1,74 @@
+﻿{
+    "mirrorSourceRows":  [
+                             0,
+                             1,
+                             2,
+                             3,
+                             4,
+                             3,
+                             2,
+                             1
+                         ],
+    "hero":  "Healer",
+    "sourceScales":  {
+                         "actions":  0.34285714285714286,
+                         "body":  0.36363636363636365
+                     },
+    "version":  1,
+    "directions":  [
+                       "south",
+                       "south-east",
+                       "east",
+                       "north-east",
+                       "north",
+                       "north-west",
+                       "west",
+                       "south-west"
+                   ],
+    "displayAnchor":  [
+                          32,
+                          54
+                      ],
+    "anchor":  [
+                   48,
+                   84
+               ],
+    "states":  {
+                   "cast":  [
+                                3,
+                                4,
+                                5
+                            ],
+                   "idle":  [
+                                0,
+                                1,
+                                2
+                            ],
+                   "hit":  [
+                               6
+                           ],
+                   "signature":  [
+                                     6,
+                                     7,
+                                     8
+                                 ],
+                   "basic":  [
+                                 0,
+                                 1,
+                                 2
+                             ],
+                   "downed":  [
+                                  7
+                              ],
+                   "move":  [
+                                3,
+                                4,
+                                5
+                            ]
+               },
+    "cell":  96,
+    "sheets":  {
+                   "actions":  "ascended-healer-actions-v1.png",
+                   "body":  "ascended-healer-body-v1.png"
+               }
+}

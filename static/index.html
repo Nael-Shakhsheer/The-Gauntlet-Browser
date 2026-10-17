@@ -3,11 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#21302c">
+  <meta name="theme-color" content="#1d2c3b">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 20'%3E%3Cpath fill='%23101e2b' d='M1 1h16v11h-2v3h-3v2h-3v2H6v-2H3v-2H1z'/%3E%3Cpath fill='%23edc87b' d='M3 3h12v8h-2v3h-3v2H8v-2H5v-3H3z'/%3E%3Cpath fill='%2384734d' d='M9 3h6v8h-2v3h-3v2H9z'/%3E%3C/svg%3E">
   <title>The Gauntlet — Co-op Adventure</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <section id="landscapeNotice" class="landscape-notice hidden" role="alert" aria-label="Rotate your device">
+    <div class="rotate-device" aria-hidden="true">↻</div>
+    <h2>Rotate your device</h2>
+    <p>The Gauntlet plays horizontally. Turn your phone or tablet to landscape to continue.</p>
+    <small>Combat continues while you rotate.</small>
+  </section>
   <main class="shell">
     <header class="brand">
       <div class="brand-mark" aria-hidden="true"><span>✦</span></div>
@@ -16,12 +23,15 @@
     </header>
     <section id="entry" class="entry panel">
       <div class="entry-copy">
-        <p class="eyebrow">GATHER YOUR PARTY</p><h2>Enter the gauntlet together.</h2>
-        <p>Choose a class, share your room code, and face the run as a team.</p>
+        <p class="eyebrow">FROM OAKVALE TO THE UNKNOWN</p><h2>The road is waiting.</h2>
+        <p>Start a separate world, continue your character, or join friends.</p>
+        <div class="front-actions"><button id="newAdventure" class="primary">New Adventure</button><button id="newGauntlet" class="secondary">New Gauntlet run</button><button id="joinParty" class="secondary">Join a party</button><button id="frontSettings" class="secondary">Settings</button></div>
         <button id="openSettings" class="secondary small" type="button">Controls & keybindings</button>
         <button class="secondary small" type="button" data-guide>How to play</button>
         <button class="secondary small" type="button" data-audio-open>Sound settings</button>
         <button id="continueRun" class="primary small hidden" type="button">Continue saved run</button>
+        <button id="importAdventure" class="secondary small" type="button">Import Adventure backup</button>
+        <input id="adventureBackupFile" type="file" accept="application/json,.json" class="hidden">
       </div>
       <div class="entry-art" aria-hidden="true">
         <img src="/sprites/portrait-knight-v1.png" alt="" width="64" height="64">
@@ -40,17 +50,19 @@
         <p id="controlHint" class="control-hint">Move: WASD · Dash: Space (5s) · Light attack: Left click · Special: Q · Ultimate: X</p>
         <button id="resetBindings" class="secondary small" type="button">Restore defaults</button>
       </section>
-      <form id="createForm" class="form-row">
+      <form id="createForm" class="form-row hidden">
         <label><span>Your name</span><input id="createName" maxlength="18" placeholder="Adventurer" autocomplete="nickname"></label>
         <button class="primary" type="submit">Create a room</button>
       </form>
-      <div class="divider"><span>OR JOIN A PARTY</span></div>
+      <section id="frontSavedWorlds" class="front-saves" aria-label="Your saved worlds"></section>
       <form id="joinForm" class="form-row">
         <label><span>Your name</span><input id="joinName" maxlength="18" placeholder="Adventurer" autocomplete="nickname"></label>
         <label class="code-label"><span>Room code</span><input id="roomCode" maxlength="5" placeholder="ABCDE" autocapitalize="characters" autocomplete="off"></label>
-        <button class="secondary" type="submit">Join room</button>
+        <label><span>Your hero</span><select id="joinHero"></select></label>
+        <button class="secondary" type="submit">Join party</button>
       </form>
       <p class="notice" id="entryNotice" role="status"></p>
+      <small id="buildVersion" class="subtle">Checking local build…</small>
       <a id="liveGameLink" class="primary live-game-link hidden" href="http://127.0.0.1:8000/">Open the live game</a>
     </section>
     <section id="lobby" class="lobby hidden">
@@ -65,8 +77,10 @@
           <p class="subtle">Each class is unique within the party. Choose one Light, one Special, and one Ultimate ability.</p>
           <fieldset id="runOptions" class="run-options">
             <legend>Run options · host chooses</legend>
+            <label><span>Mode</span><select id="modeChoice"><option value="gauntlet">Gauntlet · stage campaign</option><option value="adventure">Adventure · woodland prototype</option></select></label>
             <label><span>Challenge</span><select id="difficultyChoice"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select></label>
-            <label><span>Run length</span><select id="lengthChoice"><option value="9">Tester · 9 stages</option><option value="20">Short · 20 stages</option><option value="25" selected>Standard · 25 stages</option><option value="30">Long · 30 stages</option></select></label>
+            <label id="lengthOption"><span>Run length</span><select id="lengthChoice"><option value="9">Tester · 9 stages</option><option value="20">Short · 20 stages</option><option value="25" selected>Standard · 25 stages</option><option value="30">Long · 30 stages</option></select></label>
+            <p id="adventureModeHint" class="subtle hidden">Adventure is a connected woodland around Oakvale. Explore freely, help the missing hunter, repair a shortcut and secure the old ruins. Separate automatic local saves; rest at the inn to set your return point.</p>
             <label class="companion-choice"><input id="npcCompanion" type="checkbox"><span>Add NPC companion</span></label>
             <p id="testerModeHint" class="subtle hidden">Tester compresses 25-stage combat progression into 9 stages, with bosses at 3, 6 and 9 and Dracos from 7.</p>
             <p class="subtle">The companion fills one of four party slots and chooses a random available hero when the run starts. Enemy numbers and strength scale with your full party.</p>
@@ -83,7 +97,14 @@
             <div><p class="eyebrow">THE GAUNTLET · <span id="runeCount">0 RUNES</span></p><h2 id="stageHeading">Stage 1 · Arena</h2></div>
             <div class="game-top-actions"><button id="toggleChat" class="secondary small">Chat</button><button id="togglePouch" class="secondary small">Pouch</button><button id="mainMenuGame" class="secondary small">Main menu</button></div>
           </div>
+          <nav id="adventureTools" class="adventure-tools hidden" aria-label="Adventure tools"><button id="adventureMapButton" class="secondary small">Map</button><button id="adventureJournalButton" class="secondary small">Journal</button><button id="heroSkillsButton" class="secondary small">Skills</button><button id="villageTeleportButton" class="secondary small">Village portal</button><span id="adventureStatus" role="status"></span></nav>
           <canvas id="world" width="960" height="540" aria-label="Shared real-time game area"></canvas>
+          <aside id="signpostDirections" class="signpost-directions hidden" role="status" aria-live="polite" aria-labelledby="signpostTitle">
+            <h3 id="signpostTitle">Woodland directions</h3><div id="signpostRoutes"></div>
+            <p>Directions added to your map · walk away to dismiss</p>
+          </aside>
+          <button id="areaViewButton" class="secondary area-view-button hidden" type="button" aria-label="View the whole area: tap for three seconds or hold" aria-pressed="false">Area view · V</button>
+          <p id="adventureFeedback" class="adventure-feedback hidden" role="status" aria-live="polite"></p>
           <p id="bossTactic" class="boss-tactic hidden" role="status"></p>
           <div id="teamHud" class="team-hud" aria-label="Party health"></div>
           <div class="coordination-tools">
@@ -156,6 +177,8 @@
           </div>
           <div id="gameHud" class="game-hud">
             <div class="resource-stack">
+              <img id="hudHeroPortrait" class="hud-hero-portrait" src="/sprites/portrait-knight-v1.png" width="48" height="48" alt="" aria-hidden="true">
+              <small id="barrierLabel" class="barrier-badge hidden" role="status"></small>
               <div class="resource-meter health-meter"><span id="hpLabel">HP 100 / 100</span><div class="resource-track"><div id="hpFill"></div></div></div>
               <div class="resource-meter mana-meter"><span id="manaLabel">MANA 100 / 100</span><div class="resource-track"><div id="manaFill"></div></div></div>
             </div>
@@ -213,12 +236,67 @@
   <script src="combat-environment.js" defer></script>
   <script src="projectile-animations.js" defer></script>
   <script src="ability-animations.js" defer></script>
+  <script src="ascended-sprites.js" defer></script>
+  <script src="combat-visuals.js" defer></script>
+  <script src="camera.js" defer></script>
+  <script src="world-scenery.js" defer></script>
+  <script src="dungeon-sprites.js" defer></script>
+  <script src="region-sprites.js" defer></script>
+  <script src="adventure-sprites.js" defer></script>
   <script src="movement.js" defer></script>
+  <script src="audio-routing.js" defer></script>
+  <script src="music.js" defer></script>
   <script src="audio.js" defer></script>
+  <script src="feedback.js" defer></script>
   <script src="equipment-comparison.js" defer></script>
+  <script src="diagnostics.js" defer></script>
+  <script src="input-transport.js" defer></script>
+  <script src="state-cache.js" defer></script>
   <script src="app.js" defer></script>
   <script src="coordination.js" defer></script>
   <script src="progression.js" defer></script>
+  <script src="adventure.js" defer></script>
+  <script src="opening.js" defer></script>
+  <script src="chapter.js" defer></script>
+  <script src="recovery.js" defer></script>
+  <script src="front-menu.js" defer></script>
+  <script src="adventure-skills.js" defer></script>
+  <dialog id="adventureMapDialog" class="panel info-dialog adventure-map-dialog" aria-labelledby="adventureMapTitle">
+    <div class="section-heading map-heading"><div><p class="eyebrow">THE ADVENTURER'S ATLAS</p><h2 id="adventureMapTitle">The Oakvale woodland</h2></div><div class="map-view-buttons"><button id="toggleAdventureMapView" class="secondary small">Dungeon maps</button><button data-close="adventureMapDialog" class="secondary">Close</button></div></div>
+    <div class="map-toolbar" aria-label="Map view controls"><div class="map-view-buttons"><button class="secondary small" data-map-focus="party">Your party</button><button class="secondary small" data-map-focus="goal">Tracked goal</button></div><div class="map-zoom-buttons"><button class="secondary small" data-map-zoom="out" aria-label="Zoom map out">−</button><button class="secondary small" data-map-zoom="fit">Fit</button><button class="secondary small" data-map-zoom="in" aria-label="Zoom map in">+</button></div></div>
+    <div class="atlas-layout"><div class="map-viewport" id="adventureMapViewport" tabindex="0" aria-label="Woodland map. Scroll to pan when zoomed."><div id="adventureMap"></div></div><aside id="adventureMapDetails" class="map-details" aria-live="polite"></aside></div>
+    <div class="map-legend" aria-label="Map legend"><span><i class="legend-party"></i>Your party</span><span><i class="legend-visited"></i>Visited</span><span><i class="legend-goal">★</i>Tracked goal</span><span><i class="legend-closed"></i>Closed trail</span></div>
+    <p class="map-footnote"><span id="adventureMapCount"></span> · Select a landmark for details. Scroll or swipe to pan when zoomed. Trails are charted by direction; distances are approximate.</p>
+    <div id="adventureDungeonMaps"></div>
+  </dialog>
+  <dialog id="adventureJournalDialog" class="panel info-dialog adventure-journal-dialog" aria-labelledby="adventureJournalTitle">
+    <div class="section-heading"><h2 id="adventureJournalTitle">Adventure journal</h2><button data-close="adventureJournalDialog" class="secondary">Close</button></div>
+    <p>Choose one goal to track. Woodland quests can be completed in any order.</p>
+    <div id="adventureJournal"></div><div id="adventureDungeonJournal"></div><div id="adventureDiscoveries"></div>
+    <details class="adventure-journal-details"><summary>Recent party rewards</summary><div id="adventureRewards"></div></details>
+    <section id="adventureRewardChoices" aria-label="Your pending reward choices"></section><p id="adventureRewardNotice" class="notice" role="status"></p>
+    <details class="adventure-journal-details"><summary>Saving and inn recovery</summary><p id="adventureJournalSave"></p></details>
+  </dialog>
+  <dialog id="adventureContinueDialog" class="panel info-dialog recovery-dialog" aria-labelledby="adventureContinueTitle">
+    <div class="section-heading"><h2 id="adventureContinueTitle">Continue Adventure</h2><button data-close="adventureContinueDialog" class="secondary">Close</button></div>
+    <div id="adventureRecoveryList"></div><p id="adventureRecoveryNotice" class="notice" role="status"></p>
+    <details><summary>Account and cloud recovery</summary><p id="cloudSetupStatus">Checking storage configuration…</p>
+      <form id="cloudSignIn" class="hidden"><label>Email <input id="cloudEmail" type="email" autocomplete="username" required></label><label>Password <input id="cloudPassword" type="password" autocomplete="current-password" required></label><button class="secondary">Sign in</button></form>
+      <button id="cloudListWorlds" class="secondary small hidden">Find my cloud worlds</button><button id="cloudLinkWorld" class="secondary small hidden">Link this character and world</button><div id="cloudWorlds"></div>
+    </details>
+  </dialog>
+  <dialog id="villagePortalDialog" class="panel info-dialog recovery-dialog" aria-labelledby="villagePortalTitle">
+    <div class="section-heading"><h2 id="villagePortalTitle">Travel shrines & Soul Crystal</h2><button data-close="villagePortalDialog" class="secondary">Close</button></div>
+    <p>Gather nearby. Every connected hunter confirms, then stands still for 3 seconds. Nearby enemies, damage or movement interrupt it. Sealed fights must be finished first.</p>
+    <div id="villagePortalDestinations"></div><p id="villagePortalNotice" class="notice" role="status"></p>
+    <p class="subtle">Teleport keeps health, equipment and recharge. Use an inn bed to rest.</p>
+  </dialog>
+  <dialog id="adventureImportDialog" class="panel info-dialog recovery-dialog" aria-labelledby="adventureImportTitle">
+    <div class="section-heading"><h2 id="adventureImportTitle">Review backup</h2><button data-close="adventureImportDialog" class="secondary">Cancel</button></div>
+    <p>Restore as a separate Adventure. Existing worlds and backup files stay intact. Choose your character; invite friends to the other recovered characters afterwards.</p>
+    <div id="adventureImportSummary"></div><label>Your character <select id="adventureImportCharacter"></select></label>
+    <button id="adventureImportConfirm" class="primary">Create recovered Adventure</button><p id="adventureImportNotice" class="notice" role="status"></p>
+  </dialog>
   <dialog id="storyDialog" class="panel info-dialog" aria-labelledby="storyTitle" aria-describedby="storyText">
     <p id="storyStep" class="eyebrow"></p>
     <div class="story-conversation">
@@ -230,6 +308,15 @@
   <dialog id="trainingDialog" class="panel info-dialog training-dialog" aria-labelledby="trainingTitle">
     <div class="section-heading"><h2 id="trainingTitle">Hunter training</h2><button id="closeTraining" class="secondary">Close</button></div>
     <p id="trainingPoints"></p><div id="trainingBranches" class="training-branches"></div><p id="trainingNotice" class="notice" role="status"></p>
+  </dialog>
+  <dialog id="heroSkillsDialog" class="panel info-dialog hero-skills-dialog" aria-labelledby="heroSkillsTitle">
+    <div class="section-heading"><h2 id="heroSkillsTitle">Hero skills</h2><button data-close="heroSkillsDialog" class="secondary">Close</button></div>
+    <p id="heroSkillsPoints"></p><p id="heroSkillsSafety" class="subtle"></p>
+    <div id="heroLoadout" class="hero-loadout" aria-label="Adventure action slots"></div>
+    <div id="heroBranches" class="hero-branches" aria-label="Skill branches"></div><div id="heroNodes" class="hero-nodes"></div>
+    <p id="heroSkillsNotice" class="notice" role="status"></p>
+    <details><summary>Milestone points and preserved training</summary><div id="heroMilestones"></div></details>
+    <button id="heroRespec" class="secondary small">Respec learned skills · free at villages</button><p class="subtle">Respec refunds spent points. It keeps health, mana, recharge, milestones and older training benefits. Live summons are dismissed with their normal death recharge.</p>
   </dialog>
   <dialog id="questDialog" class="panel info-dialog" aria-labelledby="questTitle">
     <div class="section-heading"><h2 id="questTitle">The wounded hunter's request</h2><button data-close="questDialog" class="secondary">Close</button></div>
@@ -246,10 +333,18 @@
   </dialog>
   <dialog id="audioDialog" class="panel info-dialog audio-dialog" aria-labelledby="audioTitle">
     <div class="section-heading"><h2 id="audioTitle">Sound settings</h2><button data-close="audioDialog" class="secondary" type="button">Close</button></div>
-    <p>Retro sound effects for combat, treasure and interactions. These settings apply to this browser.</p>
+    <p>Original music, Bxfr effects and quiet stylized atmosphere. Settings apply to this browser.</p>
+    <label class="audio-volume"><span>Master <output data-master-value>100%</output></span><input data-master-volume type="range" min="0" max="100" value="100" aria-label="Master volume"></label>
+    <label class="audio-volume"><span>Music <output data-music-value>16%</output></span><input data-music-volume type="range" min="0" max="100" value="16" aria-label="Music volume"></label>
+    <label class="audio-volume"><span>UI sounds <output data-ui-value>30%</output></span><input data-ui-volume type="range" min="0" max="100" value="30" aria-label="UI sounds volume"></label>
     <label class="audio-volume"><span>Effects volume <output data-audio-value>45%</output></span><input data-audio-volume type="range" min="0" max="100" value="45" aria-label="Effects volume"></label>
-    <label class="audio-mute"><input data-audio-mute type="checkbox">Mute sound effects</label>
-    <button data-audio-test class="secondary" type="button">Test sound</button>
+    <label class="audio-mute"><input data-audio-mute type="checkbox">Mute all audio</label>
+    <label class="audio-volume"><span>Ambience <output data-ambience-value>16%</output></span><input data-ambience-volume type="range" min="0" max="100" value="16" aria-label="Ambience volume"></label>
+    <label class="audio-volume"><span>Screen shake</span><select data-screen-shake aria-label="Screen shake"><option value="off">Off</option><option value="reduced" selected>Reduced</option><option value="normal">Normal</option></select></label>
+    <label class="audio-mute"><input data-reduced-effects type="checkbox">Reduce decorative effects</label>
+    <p class="subtle">Device reduced-motion preferences also disable shake and reduce decoration. Danger warnings remain visible.</p>
+    <div class="cue-previews" aria-label="Cue previews"><button class="secondary small" type="button" data-cue-preview="knight-light">Metal</button><button class="secondary small" type="button" data-cue-preview="wizard-special">Arcane</button><button class="secondary small" type="button" data-cue-preview="revive">Rescue</button><button class="secondary small" type="button" data-cue-preview="boss-warning">Warning</button><button class="secondary small" type="button" data-cue-preview="amb-woodland">Atmosphere</button></div>
+    <div class="cue-previews" aria-label="Category previews"><button data-music-preview="oakvale" class="secondary small" type="button">Music preview</button><button data-cue-preview="ui-confirm" class="secondary small" type="button">UI preview</button><button data-audio-test class="secondary small" type="button">Effects preview</button></div>
     <p data-audio-status class="subtle" role="status">Click, tap or press a key to activate sound.</p>
   </dialog>
   <dialog id="statsDialog" class="panel info-dialog" aria-labelledby="statsTitle">
@@ -257,5 +352,23 @@
     <p id="saveStatus"></p><p class="subtle">Overall totals for this run, including the current stage. Damage dealt includes your summons; damage taken counts your hero’s HP lost. Revives count allies rescued, deaths count falling or a party wipe, and kills go to the finishing attacker.</p>
     <div id="overallStats"></div><button id="downloadStats" class="secondary">Download run stats</button>
   </dialog>
+  <dialog id="runtimeDialog" class="panel info-dialog" aria-labelledby="runtimeTitle"><div class="section-heading"><h2 id="runtimeTitle">Technical details</h2><button class="secondary" data-close="runtimeDialog">Close</button></div><p id="runtimeBuild" class="subtle"></p><p>Anonymous timings from this page, in milliseconds. No player names or save contents are collected.</p><pre id="runtimeReadings"></pre><button id="runtimeServer" class="secondary">Read server timings</button><pre id="runtimeServerReadings"></pre></dialog>
+  <dialog id="newRunDialog" class="panel info-dialog setup-dialog" aria-labelledby="newRunTitle">
+    <div class="section-heading"><h2 id="newRunTitle">New Adventure</h2><button class="secondary" data-close="newRunDialog">Back</button></div>
+    <p>A new run creates a separate character and world. Existing saves stay available in Continue.</p>
+    <form id="newRunForm" class="setup-fields">
+      <label>Mode<select id="newMode"><option value="adventure">Adventure</option><option value="gauntlet">Gauntlet</option></select></label>
+      <label>Your name<input id="newName" maxlength="18" placeholder="Adventurer" required value="Adventurer"></label>
+      <label id="newWorldLabel">Adventure name<input id="newWorldName" maxlength="48" value="Oakvale adventure"></label>
+      <label>Your hero<select id="newHero"></select></label>
+      <label>Challenge<select id="newDifficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select></label>
+      <label class="setup-companion"><input id="newCompanion" type="checkbox">Add an NPC companion</label>
+      <label id="skipIntroLabel" class="setup-companion"><input id="skipIntro" type="checkbox">Skip introduction · begin in Oakvale with the same starter progression</label>
+      <p id="newRunExplanation" class="subtle"></p><p id="newRunNotice" class="notice" role="status"></p>
+      <button id="newRunSubmit" class="primary" type="submit">Begin Adventure</button>
+    </form>
+  </dialog>
+  <dialog id="joinPartyDialog" class="panel info-dialog" aria-labelledby="joinPartyTitle"><div class="section-heading"><h2 id="joinPartyTitle">Join a party</h2><button class="secondary" data-close="joinPartyDialog">Back</button></div><p>Adventure parties accept new hunters in Oakvale or Dunmere. Use Continue to reconnect an existing character.</p><div id="joinPartyBody"></div><p id="joinPartyNotice" class="notice" role="status"></p></dialog>
+  <dialog id="settingsDialog" class="panel info-dialog" aria-labelledby="settingsTitle"><div class="section-heading"><h2 id="settingsTitle">Settings</h2><button class="secondary" data-close="settingsDialog">Back</button></div><div id="settingsBody" class="settings-body"></div></dialog>
 </body>
 </html>

@@ -1,5 +1,8 @@
 __pycache__/
 *.pyc
+.test-tmp/
+.pytest_cache/
+.ruff_cache/
 data/
 releases/
 /.codex/
@@ -10,3 +13,6 @@ releases/
 /reports/*.png
 /reports/*.jpg
 /reports/*.jpeg
+.env
+.env.*
+!.env.example

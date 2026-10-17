@@ -1,5 +1,6 @@
 """Boss attacks use visible windups, fixed attack decisions and dodgeable areas."""
 import math
+import enemy_awareness
 import secrets
 import combat_environment as terrain
 
@@ -15,7 +16,7 @@ def view(room):
     boss = next((e for e in room.get('enemies', []) if e.get('boss')), None)
     if not boss or room.get('phase') != 'combat': return None
     tips = {'minotaur': 'Bait a charge into cover: it creates a 3s opening with +35% damage.',
-            'troll': 'The Behemoth raises rocks, then shatters cover. Move when it marks your shelter.',
+            'troll': 'It raises rocks, then shatters cover. Move when it marks your shelter.',
             'serpent': 'Bait the poison weave away from your path, or stun her during its wind-up.'}
     elements = {'Fire': 'Leave the marked breath lane; the ground keeps burning.',
                 'Ice': 'Ice walls divide movement lanes. Use the gaps or break the shards.',
@@ -73,6 +74,8 @@ def prepare_signature(world, room, enemy, pending, now):
     delay, phase = WINDUPS[kind], enemy.get('bossPhase', 1)
     token = pending['signatureToken'] = secrets.token_hex(4)
     def mark(px, py, radius=45, duration=.3, power=1, extra=0, label=None):
+        if (room.get('adventure') or {}).get('current','').startswith(('cave_','tower_')) and not terrain.line_clear(room,enemy,{'x':px,'y':py}):
+            return
         h = area(room, enemy, max(40,min(920,px)), max(45,min(495,py)), now,
                  radius=radius, delay=delay+extra, duration=duration, power=power, kind=kind)
         h.update(signatureToken=token, label=label or kind.replace('_',' ').upper())
@@ -97,7 +100,7 @@ def prepare_signature(world, room, enemy, pending, now):
                 mark(enemy['x']+math.cos(angle)*step*65-math.sin(angle)*lane,
                      enemy['y']+math.sin(angle)*step*65+math.cos(angle)*lane,43,6,.6,label='BURNING LANE')
     elif kind=='storm_marks':
-        humans=[p for p in world._active_players(room) if p['status']=='alive']
+        humans=[p for p in world._active_players(room) if enemy_awareness.visible(p,now) and terrain.line_clear(room,enemy,p)]
         for actor in humans: mark(actor['x'],actor['y'],65 if phase==1 else 78,power=1.1,label='LIGHTNING · SPREAD')
         if phase==2:
             for index,a in enumerate(humans):
@@ -159,14 +162,14 @@ def tick_areas(world, room, now):
                 owner=room['players'].get(hazard['ownerId'])
                 if owner:
                     for enemy in list(room['enemies']):
-                        if math.hypot(enemy['x']-hazard['x'],enemy['y']-hazard['y']) <= hazard['radius']:
+                        if math.hypot(enemy['x']-hazard['x'],enemy['y']-hazard['y']) <= hazard['radius'] and (not (room.get('adventure') or {}).get('current','').startswith(('cave_','tower_')) or terrain.line_clear(room,hazard,enemy)):
                             world._damage_enemy(room,owner,enemy,hazard['damage'],boost_source=hazard.get('boostSource'),boost_factor=hazard.get('boostFactor',1))
                     for cover in terrain.obstacles(room):
                         if math.hypot(cover['x']-hazard['x'],cover['y']-hazard['y']) <= hazard['radius']:
                             terrain.damage_cover(world,room,cover,hazard['damage'])
                 continue
             for target in world._combat_targets(room):
-                if target["status"] == "alive" and math.hypot(target["x"]-hazard["x"], target["y"]-hazard["y"]) <= hazard["radius"]+10:
+                if target["status"] == "alive" and math.hypot(target["x"]-hazard["x"], target["y"]-hazard["y"]) <= hazard["radius"]+10 and (not (room.get('adventure') or {}).get('current','').startswith(('cave_','tower_')) or terrain.line_clear(room,hazard,target)):
                     world._damage_player(room, hazard, target, hazard["damage"])
             if world._check_party_wipe(room):
                 break
@@ -251,7 +254,8 @@ def tick(world, room, enemy, target, now, dt):
         enemy["recoverUntil"] = now+RECOVERY[kind]+(.7 if kind == "charge" else 0)
         enemy["nextBossAttack"] = enemy["recoverUntil"]+2.3/enemy.get("attackRate", 1)
         return
-    if now >= enemy.get("nextBossAttack", 0):
+    if not enemy.get("allowAcquire",True):return
+    if now >= enemy.get("nextBossAttack", 0) and (not (room.get('adventure') or {}).get('current','').startswith(('cave_','tower_')) or terrain.line_clear(room,enemy,target)):
         attacks = pattern(enemy)
         index = enemy.get("attackIndex", 0)
         kind = attacks[index % len(attacks)]
@@ -270,7 +274,7 @@ def tick(world, room, enemy, target, now, dt):
         if kind == "slam":
             area(room, enemy, enemy["x"], enemy["y"], now, radius=115, delay=WINDUPS[kind], power=1.4)
         elif kind in ("pool", "meteor"):
-            targets = [p for p in world._active_players(room) if p["status"] == "alive"] if kind == "meteor" else [target]
+            targets = [p for p in world._active_players(room) if enemy_awareness.visible(p,now) and terrain.line_clear(room,enemy,p)] if kind == "meteor" else [target]
             for ally in targets:
                 area(room, enemy, ally["x"], ally["y"], now, radius=95 if kind == "meteor" else 80,
                      delay=WINDUPS[kind], duration=.25 if kind == "meteor" else 4,

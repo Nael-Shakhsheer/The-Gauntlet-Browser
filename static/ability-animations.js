@@ -29,17 +29,23 @@
     major_mend:['Healer','heal','#a4f5ec'], quick_revival:['Healer','revive','#d2fff5'],
     miracle:['Healer','heal','#e4fff9'], mass_revival:['Healer','revive','#fff7c6']
   };
-  for (const hero of heroes) {
+  function sprite(hero) {
+    if(sprites[hero])return sprites[hero];
+    if(!heroes.includes(hero))return null;
     const img = sprites[hero] = new Image();
     img.src = spriteRoot+hero.toLowerCase()+'-abilities-v1.png';
+    return img;
   }
   let scene = '';
   const clamp = n => Math.max(0,Math.min(1,n));
   const castPhase = room => ['combat','chest','stage_exit','cleared'].includes(room.phase);
   const elapsed = record => record.elapsed+(performance.now()-record.at)/1000;
   const progress = record => clamp(elapsed(record)/record.duration);
+  const reduced = () => Boolean(window.GauntletAudio?.visualSettings().reduced);
+  let particleBudget=64;
+  function beginFrame(){particleBudget=reduced()?20:64;}
   function observe(room) {
-    const key = [room.code,room.you,room.stage].join(':');
+    const key = window.GauntletAudio?.sceneKey(room) || [room.code,room.you,room.adventure?.area,room.stage].join(':');
     if (key !== scene || !castPhase(room)) {
       motions.clear(); casts.clear(); births.clear(); scene = key;
     }
@@ -52,7 +58,10 @@
       const prior = motions.get(p.id);
       // Do not restart a pose on every multiplayer snapshot.
       if (cast.id !== prior?.id) motions.set(p.id,{...cast,at:now});
-      else if (Math.abs(elapsed(prior)-cast.elapsed)>.2) { prior.elapsed=cast.elapsed; prior.at=now; }
+      else {
+        prior.released=cast.released;prior.releaseAt=cast.releaseAt;prior.cancelled=cast.cancelled;
+        if (Math.abs(elapsed(prior)-cast.elapsed)>.2) { prior.elapsed=cast.elapsed; prior.at=now; }
+      }
     }
     for (const id of motions.keys()) if (!live.has(id)) motions.delete(id);
     live.clear();
@@ -60,6 +69,7 @@
       if (e.type !== 'ability_cast' || e.stage !== room.stage) continue;
       live.add(e.id);
       if (!casts.has(e.id)) casts.set(e.id,{...e,elapsed:e.elapsed ?? Math.max(0,e.duration-(e.until*1000-Date.now())/1000),at:now});
+      else Object.assign(casts.get(e.id),{released:e.released,releaseAt:e.releaseAt,cancelled:e.cancelled,recipientIds:e.recipientIds});
     }
     for (const [id,c] of casts) if (!live.has(id) || elapsed(c)>=c.duration) casts.delete(id);
     live.clear();
@@ -74,14 +84,14 @@
     return p.status==='alive' && r?.heroClass===p.class && elapsed(r)<r.duration ? r : null;
   }
   function hero(ctx,p,x,y) {
-    const r=motion(p), img=sprites[p.class];
+    const r=motion(p), img=sprite(p.class);
     if (!r || !img?.complete || !img.naturalWidth) return false;
-    const t=elapsed(r), step=t<.10?0:t<(r.attackType==='light'?.22:.32)?1:2;
+    const t=elapsed(r),release=r.releaseAt??0,step=r.cancelled?2:r.released===false||t<release?0:t<release+.14?1:2;
     const group={light:0,special:1,ultimate:2}[r.attackType];
     const dir=(Math.round((Math.PI/2-Math.atan2(r.facingY ?? 1,r.facingX ?? 0))/(Math.PI/4))+8)%8;
     ctx.save(); ctx.imageSmoothingEnabled=false;
     // Export contains all eight directions, including deterministic mirrors.
-    const sway=r.attackType==='ultimate' && t>.32 ? Math.round(Math.sin(t*32)) : 0;
+    const sway=!reduced() && r.attackType==='ultimate' && t>.32 ? Math.round(Math.sin(t*32)) : 0;
     ctx.drawImage(img,(group*3+step)*96,dir*96,96,96,x-48+sway,y-72,96,96);
     ctx.restore(); return true;
   }
@@ -106,7 +116,8 @@
   function emitter(ctx,type,color,x,y,t,size=1,seed=0) {
     const fade=1-clamp(t);
     ctx.save();ctx.globalAlpha*=fade;
-    for(let i=0;i<12;i++) {
+    const count=Math.min(reduced()?3:6,particleBudget);particleBudget-=count;
+    for(let i=0;i<count;i++) {
       const a=i*Math.PI/6+seed*.17, r=(7+t*36)*size;
       const px=x+Math.cos(a)*r, py=y+Math.sin(a)*r*.6-t*25*size;
       if(type==='ice') {ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(Math.round(px),Math.round(py-6));ctx.lineTo(Math.round(px+3),Math.round(py));ctx.lineTo(Math.round(px),Math.round(py+3));ctx.lineTo(Math.round(px-3),Math.round(py));ctx.closePath();ctx.fill();}
@@ -118,6 +129,7 @@
   }
   function ground(ctx,p) {
     const r=motion(p);if(!r)return;
+    if(window.GauntletCombatVisuals?.handles(r))return;
     const [,type,color]=designs[r.abilityId] || [p.class,'arcane',p.color], t=progress(r);
     ctx.save();
     if(r.kind==='summon') {
@@ -132,17 +144,18 @@
   function front(ctx,room) {
     if(!castPhase(room))return;
     for(const c of casts.values()) {
+      if(window.GauntletCombatVisuals?.handles(c))continue;
       const p=room.players?.find(p=>p.id===c.ownerId && p.class===c.heroClass);
       if(!p || p.status!=='alive' || p.connected===false || p.indoors)continue;
       const t=progress(c), [,type,color]=designs[c.abilityId] || [c.heroClass,'arcane','#c6dcff'];
       const isUlt=c.attackType==='ultimate', size=isUlt?1.8:c.attackType==='special'?1.1:.5;
       ctx.save();ctx.globalAlpha=(1-t)*.9;
-      if(isUlt){ctx.shadowColor=color;ctx.shadowBlur=7;}
+      if(isUlt&&!reduced()){ctx.shadowColor=color;ctx.shadowBlur=4;}
       const burst=clamp((elapsed(c)-.18)/(c.duration-.18));
       emitter(ctx,type,color,p.x,p.y-19,burst,size,c.id.charCodeAt(0));
       if(isUlt) {
         // Vertical ribbons erupt from the HERO, visible to every client.
-        for(let i=0;i<9;i++) {
+        for(let i=0;i<(reduced()?0:5);i++) {
           const dx=(i-4)*10, h=(38+(i%3)*19)*Math.sin(Math.PI*Math.min(1,t*1.5));
           pixel(ctx,p.x+dx,p.y+12-h,3,h>0?color:'transparent');
           ctx.fillStyle=color;ctx.globalAlpha=(1-t)*.32;
@@ -206,19 +219,21 @@
     const kind=pending?.kind || record?.kind || e.combatRole;
     const t=pending ? clamp((record?.progress || 0)+(performance.now()-(record?.at || performance.now()))/1000*(1-(record?.progress || 0))/Math.max(.01,record?.remaining || 1)) : age<550?clamp(age/550):basic;
     const a=Math.atan2(record?.facing?.facingY ?? e.facingY ?? 1,record?.facing?.facingX ?? e.facingX ?? 0);
-    const type=kind==='support'?'heal':['charge','charger','ambusher'].includes(kind)?'wind':['slam','bruiser','draco_melee','rocks'].includes(kind)?'earth':e.affinity==='Fire'?'fire':e.affinity==='Ice'?'ice':e.affinity==='Storm'?'lightning':e.affinity==='Poison'?'vine':'arcane';
-    const color=kind==='support'?'#a4efb5':e.color;
+    const healing=kind==='support' && Boolean(pending?.ally || record?.healing);
+    const type=healing?'heal':['charge','charger','ambusher'].includes(kind)?'wind':['slam','bruiser','draco_melee','rocks'].includes(kind)?'earth':e.affinity==='Fire'?'fire':e.affinity==='Ice'?'ice':e.affinity==='Storm'?'lightning':['Poison','Nature'].includes(e.affinity)?'vine':'arcane';
+    const color=healing?'#a4efb5':e.color;
     ctx.save();ctx.globalAlpha=pending ? .7 : 1-t;
     const reach=e.kind==='dragon'?46:e.kind==='draco'?26:18;
     const x=e.x+Math.cos(a)*reach,y=e.y-(e.kind==='dragon'?53:19)+Math.sin(a)*reach*.65;
     if(pending) {
       const radius=4+t*13;
-      ring(ctx,kind==='support'?e.x:x,kind==='support'?e.y+13:y,radius,color,.9,t);
+      ring(ctx,healing?e.x:x,healing?e.y+13:y,radius,color,.9,t);
       if(type==='wind'||type==='earth')ring(ctx,e.x,e.y+13,13+t*18,color,.6,t);
       // Breath/volley energy concentrates at the committed mouth/weapon facing.
-      for(let i=0;i<6;i++){const b=i*Math.PI/3+performance.now()/180;pixel(ctx,x+Math.cos(b)*radius,y+Math.sin(b)*radius*.7,2+t*2,color);}
+      const count=Math.min(reduced()?2:4,particleBudget);particleBudget-=count;
+      for(let i=0;i<count;i++){const b=i*Math.PI/2+(reduced()?0:performance.now()/220);pixel(ctx,x+Math.cos(b)*radius,y+Math.sin(b)*radius*.7,2+t*2,color);}
     } else emitter(ctx,type,color,x,y,t,e.boss?1.1:.6);
     ctx.restore();
   }
-  window.GauntletAbilityAnimations={observe,hero,motion,ground,front,summonGround,summonScale,summonFront,enemy};
+  window.GauntletAbilityAnimations={observe,hero,motion,ground,front,summonGround,summonScale,summonFront,enemy,beginFrame};
 })();

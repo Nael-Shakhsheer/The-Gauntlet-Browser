@@ -174,7 +174,12 @@ class CampaignTests(unittest.TestCase):
         world._present_routes(room)
         world._enter_fork(room)
         p.update(x=28, y=170)
-        self.steps(world, 300)
+        # Stop at arrival; random companion combat can clear stage 2 if this
+        # navigation test keeps simulating another fifteen seconds afterward.
+        for _ in range(300):
+            self.steps(world, 1)
+            if room['stage'] == 2:
+                break
         self.assertEqual(room["stage"], 2)
         self.assertEqual(room["phase"], "combat")
         room.update(phase="chest", chest={"x": bot["x"], "y": bot["y"], "decisions": {p["id"]: "opened"}, "runesAwarded": True})
@@ -194,7 +199,12 @@ class CampaignTests(unittest.TestCase):
             self.assertIsNone(bot["aiRoute"])
             self.assertEqual(bot["aiPathIndex"], 0)
             p.update(x=28, y=170)
-            self.steps(world, 280)
+            # This checks navigation at arrival, before random companion combat
+            # can also complete the destination stage.
+            for _ in range(280):
+                self.steps(world, 1)
+                if room['stage'] == expected:
+                    break
             self.assertEqual(room["stage"], expected)
             self.assertEqual(room["phase"], "combat")
 
@@ -256,6 +266,7 @@ class CampaignTests(unittest.TestCase):
 
     def test_enemy_projectiles_turn_gently_then_stop_tracking(self):
         world, room, p = self.party()
+        room['environment'] = {}  # Isolate steering from random cover/line-of-sight loss.
         p.update(x=600, y=250)
         world._launch_projectile(room, side="enemy", owner_id="enemy", target_id=p["id"], x=100, y=250,
                                  damage=10, color="#fff", attack_class="Wizard", speed=200)

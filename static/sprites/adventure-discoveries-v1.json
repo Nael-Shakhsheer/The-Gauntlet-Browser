@@ -1,0 +1,36 @@
+{
+  "frames": 1,
+  "rows": [
+    {
+      "width": 132,
+      "row": 0,
+      "id": "road_wagon",
+      "height": 111
+    },
+    {
+      "width": 82,
+      "row": 1,
+      "id": "leaf_waymarker",
+      "height": 80
+    },
+    {
+      "width": 158,
+      "row": 2,
+      "id": "burned_watch",
+      "height": 146
+    },
+    {
+      "width": 59,
+      "row": 3,
+      "id": "moss_cache",
+      "height": 41
+    }
+  ],
+  "anchor": [
+    96,
+    144
+  ],
+  "source": "art/adventure-sprites/source/discoveries-v1.png",
+  "cell": 192,
+  "columns": 1
+}

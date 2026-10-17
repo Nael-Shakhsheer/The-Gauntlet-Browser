@@ -6,11 +6,20 @@ import os
 import socket
 import threading
 import time
+import secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import build_info
 from urllib.parse import parse_qs, urlparse
 
 from game import WORLD
+from adventure_recovery import Recovery,proof_matches
+RECOVERY=Recovery(WORLD)
+
+def recovery():
+    global RECOVERY
+    if RECOVERY.world is not WORLD:RECOVERY=Recovery(WORLD)
+    return RECOVERY
 
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "static"
@@ -37,7 +46,7 @@ class Handler(BaseHTTPRequestHandler):
         # failures and other requests visible without spending CPU on that flood.
         if str(code) == '200' and urlparse(self.path).path in ('/api/state', '/api/action', '/healthz'):
             return
-        super().log_request(code, size)
+        self.log_message('"%s %s %s" %s %s',self.command,urlparse(self.path).path,self.request_version,str(code),str(size))
 
     def _send(self, status: int, body: dict | str | bytes, content_type: str = "application/json; charset=utf-8") -> None:
         raw = body if isinstance(body, bytes) else body.encode("utf-8") if isinstance(body, str) else json.dumps(body).encode("utf-8")
@@ -49,14 +58,31 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def _body(self) -> dict:
-        size = min(int(self.headers.get("Content-Length", "0")), 16_384)
-        return json.loads(self.rfile.read(size) or b"{}")
+        size = int(self.headers.get('Content-Length','0'))
+        limit=2_000_000 if self.path=='/api/adventure/import-preview' else 16_384
+        if not 0<=size<=limit:raise ValueError('Request too large.')
+        payload=json.loads(self.rfile.read(size) or b"{}")
+        if not isinstance(payload,dict):raise ValueError('Request body must be an object.')
+        return payload
 
     def _error(self, message: str, status: int = 400) -> None:
         self._send(status, {"error": message})
 
+    def _authorize_session(self,code,pid,proof=None):
+        room=WORLD.rooms.get(str(code).upper());p=(room or {}).get('players',{}).get(pid)
+        if p and p.get('strictSession') and not proof_matches(proof,p.get('recoveryProof')):
+            raise ValueError('Private character recovery proof required. Use Continue or your private recovery link.')
+
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
+        if parsed.path=='/api/build':return self._send(200,build_info.view())
+        if parsed.path=='/api/diagnostics':
+            query=parse_qs(parsed.query)
+            try:self._authorize_session(query.get('room',[''])[0],query.get('player',[''])[0],self.headers.get('X-Gauntlet-Recovery'))
+            except ValueError as error:return self._error(str(error),403)
+            member=WORLD.rooms.get(query.get('room',[''])[0].upper(),{}).get('players',{}).get(query.get('player',[''])[0])
+            if not member:return self._error('Room or player not found.',404)
+            return self._send(200,dict(build=build_info.view(),metrics=WORLD.metrics.view()))
         if parsed.path == "/healthz":
             healthy = SIMULATION_LAST_TICK is None or time.monotonic()-SIMULATION_LAST_TICK < 5
             return self._send(200 if healthy else 503, {"ok": healthy})
@@ -70,10 +96,17 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/":
             return self._file("index.html", "text/html; charset=utf-8")
-        if parsed.path in ("/app.js", "/audio.js", "/coordination.js", "/progression.js", "/town-sprites.js", "/combat-environment.js", "/ability-animations.js", "/projectile-animations.js", "/movement.js", "/equipment-comparison.js", "/style.css"):
+        if parsed.path in ('/input-transport.js','/adventure-skills.js','/front-menu.js','/opening.js','/chapter.js','/state-cache.js','/ascended-sprites.js','/region-sprites.js','/combat-visuals.js'):
+            return self._file(parsed.path.lstrip('/'),'text/javascript; charset=utf-8')
+        if parsed.path in ("/music.js", "/audio-routing.js", "/diagnostics.js", "/app.js", "/recovery.js", "/feedback.js", "/adventure.js", "/adventure-sprites.js", "/dungeon-sprites.js", "/camera.js", "/world-scenery.js", "/audio.js", "/coordination.js", "/progression.js", "/town-sprites.js", "/combat-environment.js", "/ability-animations.js", "/projectile-animations.js", "/movement.js", "/equipment-comparison.js", "/style.css"):
             name = parsed.path.lstrip("/")
             mime = "text/javascript; charset=utf-8" if name.endswith(".js") else "text/css; charset=utf-8"
             return self._file(name, mime)
+        if parsed.path.startswith('/music/'):
+            name=parsed.path.lstrip('/');asset=(STATIC/name).resolve()
+            if not asset.is_relative_to((STATIC/'music').resolve()) or asset.suffix.lower() not in ('.wav','.json'):
+                return self._error('Not found.',404)
+            return self._file(name,'audio/wav' if asset.suffix.lower()=='.wav' else 'application/json')
         if parsed.path.startswith("/audio/"):
             name = parsed.path.lstrip("/")
             asset = (STATIC / name).resolve()
@@ -90,11 +123,18 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path in ("/api/state", "/api/stats"):
             query = parse_qs(parsed.query)
             try:
-                read = WORLD.state if parsed.path == "/api/state" else WORLD.run_stats
-                state = read(query.get("room", [""])[0], query.get("player", [""])[0])
+                self._authorize_session(query.get('room',[''])[0],query.get('player',[''])[0],self.headers.get('X-Gauntlet-Recovery'))
+                args=(query.get('room',[''])[0],query.get('player',[''])[0])
+                if parsed.path=='/api/state':
+                    state=WORLD.state(*args,include_catalog=query.get('catalog',[''])[0]!=build_info.SERVER,
+                        known_skill_revision=query.get('heroSkills',[''])[0] or None)
+                    state['catalogVersion']=build_info.SERVER
+                else:state=WORLD.run_stats(*args)
             except ValueError as error:
                 return self._error(str(error), 404)
             return self._send(200, state)
+        if parsed.path=='/api/cloud/config':
+            return self._send(200,WORLD.storage.cloud.public_config() if WORLD.storage else {'configured':False})
         return self._error("Not found.", 404)
 
     def _file(self, name: str, mime: str) -> None:
@@ -109,15 +149,50 @@ class Handler(BaseHTTPRequestHandler):
         except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
             return self._error("Invalid request body.")
         try:
+            if self.path=='/api/new-run':
+                code,pid=__import__('session_flow').create(WORLD,payload,build_info.INSTANCE)
+                return self._send(201,recovery().session(code,pid))
+            if self.path=='/api/party/join':
+                code,pid=__import__('session_flow').join(WORLD,payload)
+                return self._send(201,recovery().session(code,pid))
             if self.path == "/api/rooms":
                 name = str(payload.get("name", "Player")).strip()[:18] or "Player"
                 code, player_id = WORLD.create_room(name)
-                return self._send(201, {"room": code, "player": player_id})
+                WORLD.rooms[code]['players'][player_id]['strictSession']=True
+                return self._send(201, recovery().session(code,player_id))
             if self.path == "/api/join":
                 name = str(payload.get("name", "Player")).strip()[:18] or "Player"
                 code, player_id = WORLD.join_room(str(payload.get("room", "")), name)
-                return self._send(201, {"room": code, "player": player_id})
+                WORLD.rooms[code]['players'][player_id]['strictSession']=True
+                return self._send(201, recovery().session(code,player_id))
+            if self.path in ('/api/adventure/summary','/api/adventure/export'):
+                self._authorize_session(payload.get('room'),payload.get('player'),payload.get('recovery') or self.headers.get('X-Gauntlet-Recovery'))
+                return self._send(200,recovery().read(payload,export=self.path.endswith('export')))
+            if self.path=='/api/adventure/import-preview':return self._send(200,recovery().preview(payload.get('document')))
+            if self.path=='/api/adventure/import':return self._send(201,recovery().commit(payload))
+            if self.path in ('/api/adventure/slots','/api/adventure/backup-preview'):
+                return self._send(200,recovery().slots(payload,preview=self.path.endswith('backup-preview')))
+            if self.path=='/api/adventure/invite':return self._send(200,recovery().guest_invite(payload))
+            if self.path=='/api/adventure/roster':
+                self._authorize_session(payload.get('room'),payload.get('player'),payload.get('recovery') or self.headers.get('X-Gauntlet-Recovery'))
+                with WORLD.lock:
+                    room,p=WORLD.adventure_access(payload.get('room',''),payload.get('player',''))
+                    # Public character IDs are distinct from private recovery proofs.
+                    return self._send(200,[dict(characterId=c['characterId'],name=c['name'],hero=c['class']) for c in room['players'].values() if not c.get('bot')])
+            if self.path.startswith('/api/cloud/'):
+                if not WORLD.storage:raise ValueError('Cloud storage is not configured.')
+                cloud=WORLD.storage.cloud;token=self.headers.get('Authorization','').removeprefix('Bearer ')
+                if self.path=='/api/cloud/claim':result=cloud.claim(WORLD,payload,token)
+                elif self.path=='/api/cloud/worlds':result=cloud.worlds(token)
+                elif self.path=='/api/cloud/preview':
+                    actor=cloud.actor(token);wid=str(__import__('uuid').UUID(str(payload.get('worldId',''))))
+                    record=cloud.rpc('gauntlet_load_world',p_actor=actor,p_world=wid)
+                    result=recovery().preview(record['record']['backup'])
+                elif self.path=='/api/cloud/load':result=cloud.load(recovery(),token,payload.get('worldId',''),as_copy=payload.get('copy') is True)
+                else:raise ValueError('Unknown cloud operation.')
+                return self._send(200,result)
             if self.path == "/api/action":
+                self._authorize_session(payload.get('room'),payload.get('player'),payload.get('recovery') or self.headers.get('X-Gauntlet-Recovery'))
                 WORLD.action(str(payload.get("room", "")), str(payload.get("player", "")), payload)
                 return self._send(200, {"ok": True})
         except ValueError as error:
@@ -134,16 +209,18 @@ class Handler(BaseHTTPRequestHandler):
 def _simulation_loop(stop_event=None) -> None:
     global SIMULATION_LAST_TICK
     SIMULATION_LAST_TICK = time.monotonic()
+    deadline=time.monotonic()
     while stop_event is None or not stop_event.is_set():
         try:
             WORLD.tick()
             SIMULATION_LAST_TICK = time.monotonic()
         except Exception:
             logging.exception("Unexpected simulation loop failure; retrying next tick")
-        if stop_event is None:
-            time.sleep(0.05)
-        else:
-            stop_event.wait(0.05)
+        deadline+=.05
+        if deadline<time.monotonic()-.1:deadline=time.monotonic()
+        wait=max(0,deadline-time.monotonic())
+        if stop_event is None:time.sleep(wait)
+        else:stop_event.wait(wait)
 
 
 def main() -> None:

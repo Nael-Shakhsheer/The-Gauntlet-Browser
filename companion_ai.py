@@ -32,10 +32,11 @@ def defensive_move(room, bot, enemy, light_range, now):
     if bot.get("reviving") and not danger: return False
     side = -bot.get("aiDodgeSide",1)
     candidates = []
+    width, height = terrain.dimensions(room)
     for i in range(8):
         angle = i*math.pi/4
         x,y = bot["x"]+math.cos(angle)*110, bot["y"]+math.sin(angle)*110
-        if not (35<x<925 and 35<y<505) or not terrain.walkable(room,x,y): continue
+        if not (35<x<width-35 and 35<y<height-35) or not terrain.walkable(room,x,y): continue
         if not terrain.line_clear(room,bot,{"x":x,"y":y}): continue
         score = min(80,min([math.hypot(x-z["x"],y-z["y"])-z["radius"] for z in zones],default=80))
         for shot in shots:
@@ -76,6 +77,7 @@ def equip_loot(world, room, bot):
 
 
 def tick(world, room, now, ability_sets):
+    width, height = terrain.dimensions(room)
     humans = [p for p in world._active_players(room) if not p.get("bot")]
     if not humans:
         return
@@ -88,7 +90,11 @@ def tick(world, room, now, ability_sets):
         phase = room["phase"]
         if phase == "combat":
             downed = [p for p in world._active_players(room) if p["status"] == "downed"]
-            enemy = min(room["enemies"], key=lambda e: math.hypot(e["x"]-bot["x"], e["y"]-bot["y"]), default=None)
+            foes = room['enemies']
+            if room.get('mode') == 'adventure':
+                foes = [e for e in foes if e.get('boss') or e.get('aggro') or any(
+                    math.hypot(e['x']-p['x'],e['y']-p['y'])<155 for p in humans)]
+            enemy = min(foes, key=lambda e: math.hypot(e["x"]-bot["x"], e["y"]-bot["y"]), default=None)
             if downed:
                 rescue = min(downed, key=lambda p: math.hypot(p["x"]-bot["x"], p["y"]-bot["y"]))
                 if math.hypot(rescue["x"]-bot["x"], rescue["y"]-bot["y"]) <= 55:
@@ -117,15 +123,16 @@ def tick(world, room, now, ability_sets):
                 length = max(1,math.hypot(dx,dy))
                 for side in (bot.get("aiDodgeSide",1),-bot.get("aiDodgeSide",1)):
                     point = (bot["x"]-dy/length*80*side,bot["y"]+dx/length*80*side)
-                    if terrain.walkable(room,*point) and 28<point[0]<932 and 30<point[1]<510:
+                    if terrain.walkable(room,*point) and 28<point[0]<width-28 and 30<point[1]<height-30:
                         bot["aiMoveAt"] = 0; move(bot,point,now); break
             if not room.get("waveStartsAt") and now >= bot.get("aiCastAt", 0):
                 bot["aiCastAt"] = now+.2
                 for index, aid in enumerate(bot["abilities"]):
                     if room["phase"] != "combat":
                         break
-                    ability = next(a for a in ability_sets[bot["class"]] if a[0] == aid)
-                    if ability[3] == "team_heal" and all(p["hp"] >= p["maxHp"]*.8 for p in world._active_players(room) if p["status"] == "alive"):
+                    ability = __import__('hero_skills').catalog(bot).get(aid) if bot.get('heroProgress') else None
+                    kind=ability['kind'] if ability else next(a[3] for a in ability_sets[bot['class']] if a[0]==aid)
+                    if kind in ('team_heal','triage') and all(p["hp"] >= p["maxHp"]*.8 for p in world._active_players(room) if p["status"] == "alive"):
                         continue
                     if index == 0 and downed:
                         continue
@@ -136,6 +143,8 @@ def tick(world, room, now, ability_sets):
                 for item in list(bot["inventory"]):
                     if (item["kind"] == "heal" and bot["hp"] < bot["maxHp"]*.5) or (item["kind"] == "mana" and bot["mana"] < 25):
                         world._action(room["code"], bot["id"], {"action": "useItem", "item": item["id"]})
+                        if room.get('mode') == 'adventure':
+                            world._save_checkpoint(room)
                         break
         elif phase == "peace":
             move(bot, (480, 30) if all(p.get("questAccepted") for p in humans) else (leader["x"]+35, leader["y"]), now)
@@ -157,6 +166,9 @@ def tick(world, room, now, ability_sets):
             else:
                 move(bot, (leader["x"], leader["y"]), now)
         elif phase == "town":
+            if room.get('mode') == 'adventure':
+                move(bot, (leader['x']+30, leader['y']), now)
+                continue
             ready = all(p.get("townExitReady") for p in humans)
             bot["townExitReady"] = False
             move(bot, (480, 490) if ready else (480, 460), now)
@@ -174,6 +186,9 @@ def tick(world, room, now, ability_sets):
             else:
                 bot["dx"], bot["dy"] = 0, 0
         elif phase == "puzzle":
+            if room.get('mode') == 'adventure':
+                move(bot, (leader['x']+30, leader['y']), now)
+                continue
             puzzle = room["puzzle"]
             own = puzzle["rooms"][bot["id"]]
             if not own["totemSeen"]:

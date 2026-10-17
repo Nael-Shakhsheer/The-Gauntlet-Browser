@@ -1,5 +1,6 @@
 """Recognizable family roles with committed windups and recovery."""
 import math
+import enemy_awareness
 import time
 import combat_environment as terrain
 
@@ -19,6 +20,7 @@ def assign(room):
 
 
 def approach(room,e,target,now,dt,stop):
+    width, height = terrain.dimensions(room)
     if now >= e.get("moveDecisionAt",0):
         dx,dy = target["x"]-e["x"],target["y"]-e["y"]
         distance = max(.001,math.hypot(dx,dy))
@@ -27,7 +29,7 @@ def approach(room,e,target,now,dt,stop):
         if e["combatRole"]=="ambusher" and distance > 130:
             side = 1 if sum(map(ord,e["id"]))%2 else -1
             gx,gy = target["x"]-dy/distance*90*side,target["y"]+dx/distance*90*side
-        e.update(moveDecisionAt=now+.8,moveGoal=[max(28,min(932,gx)),max(30,min(510,gy))])
+        e.update(moveDecisionAt=now+.8,moveGoal=[max(28,min(width-28,gx)),max(30,min(height-30,gy))])
     gx,gy = e.get("moveGoal",[e["x"],e["y"]])
     dx,dy = gx-e["x"],gy-e["y"]
     distance = max(.001,math.hypot(dx,dy))
@@ -71,7 +73,7 @@ def tick(world,room,e,target,now,dt):
             e.update(roleVx=dx/distance*speed,roleVy=dy/distance*speed,roleChargeUntil=now+duration,roleHits=[],roleRecoverUntil=now+duration+.9)
         elif role=="support" and pending.get("ally"):
             ally = next((a for a in room["enemies"] if a["id"]==pending["ally"]),None)
-            if ally and math.hypot(ally["x"]-e["x"],ally["y"]-e["y"])<250:
+            if ally and math.hypot(ally["x"]-e["x"],ally["y"]-e["y"])<250 and terrain.line_clear(room,e,ally):
                 ally["hp"] = min(ally["maxHp"],ally["hp"]+max(4,round(ally["maxHp"]*.08)))
                 world._add_effect(room,"heal",ally["x"],ally["y"],"#94e5aa",duration=.6)
             e["roleRecoverUntil"] = now+.8
@@ -87,6 +89,7 @@ def tick(world,room,e,target,now,dt):
                     world._damage_player(room,e,actor,e["damage"])
             e["roleRecoverUntil"] = now+1.0
         return
+    if not e.get("allowAcquire",True):return
     distance = math.hypot(target["x"]-e["x"],target["y"]-e["y"])
     clear = terrain.line_clear(room,e,target)
     reach = {"ranged":260,"support":220,"charger":290,"ambusher":175,"bruiser":65}[role]
@@ -97,7 +100,7 @@ def tick(world,room,e,target,now,dt):
     approach(room,e,target,now,dt,stop)
     e["moving"] = math.hypot(e["x"]-old_x,e["y"]-old_y)>.1
     if now < e.get("roleReadyAt",0): return
-    wounded = [a for a in room["enemies"] if a is not e and a["hp"]<a["maxHp"]*.9 and math.hypot(a["x"]-e["x"],a["y"]-e["y"])<230]
+    wounded = [a for a in room["enemies"] if a is not e and a["hp"]<a["maxHp"]*.9 and math.hypot(a["x"]-e["x"],a["y"]-e["y"])<230 and terrain.line_clear(room,e,a)]
     if (distance<=reach and clear) or (role=="support" and wounded):
         delay = .8 if role in ("charger","support") else .6
         e["roleAttack"] = {"kind":role,"x":target["x"],"y":target["y"],"targetId":target["id"],"startedAt":now,"releaseAt":now+delay}
@@ -129,15 +132,17 @@ def tick_draco(world, room, e, target, now, dt):
             room["projectiles"][-1].update(vx=math.cos(angle)*300, vy=math.sin(angle)*300)
             e["dracoNext"] = "draco_melee"
         else:
-            actor = next((p for p in world._combat_targets(room) if p["id"] == pending["targetId"] and p["status"] == "alive"), None)
+            actor = next((p for p in world._combat_targets(room) if p["status"] == "alive" and math.hypot(p["x"]-pending["x"],p["y"]-pending["y"])<=30), None)
             if actor and math.hypot(actor["x"]-e["x"], actor["y"]-e["y"]) <= 55 and terrain.line_clear(room,e,actor):
                 world._damage_player(room,e,actor,e["damage"])
                 world._add_effect(room,"enemy_attack",e["x"],e["y"],e["color"],actor["x"],actor["y"],.2,attack_class="Knight")
             e["dracoNext"] = "draco_projectile"
         e.update(roleRecoverUntil=now+.25, moveDecisionAt=0)
         return
+    if not e.get("allowAcquire",True):return
     kind = e.get("dracoNext", "draco_projectile")
     reach = 245 if kind == "draco_projectile" else 55
+    if not e.get("allowAcquire",True):return
     distance = math.hypot(target["x"]-e["x"],target["y"]-e["y"])
     clear = terrain.line_clear(room,e,target)
     old_x, old_y = e["x"], e["y"]

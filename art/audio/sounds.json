@@ -1,25 +1,2931 @@
 {
-  "generator": "Bfxr 1.0.4 DSP, explicit parameters with seeded noise",
+  "generator": "Retained Bfxr 1.0.4 DSP; explicit recipes, seeded noise, recipe filters and edge fades",
   "sounds": {
-    "blade": {"seed":101,"params":{"waveType":3,"frequency_start":0.5,"frequency_slide":-0.26,"sustainTime":0.02,"decayTime":0.22,"hpFilterCutoff":0.2,"lpFilterCutoff":0.65}},
-    "bow": {"seed":102,"params":{"waveType":4,"frequency_start":0.48,"frequency_slide":-0.24,"sustainTime":0.02,"decayTime":0.18}},
-    "magic": {"seed":103,"params":{"waveType":4,"frequency_start":0.43,"frequency_slide":-0.13,"sustainTime":0.07,"decayTime":0.24,"vibratoDepth":0.1,"vibratoSpeed":0.35}},
-    "potion": {"seed":104,"params":{"waveType":2,"frequency_start":0.28,"frequency_slide":0.1,"sustainTime":0.03,"decayTime":0.24,"pitch_jump_amount":0.25,"pitch_jump_onset_percent":0.3}},
-    "bard": {"seed":105,"params":{"waveType":4,"frequency_start":0.42,"sustainTime":0.05,"decayTime":0.3,"pitch_jump_amount":0.18,"pitch_jump_onset_percent":0.3,"pitch_jump_2_amount":0.13,"pitch_jump_onset2_percent":0.6}},
-    "special": {"seed":106,"params":{"waveType":4,"frequency_start":0.25,"frequency_slide":0.13,"sustainTime":0.1,"decayTime":0.36,"vibratoDepth":0.08,"vibratoSpeed":0.25}},
-    "ultimate": {"seed":107,"params":{"waveType":4,"frequency_start":0.23,"frequency_slide":0.12,"attackTime":0.08,"sustainTime":0.16,"decayTime":0.48,"pitch_jump_amount":0.25,"pitch_jump_onset_percent":0.4}},
-    "dash": {"seed":108,"params":{"waveType":3,"frequency_start":0.35,"frequency_slide":0.18,"attackTime":0.025,"sustainTime":0.03,"decayTime":0.23,"hpFilterCutoff":0.1,"lpFilterCutoff":0.5}},
-    "hit": {"seed":109,"params":{"waveType":3,"frequency_start":0.18,"frequency_slide":-0.2,"sustainTime":0.02,"decayTime":0.19,"lpFilterCutoff":0.4}},
-    "hurt": {"seed":110,"params":{"waveType":0,"frequency_start":0.23,"frequency_slide":-0.18,"sustainTime":0.04,"decayTime":0.22,"squareDuty":0.45,"lpFilterCutoff":0.5}},
-    "heal": {"seed":111,"params":{"waveType":2,"frequency_start":0.4,"frequency_slide":0.08,"attackTime":0.04,"sustainTime":0.08,"decayTime":0.38,"pitch_jump_amount":0.2,"pitch_jump_onset_percent":0.4}},
-    "loot": {"seed":112,"params":{"waveType":4,"frequency_start":0.49,"sustainTime":0.055,"decayTime":0.34,"pitch_jump_amount":0.25,"pitch_jump_onset_percent":0.25,"pitch_jump_2_amount":0.2,"pitch_jump_onset2_percent":0.55}},
-    "select": {"seed":113,"params":{"waveType":2,"frequency_start":0.46,"sustainTime":0.01,"decayTime":0.13}},
-    "interact": {"seed":114,"params":{"waveType":4,"frequency_start":0.28,"sustainTime":0.025,"decayTime":0.2,"pitch_jump_amount":0.2,"pitch_jump_onset_percent":0.4}},
-    "down": {"seed":115,"params":{"waveType":4,"frequency_start":0.32,"frequency_slide":-0.14,"sustainTime":0.08,"decayTime":0.4,"pitch_jump_amount":-0.3,"pitch_jump_onset_percent":0.35}},
-    "revive": {"seed":116,"params":{"waveType":2,"frequency_start":0.22,"frequency_slide":0.12,"sustainTime":0.1,"decayTime":0.45,"pitch_jump_amount":0.3,"pitch_jump_onset_percent":0.5}},
-    "clear": {"seed":117,"params":{"waveType":4,"frequency_start":0.35,"sustainTime":0.08,"decayTime":0.45,"pitch_jump_amount":0.2,"pitch_jump_onset_percent":0.28,"pitch_jump_2_amount":0.25,"pitch_jump_onset2_percent":0.6}},
-    "warning": {"seed":118,"params":{"waveType":4,"frequency_start":0.19,"sustainTime":0.05,"decayTime":0.28,"pitch_jump_amount":-0.2,"pitch_jump_onset_percent":0.45}},
-    "impact": {"seed":119,"params":{"waveType":3,"frequency_start":0.12,"frequency_slide":-0.12,"sustainTime":0.07,"decayTime":0.33,"lpFilterCutoff":0.35}},
-    "curse": {"seed":120,"params":{"waveType":0,"frequency_start":0.25,"frequency_slide":-0.1,"sustainTime":0.06,"decayTime":0.34,"squareDuty":0.6,"lpFilterCutoff":0.5,"pitch_jump_amount":-0.3,"pitch_jump_onset_percent":0.3}}
-  }
+    "blade": {
+      "seed": 101,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.5,
+        "frequency_slide": -0.26,
+        "sustainTime": 0.02,
+        "decayTime": 0.22,
+        "hpFilterCutoff": 0.2,
+        "lpFilterCutoff": 0.65
+      }
+    },
+    "bow": {
+      "seed": 102,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.48,
+        "frequency_slide": -0.24,
+        "sustainTime": 0.02,
+        "decayTime": 0.18
+      }
+    },
+    "magic": {
+      "seed": 103,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.43,
+        "frequency_slide": -0.13,
+        "sustainTime": 0.07,
+        "decayTime": 0.24,
+        "vibratoDepth": 0.1,
+        "vibratoSpeed": 0.35
+      }
+    },
+    "potion": {
+      "seed": 104,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.28,
+        "frequency_slide": 0.1,
+        "sustainTime": 0.03,
+        "decayTime": 0.24,
+        "pitch_jump_amount": 0.25,
+        "pitch_jump_onset_percent": 0.3
+      }
+    },
+    "bard": {
+      "seed": 105,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.42,
+        "sustainTime": 0.05,
+        "decayTime": 0.3,
+        "pitch_jump_amount": 0.18,
+        "pitch_jump_onset_percent": 0.3,
+        "pitch_jump_2_amount": 0.13,
+        "pitch_jump_onset2_percent": 0.6
+      }
+    },
+    "special": {
+      "seed": 106,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.25,
+        "frequency_slide": 0.13,
+        "sustainTime": 0.1,
+        "decayTime": 0.36,
+        "vibratoDepth": 0.08,
+        "vibratoSpeed": 0.25
+      }
+    },
+    "ultimate": {
+      "seed": 107,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.23,
+        "frequency_slide": 0.12,
+        "attackTime": 0.08,
+        "sustainTime": 0.16,
+        "decayTime": 0.48,
+        "pitch_jump_amount": 0.25,
+        "pitch_jump_onset_percent": 0.4
+      }
+    },
+    "dash": {
+      "seed": 108,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.35,
+        "frequency_slide": 0.18,
+        "attackTime": 0.025,
+        "sustainTime": 0.03,
+        "decayTime": 0.23,
+        "hpFilterCutoff": 0.1,
+        "lpFilterCutoff": 0.5
+      }
+    },
+    "hit": {
+      "seed": 109,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.18,
+        "frequency_slide": -0.2,
+        "sustainTime": 0.02,
+        "decayTime": 0.19,
+        "lpFilterCutoff": 0.4
+      }
+    },
+    "hurt": {
+      "seed": 110,
+      "params": {
+        "waveType": 0,
+        "frequency_start": 0.23,
+        "frequency_slide": -0.18,
+        "sustainTime": 0.04,
+        "decayTime": 0.22,
+        "squareDuty": 0.45,
+        "lpFilterCutoff": 0.5
+      }
+    },
+    "heal": {
+      "seed": 111,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.4,
+        "frequency_slide": 0.08,
+        "attackTime": 0.04,
+        "sustainTime": 0.08,
+        "decayTime": 0.38,
+        "pitch_jump_amount": 0.2,
+        "pitch_jump_onset_percent": 0.4
+      }
+    },
+    "loot": {
+      "seed": 112,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.49,
+        "sustainTime": 0.055,
+        "decayTime": 0.34,
+        "pitch_jump_amount": 0.25,
+        "pitch_jump_onset_percent": 0.25,
+        "pitch_jump_2_amount": 0.2,
+        "pitch_jump_onset2_percent": 0.55
+      }
+    },
+    "select": {
+      "seed": 113,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.46,
+        "sustainTime": 0.01,
+        "decayTime": 0.13
+      }
+    },
+    "interact": {
+      "seed": 114,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.28,
+        "sustainTime": 0.025,
+        "decayTime": 0.2,
+        "pitch_jump_amount": 0.2,
+        "pitch_jump_onset_percent": 0.4
+      }
+    },
+    "down": {
+      "seed": 115,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.32,
+        "frequency_slide": -0.14,
+        "sustainTime": 0.08,
+        "decayTime": 0.4,
+        "pitch_jump_amount": -0.3,
+        "pitch_jump_onset_percent": 0.35
+      }
+    },
+    "revive": {
+      "seed": 116,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.22,
+        "frequency_slide": 0.12,
+        "sustainTime": 0.1,
+        "decayTime": 0.45,
+        "pitch_jump_amount": 0.3,
+        "pitch_jump_onset_percent": 0.5
+      }
+    },
+    "clear": {
+      "seed": 117,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.35,
+        "sustainTime": 0.08,
+        "decayTime": 0.45,
+        "pitch_jump_amount": 0.2,
+        "pitch_jump_onset_percent": 0.28,
+        "pitch_jump_2_amount": 0.25,
+        "pitch_jump_onset2_percent": 0.6
+      }
+    },
+    "warning": {
+      "seed": 118,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.19,
+        "sustainTime": 0.05,
+        "decayTime": 0.28,
+        "pitch_jump_amount": -0.2,
+        "pitch_jump_onset_percent": 0.45
+      }
+    },
+    "impact": {
+      "seed": 119,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.12,
+        "frequency_slide": -0.12,
+        "sustainTime": 0.07,
+        "decayTime": 0.33,
+        "lpFilterCutoff": 0.35
+      }
+    },
+    "curse": {
+      "seed": 120,
+      "params": {
+        "waveType": 0,
+        "frequency_start": 0.25,
+        "frequency_slide": -0.1,
+        "sustainTime": 0.06,
+        "decayTime": 0.34,
+        "squareDuty": 0.6,
+        "lpFilterCutoff": 0.5,
+        "pitch_jump_amount": -0.3,
+        "pitch_jump_onset_percent": 0.3
+      }
+    },
+    "knight-light": {
+      "seed": 201,
+      "params": {
+        "waveType": 0,
+        "squareDuty": 0.36,
+        "frequency_start": 0.19,
+        "frequency_slide": -0.09,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.025,
+        "decayTime": 0.22,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "knight light family"
+    },
+    "knight-light-1": {
+      "seed": 202,
+      "params": {
+        "waveType": 0,
+        "squareDuty": 0.36,
+        "frequency_start": 0.18525,
+        "frequency_slide": -0.09,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.025,
+        "decayTime": 0.22,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated knight Light variant"
+    },
+    "knight-light-2": {
+      "seed": 203,
+      "params": {
+        "waveType": 0,
+        "squareDuty": 0.36,
+        "frequency_start": 0.19474999999999998,
+        "frequency_slide": -0.09,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.025,
+        "decayTime": 0.22,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated knight Light variant"
+    },
+    "knight-special": {
+      "seed": 204,
+      "params": {
+        "waveType": 0,
+        "squareDuty": 0.36,
+        "frequency_start": 0.19,
+        "frequency_slide": -0.09,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.42,
+      "notes": "knight special family"
+    },
+    "knight-ultimate": {
+      "seed": 205,
+      "params": {
+        "waveType": 0,
+        "squareDuty": 0.36,
+        "frequency_start": 0.19,
+        "frequency_slide": -0.09,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.13,
+        "decayTime": 0.43,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.19,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.48,
+      "notes": "knight ultimate family"
+    },
+    "knight-impact": {
+      "seed": 206,
+      "params": {
+        "waveType": 0,
+        "squareDuty": 0.36,
+        "frequency_start": 0.19,
+        "frequency_slide": -0.16,
+        "lpFilterCutoff": 0.36,
+        "sustainTime": 0.012,
+        "decayTime": 0.12,
+        "attackTime": 0.008,
+        "hpFilterCutoff": 0.035
+      },
+      "peak": 0.2,
+      "notes": "knight confirmed impact"
+    },
+    "rogue-light": {
+      "seed": 207,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.4,
+        "frequency_slide": -0.2,
+        "hpFilterCutoff": 0.12,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.014,
+        "decayTime": 0.15,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "rogue light family"
+    },
+    "rogue-light-1": {
+      "seed": 208,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.39,
+        "frequency_slide": -0.2,
+        "hpFilterCutoff": 0.12,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.014,
+        "decayTime": 0.15,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated rogue Light variant"
+    },
+    "rogue-light-2": {
+      "seed": 209,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.41,
+        "frequency_slide": -0.2,
+        "hpFilterCutoff": 0.12,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.014,
+        "decayTime": 0.15,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated rogue Light variant"
+    },
+    "rogue-special": {
+      "seed": 210,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.4,
+        "frequency_slide": -0.2,
+        "hpFilterCutoff": 0.12,
+        "lpFilterCutoff": 0.52,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.42,
+      "notes": "rogue special family"
+    },
+    "rogue-ultimate": {
+      "seed": 211,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.4,
+        "frequency_slide": -0.2,
+        "hpFilterCutoff": 0.12,
+        "lpFilterCutoff": 0.52,
+        "sustainTime": 0.13,
+        "decayTime": 0.43,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.19,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.48,
+      "notes": "rogue ultimate family"
+    },
+    "rogue-impact": {
+      "seed": 212,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.4,
+        "frequency_slide": -0.16,
+        "hpFilterCutoff": 0.12,
+        "lpFilterCutoff": 0.36,
+        "sustainTime": 0.012,
+        "decayTime": 0.12,
+        "attackTime": 0.008
+      },
+      "peak": 0.2,
+      "notes": "rogue confirmed impact"
+    },
+    "archer-light": {
+      "seed": 213,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.34,
+        "frequency_slide": -0.21,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.02,
+        "decayTime": 0.18,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "archer light family"
+    },
+    "archer-light-1": {
+      "seed": 214,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.3315,
+        "frequency_slide": -0.21,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.02,
+        "decayTime": 0.18,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated archer Light variant"
+    },
+    "archer-light-2": {
+      "seed": 215,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.3485,
+        "frequency_slide": -0.21,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.02,
+        "decayTime": 0.18,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated archer Light variant"
+    },
+    "archer-special": {
+      "seed": 216,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.34,
+        "frequency_slide": -0.21,
+        "lpFilterCutoff": 0.55,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.42,
+      "notes": "archer special family"
+    },
+    "archer-ultimate": {
+      "seed": 217,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.34,
+        "frequency_slide": -0.21,
+        "lpFilterCutoff": 0.55,
+        "sustainTime": 0.13,
+        "decayTime": 0.43,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.19,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.48,
+      "notes": "archer ultimate family"
+    },
+    "archer-impact": {
+      "seed": 218,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.34,
+        "frequency_slide": -0.16,
+        "lpFilterCutoff": 0.36,
+        "sustainTime": 0.012,
+        "decayTime": 0.12,
+        "attackTime": 0.008,
+        "hpFilterCutoff": 0.035
+      },
+      "peak": 0.2,
+      "notes": "archer confirmed impact"
+    },
+    "wizard-light": {
+      "seed": 219,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.31,
+        "frequency_slide": -0.08,
+        "lpFilterCutoff": 0.48,
+        "vibratoDepth": 0.055,
+        "vibratoSpeed": 0.25,
+        "sustainTime": 0.06,
+        "decayTime": 0.24,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "wizard light family"
+    },
+    "wizard-light-1": {
+      "seed": 220,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.30225,
+        "frequency_slide": -0.08,
+        "lpFilterCutoff": 0.48,
+        "vibratoDepth": 0.055,
+        "vibratoSpeed": 0.25,
+        "sustainTime": 0.06,
+        "decayTime": 0.24,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated wizard Light variant"
+    },
+    "wizard-light-2": {
+      "seed": 221,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.31775,
+        "frequency_slide": -0.08,
+        "lpFilterCutoff": 0.48,
+        "vibratoDepth": 0.055,
+        "vibratoSpeed": 0.25,
+        "sustainTime": 0.06,
+        "decayTime": 0.24,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated wizard Light variant"
+    },
+    "wizard-special": {
+      "seed": 222,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.31,
+        "frequency_slide": -0.08,
+        "lpFilterCutoff": 0.62,
+        "vibratoDepth": 0.055,
+        "vibratoSpeed": 0.25,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.42,
+      "notes": "wizard special family"
+    },
+    "wizard-ultimate": {
+      "seed": 223,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.31,
+        "frequency_slide": -0.08,
+        "lpFilterCutoff": 0.62,
+        "vibratoDepth": 0.055,
+        "vibratoSpeed": 0.25,
+        "sustainTime": 0.13,
+        "decayTime": 0.43,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.19,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.48,
+      "notes": "wizard ultimate family"
+    },
+    "wizard-impact": {
+      "seed": 224,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.31,
+        "frequency_slide": -0.16,
+        "lpFilterCutoff": 0.36,
+        "vibratoDepth": 0.055,
+        "vibratoSpeed": 0.25,
+        "sustainTime": 0.012,
+        "decayTime": 0.12,
+        "attackTime": 0.008,
+        "hpFilterCutoff": 0.035
+      },
+      "peak": 0.2,
+      "notes": "wizard confirmed impact"
+    },
+    "druid-light": {
+      "seed": 225,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.25,
+        "frequency_slide": 0.06,
+        "lpFilterCutoff": 0.33,
+        "sustainTime": 0.025,
+        "decayTime": 0.21,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "druid light family"
+    },
+    "druid-light-1": {
+      "seed": 226,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.24375,
+        "frequency_slide": 0.06,
+        "lpFilterCutoff": 0.33,
+        "sustainTime": 0.025,
+        "decayTime": 0.21,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated druid Light variant"
+    },
+    "druid-light-2": {
+      "seed": 227,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.25625,
+        "frequency_slide": 0.06,
+        "lpFilterCutoff": 0.33,
+        "sustainTime": 0.025,
+        "decayTime": 0.21,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated druid Light variant"
+    },
+    "druid-special": {
+      "seed": 228,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.25,
+        "frequency_slide": 0.06,
+        "lpFilterCutoff": 0.33,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.42,
+      "notes": "druid special family"
+    },
+    "druid-ultimate": {
+      "seed": 229,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.25,
+        "frequency_slide": 0.06,
+        "lpFilterCutoff": 0.33,
+        "sustainTime": 0.13,
+        "decayTime": 0.43,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.19,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.48,
+      "notes": "druid ultimate family"
+    },
+    "druid-impact": {
+      "seed": 230,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.25,
+        "frequency_slide": -0.16,
+        "lpFilterCutoff": 0.33,
+        "sustainTime": 0.012,
+        "decayTime": 0.12,
+        "attackTime": 0.008,
+        "hpFilterCutoff": 0.035
+      },
+      "peak": 0.2,
+      "notes": "druid confirmed impact"
+    },
+    "cleric-light": {
+      "seed": 231,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.32,
+        "pitch_jump_amount": 0.16,
+        "pitch_jump_onset_percent": 0.38,
+        "sustainTime": 0.025,
+        "decayTime": 0.2,
+        "lpFilterCutoff": 0.48,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "cleric light family"
+    },
+    "cleric-light-1": {
+      "seed": 232,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.312,
+        "pitch_jump_amount": 0.16,
+        "pitch_jump_onset_percent": 0.38,
+        "sustainTime": 0.025,
+        "decayTime": 0.2,
+        "lpFilterCutoff": 0.48,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated cleric Light variant"
+    },
+    "cleric-light-2": {
+      "seed": 233,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.32799999999999996,
+        "pitch_jump_amount": 0.16,
+        "pitch_jump_onset_percent": 0.38,
+        "sustainTime": 0.025,
+        "decayTime": 0.2,
+        "lpFilterCutoff": 0.48,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated cleric Light variant"
+    },
+    "cleric-special": {
+      "seed": 234,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.32,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "attackTime": 0.025
+      },
+      "peak": 0.42,
+      "notes": "cleric special family"
+    },
+    "cleric-ultimate": {
+      "seed": 235,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.32,
+        "pitch_jump_amount": 0.19,
+        "pitch_jump_onset_percent": 0.45,
+        "sustainTime": 0.13,
+        "decayTime": 0.43,
+        "attackTime": 0.025
+      },
+      "peak": 0.48,
+      "notes": "cleric ultimate family"
+    },
+    "cleric-impact": {
+      "seed": 236,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.32,
+        "pitch_jump_amount": 0.16,
+        "pitch_jump_onset_percent": 0.38,
+        "sustainTime": 0.012,
+        "decayTime": 0.12,
+        "attackTime": 0.008,
+        "frequency_slide": -0.16,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.035
+      },
+      "peak": 0.2,
+      "notes": "cleric confirmed impact"
+    },
+    "bard-light": {
+      "seed": 237,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.33,
+        "pitch_jump_amount": 0.16,
+        "pitch_jump_onset_percent": 0.35,
+        "sustainTime": 0.04,
+        "decayTime": 0.26,
+        "lpFilterCutoff": 0.48,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "bard light family"
+    },
+    "bard-light-1": {
+      "seed": 238,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.32175,
+        "pitch_jump_amount": 0.16,
+        "pitch_jump_onset_percent": 0.35,
+        "sustainTime": 0.04,
+        "decayTime": 0.26,
+        "lpFilterCutoff": 0.48,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated bard Light variant"
+    },
+    "bard-light-2": {
+      "seed": 239,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.33825,
+        "pitch_jump_amount": 0.16,
+        "pitch_jump_onset_percent": 0.35,
+        "sustainTime": 0.04,
+        "decayTime": 0.26,
+        "lpFilterCutoff": 0.48,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated bard Light variant"
+    },
+    "bard-special": {
+      "seed": 240,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.33,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "lpFilterCutoff": 0.68,
+        "attackTime": 0.025
+      },
+      "peak": 0.42,
+      "notes": "bard special family"
+    },
+    "bard-ultimate": {
+      "seed": 241,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.33,
+        "pitch_jump_amount": 0.19,
+        "pitch_jump_onset_percent": 0.45,
+        "sustainTime": 0.13,
+        "decayTime": 0.43,
+        "lpFilterCutoff": 0.68,
+        "attackTime": 0.025
+      },
+      "peak": 0.48,
+      "notes": "bard ultimate family"
+    },
+    "bard-impact": {
+      "seed": 242,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.33,
+        "pitch_jump_amount": 0.16,
+        "pitch_jump_onset_percent": 0.35,
+        "sustainTime": 0.012,
+        "decayTime": 0.12,
+        "lpFilterCutoff": 0.36,
+        "attackTime": 0.008,
+        "frequency_slide": -0.16,
+        "hpFilterCutoff": 0.035
+      },
+      "peak": 0.2,
+      "notes": "bard confirmed impact"
+    },
+    "healer-light": {
+      "seed": 243,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.34,
+        "frequency_slide": 0.055,
+        "attackTime": 0.008,
+        "sustainTime": 0.04,
+        "decayTime": 0.27,
+        "lpFilterCutoff": 0.48,
+        "hpFilterCutoff": 0.035
+      },
+      "peak": 0.3,
+      "notes": "healer light family"
+    },
+    "healer-light-1": {
+      "seed": 244,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.3315,
+        "frequency_slide": 0.055,
+        "attackTime": 0.008,
+        "sustainTime": 0.04,
+        "decayTime": 0.27,
+        "lpFilterCutoff": 0.48,
+        "hpFilterCutoff": 0.035
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated healer Light variant"
+    },
+    "healer-light-2": {
+      "seed": 245,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.3485,
+        "frequency_slide": 0.055,
+        "attackTime": 0.008,
+        "sustainTime": 0.04,
+        "decayTime": 0.27,
+        "lpFilterCutoff": 0.48,
+        "hpFilterCutoff": 0.035
+      },
+      "peak": 0.3,
+      "notes": "Subtle repeated healer Light variant"
+    },
+    "healer-special": {
+      "seed": 246,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.34,
+        "frequency_slide": 0.055,
+        "attackTime": 0.025,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.42,
+      "notes": "healer special family"
+    },
+    "healer-ultimate": {
+      "seed": 247,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.34,
+        "frequency_slide": 0.055,
+        "attackTime": 0.025,
+        "sustainTime": 0.13,
+        "decayTime": 0.43,
+        "pitch_jump_amount": 0.19,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.48,
+      "notes": "healer ultimate family"
+    },
+    "healer-impact": {
+      "seed": 248,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.34,
+        "frequency_slide": -0.16,
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.12,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.035
+      },
+      "peak": 0.2,
+      "notes": "healer confirmed impact"
+    },
+    "ice-cast": {
+      "seed": 249,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.38,
+        "frequency_slide": -0.08,
+        "decayTime": 0.22,
+        "sustainTime": 0.025,
+        "lpFilterCutoff": 0.6
+      },
+      "peak": 0.45,
+      "notes": "ice-cast authored Bfxr accent"
+    },
+    "summon-fire": {
+      "seed": 250,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.21,
+        "frequency_slide": 0.08,
+        "decayTime": 0.31,
+        "sustainTime": 0.06,
+        "lpFilterCutoff": 0.35
+      },
+      "peak": 0.45,
+      "notes": "summon-fire authored Bfxr accent"
+    },
+    "summon-ice": {
+      "seed": 251,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.3,
+        "frequency_slide": 0.06,
+        "decayTime": 0.34,
+        "sustainTime": 0.06
+      },
+      "peak": 0.45,
+      "notes": "summon-ice authored Bfxr accent"
+    },
+    "summon-storm": {
+      "seed": 252,
+      "params": {
+        "waveType": 9,
+        "frequency_start": 0.25,
+        "frequency_slide": 0.05,
+        "decayTime": 0.29,
+        "sustainTime": 0.04,
+        "lpFilterCutoff": 0.46
+      },
+      "peak": 0.45,
+      "notes": "summon-storm authored Bfxr accent"
+    },
+    "summon-nature": {
+      "seed": 253,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.15,
+        "decayTime": 0.32,
+        "sustainTime": 0.03,
+        "lpFilterCutoff": 0.3
+      },
+      "peak": 0.45,
+      "notes": "summon-nature authored Bfxr accent"
+    },
+    "ward": {
+      "seed": 254,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.24,
+        "frequency_slide": 0.07,
+        "sustainTime": 0.04,
+        "decayTime": 0.3,
+        "pitch_jump_amount": 0.15,
+        "pitch_jump_onset_percent": 0.5
+      },
+      "peak": 0.45,
+      "notes": "ward authored Bfxr accent"
+    },
+    "metal-impact": {
+      "seed": 255,
+      "params": {
+        "waveType": 0,
+        "squareDuty": 0.36,
+        "frequency_start": 0.19,
+        "frequency_slide": -0.13,
+        "sustainTime": 0.015,
+        "decayTime": 0.12,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.2,
+      "notes": "metal-impact authored Bfxr accent"
+    },
+    "wood-impact": {
+      "seed": 256,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.16,
+        "sustainTime": 0.014,
+        "decayTime": 0.12,
+        "lpFilterCutoff": 0.3,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008
+      },
+      "peak": 0.2,
+      "notes": "wood-impact authored Bfxr accent"
+    },
+    "stone-impact": {
+      "seed": 636,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.12,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.006,
+        "sustainTime": 0.012,
+        "decayTime": 0.13
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "enemy-windup": {
+      "seed": 258,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.14,
+        "frequency_slide": 0.03,
+        "attackTime": 0.03,
+        "sustainTime": 0.02,
+        "decayTime": 0.15,
+        "lpFilterCutoff": 0.5
+      },
+      "peak": 0.45,
+      "notes": "enemy-windup authored Bfxr accent"
+    },
+    "enemy-release": {
+      "seed": 259,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.2,
+        "frequency_slide": -0.1,
+        "sustainTime": 0.025,
+        "decayTime": 0.17,
+        "lpFilterCutoff": 0.38
+      },
+      "peak": 0.45,
+      "notes": "enemy-release authored Bfxr accent"
+    },
+    "boss-warning": {
+      "seed": 260,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.2,
+        "pitch_jump_amount": -0.18,
+        "pitch_jump_onset_percent": 0.5,
+        "sustainTime": 0.08,
+        "decayTime": 0.32,
+        "lpFilterCutoff": 0.55
+      },
+      "peak": 0.45,
+      "notes": "boss-warning authored Bfxr accent"
+    },
+    "boss-complete": {
+      "seed": 261,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.28,
+        "pitch_jump_amount": 0.18,
+        "pitch_jump_onset_percent": 0.3,
+        "pitch_jump_2_amount": 0.21,
+        "pitch_jump_onset2_percent": 0.65,
+        "sustainTime": 0.16,
+        "decayTime": 0.47,
+        "lpFilterCutoff": 0.58
+      },
+      "peak": 0.45,
+      "notes": "boss-complete authored Bfxr accent"
+    },
+    "repair": {
+      "seed": 262,
+      "params": {
+        "waveType": 0,
+        "squareDuty": 0.36,
+        "frequency_start": 0.16,
+        "pitch_jump_amount": 0.17,
+        "pitch_jump_onset_percent": 0.45,
+        "sustainTime": 0.04,
+        "decayTime": 0.28,
+        "lpFilterCutoff": 0.4
+      },
+      "peak": 0.45,
+      "notes": "repair authored Bfxr accent"
+    },
+    "restore": {
+      "seed": 263,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.27,
+        "frequency_slide": 0.08,
+        "pitch_jump_amount": 0.2,
+        "pitch_jump_onset_percent": 0.5,
+        "attackTime": 0.04,
+        "sustainTime": 0.1,
+        "decayTime": 0.4
+      },
+      "peak": 0.45,
+      "notes": "restore authored Bfxr accent"
+    },
+    "discovery": {
+      "seed": 264,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.35,
+        "pitch_jump_amount": 0.14,
+        "pitch_jump_onset_percent": 0.5,
+        "sustainTime": 0.04,
+        "decayTime": 0.3,
+        "lpFilterCutoff": 0.62
+      },
+      "peak": 0.45,
+      "notes": "discovery authored Bfxr accent"
+    },
+    "equip": {
+      "seed": 265,
+      "params": {
+        "waveType": 0,
+        "squareDuty": 0.36,
+        "frequency_start": 0.24,
+        "sustainTime": 0.01,
+        "decayTime": 0.11,
+        "lpFilterCutoff": 0.4
+      },
+      "peak": 0.45,
+      "notes": "equip authored Bfxr accent"
+    },
+    "purchase": {
+      "seed": 266,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.4,
+        "pitch_jump_amount": 0.12,
+        "pitch_jump_onset_percent": 0.45,
+        "sustainTime": 0.018,
+        "decayTime": 0.19
+      },
+      "peak": 0.45,
+      "notes": "purchase authored Bfxr accent"
+    },
+    "amb-village": {
+      "seed": 267,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.25,
+        "attackTime": 0.08,
+        "sustainTime": 0.025,
+        "decayTime": 0.26
+      },
+      "peak": 0.28,
+      "notes": "amb-village authored Bfxr accent"
+    },
+    "amb-woodland": {
+      "seed": 268,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.2,
+        "lpFilterCutoff": 0.26,
+        "attackTime": 0.07,
+        "sustainTime": 0.035,
+        "decayTime": 0.26
+      },
+      "peak": 0.28,
+      "notes": "amb-woodland authored Bfxr accent"
+    },
+    "amb-chamber": {
+      "seed": 269,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.18,
+        "attackTime": 0.05,
+        "sustainTime": 0.03,
+        "decayTime": 0.34
+      },
+      "peak": 0.28,
+      "notes": "amb-chamber authored Bfxr accent"
+    },
+    "amb-tower": {
+      "seed": 270,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.16,
+        "lpFilterCutoff": 0.28,
+        "attackTime": 0.07,
+        "sustainTime": 0.03,
+        "decayTime": 0.3
+      },
+      "peak": 0.28,
+      "notes": "amb-tower authored Bfxr accent"
+    },
+    "amb-boss": {
+      "seed": 271,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.12,
+        "lpFilterCutoff": 0.25,
+        "attackTime": 0.1,
+        "sustainTime": 0.03,
+        "decayTime": 0.35
+      },
+      "peak": 0.28,
+      "notes": "amb-boss authored Bfxr accent"
+    },
+    "amb-fire": {
+      "seed": 272,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.14,
+        "lpFilterCutoff": 0.28,
+        "sustainTime": 0.012,
+        "decayTime": 0.09
+      },
+      "peak": 0.28,
+      "notes": "amb-fire authored Bfxr accent"
+    },
+    "amb-water": {
+      "seed": 273,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.29,
+        "lpFilterCutoff": 0.33,
+        "attackTime": 0.05,
+        "sustainTime": 0.015,
+        "decayTime": 0.2
+      },
+      "peak": 0.28,
+      "notes": "amb-water authored Bfxr accent"
+    },
+    "amb-landmark": {
+      "seed": 274,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.28,
+        "attackTime": 0.07,
+        "sustainTime": 0.02,
+        "decayTime": 0.28
+      },
+      "peak": 0.28,
+      "notes": "amb-landmark authored Bfxr accent"
+    },
+    "ice-impact": {
+      "seed": 275,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.42,
+        "frequency_slide": -0.2,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.01,
+        "decayTime": 0.13
+      },
+      "peak": 0.4,
+      "notes": "Short confirmed frost / ice-summon impact"
+    },
+    "arrow-launch": {
+      "seed": 601,
+      "params": {
+        "attackTime": 0.012,
+        "sustainTime": 0.02,
+        "decayTime": 0.18,
+        "waveType": 4,
+        "frequency_start": 0.34,
+        "frequency_slide": -0.22,
+        "lpFilterCutoff": 0.44
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "enemy-arrow-launch": {
+      "seed": 602,
+      "params": {
+        "attackTime": 0.018,
+        "sustainTime": 0.02,
+        "decayTime": 0.19,
+        "waveType": 4,
+        "frequency_start": 0.2958,
+        "frequency_slide": -0.22,
+        "lpFilterCutoff": 0.44
+      },
+      "peak": 0.29,
+      "notes": "Recognizable hostile arrow release"
+    },
+    "arrow-impact": {
+      "seed": 603,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.34,
+        "frequency_slide": -0.22,
+        "lpFilterCutoff": 0.44,
+        "attackTime": 0.006,
+        "sustainTime": 0.012,
+        "decayTime": 0.13
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "blade-launch": {
+      "seed": 604,
+      "params": {
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.13,
+        "waveType": 3,
+        "frequency_start": 0.24,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "enemy-blade-launch": {
+      "seed": 605,
+      "params": {
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.13,
+        "waveType": 3,
+        "frequency_start": 0.20879999999999999,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045
+      },
+      "peak": 0.29,
+      "notes": "Recognizable hostile blade release"
+    },
+    "blade-impact": {
+      "seed": 606,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.24,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.006,
+        "sustainTime": 0.012,
+        "decayTime": 0.13
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "fire-launch": {
+      "seed": 607,
+      "params": {
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.21,
+        "waveType": 3,
+        "frequency_start": 0.18,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.28,
+        "hpFilterCutoff": 0.045
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "enemy-fire-launch": {
+      "seed": 608,
+      "params": {
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.21,
+        "waveType": 3,
+        "frequency_start": 0.1566,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.28,
+        "hpFilterCutoff": 0.045
+      },
+      "peak": 0.29,
+      "notes": "Recognizable hostile fire release"
+    },
+    "fire-impact": {
+      "seed": 609,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.18,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.28,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.006,
+        "sustainTime": 0.012,
+        "decayTime": 0.19
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "frost-launch": {
+      "seed": 610,
+      "params": {
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.24,
+        "waveType": 2,
+        "frequency_start": 0.39,
+        "frequency_slide": -0.12,
+        "lpFilterCutoff": 0.48
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "enemy-frost-launch": {
+      "seed": 611,
+      "params": {
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.24,
+        "waveType": 2,
+        "frequency_start": 0.3393,
+        "frequency_slide": -0.12,
+        "lpFilterCutoff": 0.48
+      },
+      "peak": 0.29,
+      "notes": "Recognizable hostile frost release"
+    },
+    "frost-impact": {
+      "seed": 612,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.39,
+        "frequency_slide": -0.12,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.006,
+        "sustainTime": 0.012,
+        "decayTime": 0.13
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "lightning-launch": {
+      "seed": 613,
+      "params": {
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.15,
+        "waveType": 9,
+        "frequency_start": 0.3,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.4,
+        "hpFilterCutoff": 0.045
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "enemy-lightning-launch": {
+      "seed": 614,
+      "params": {
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.15,
+        "waveType": 9,
+        "frequency_start": 0.261,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.4,
+        "hpFilterCutoff": 0.045
+      },
+      "peak": 0.29,
+      "notes": "Recognizable hostile lightning release"
+    },
+    "lightning-impact": {
+      "seed": 615,
+      "params": {
+        "waveType": 9,
+        "frequency_start": 0.3,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.4,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.006,
+        "sustainTime": 0.012,
+        "decayTime": 0.13
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "arcane-launch": {
+      "seed": 616,
+      "params": {
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.24,
+        "waveType": 4,
+        "frequency_start": 0.29,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.4
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "enemy-arcane-launch": {
+      "seed": 617,
+      "params": {
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.24,
+        "waveType": 4,
+        "frequency_start": 0.25229999999999997,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.4
+      },
+      "peak": 0.29,
+      "notes": "Recognizable hostile arcane release"
+    },
+    "arcane-impact": {
+      "seed": 618,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.29,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.4,
+        "attackTime": 0.006,
+        "sustainTime": 0.012,
+        "decayTime": 0.13
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "sacred-launch": {
+      "seed": 619,
+      "params": {
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.24,
+        "waveType": 2,
+        "frequency_start": 0.32,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "enemy-sacred-launch": {
+      "seed": 620,
+      "params": {
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.24,
+        "waveType": 2,
+        "frequency_start": 0.2784,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.29,
+      "notes": "Recognizable hostile sacred release"
+    },
+    "sacred-impact": {
+      "seed": 621,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.32,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.006,
+        "sustainTime": 0.012,
+        "decayTime": 0.13,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "nature-launch": {
+      "seed": 622,
+      "params": {
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.16,
+        "waveType": 3,
+        "frequency_start": 0.2,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.27,
+        "hpFilterCutoff": 0.045
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "enemy-nature-launch": {
+      "seed": 623,
+      "params": {
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.16,
+        "waveType": 3,
+        "frequency_start": 0.17400000000000002,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.27,
+        "hpFilterCutoff": 0.045
+      },
+      "peak": 0.29,
+      "notes": "Recognizable hostile nature release"
+    },
+    "nature-impact": {
+      "seed": 624,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.2,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.27,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.006,
+        "sustainTime": 0.012,
+        "decayTime": 0.13
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "mixture-launch": {
+      "seed": 625,
+      "params": {
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.24,
+        "waveType": 2,
+        "frequency_start": 0.25,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "pitch_jump_amount": -0.12,
+        "pitch_jump_onset_percent": 0.3
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "enemy-mixture-launch": {
+      "seed": 626,
+      "params": {
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.24,
+        "waveType": 2,
+        "frequency_start": 0.2175,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "pitch_jump_amount": -0.12,
+        "pitch_jump_onset_percent": 0.3
+      },
+      "peak": 0.29,
+      "notes": "Recognizable hostile mixture release"
+    },
+    "mixture-impact": {
+      "seed": 627,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.25,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.006,
+        "sustainTime": 0.012,
+        "decayTime": 0.13,
+        "pitch_jump_amount": -0.12,
+        "pitch_jump_onset_percent": 0.3
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "tonal-launch": {
+      "seed": 628,
+      "params": {
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.24,
+        "waveType": 4,
+        "frequency_start": 0.3,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "pitch_jump_amount": 0.16,
+        "pitch_jump_onset_percent": 0.4
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "enemy-tonal-launch": {
+      "seed": 629,
+      "params": {
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.24,
+        "waveType": 4,
+        "frequency_start": 0.261,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "pitch_jump_amount": 0.16,
+        "pitch_jump_onset_percent": 0.4
+      },
+      "peak": 0.29,
+      "notes": "Recognizable hostile tonal release"
+    },
+    "tonal-impact": {
+      "seed": 630,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.3,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.006,
+        "sustainTime": 0.012,
+        "decayTime": 0.13,
+        "pitch_jump_amount": 0.16,
+        "pitch_jump_onset_percent": 0.4
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "shadow-launch": {
+      "seed": 631,
+      "params": {
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.16,
+        "waveType": 3,
+        "frequency_start": 0.16,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.3,
+        "hpFilterCutoff": 0.045
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "enemy-shadow-launch": {
+      "seed": 632,
+      "params": {
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.16,
+        "waveType": 3,
+        "frequency_start": 0.1392,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.3,
+        "hpFilterCutoff": 0.045
+      },
+      "peak": 0.29,
+      "notes": "Recognizable hostile shadow release"
+    },
+    "shadow-impact": {
+      "seed": 633,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.16,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.3,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.006,
+        "sustainTime": 0.012,
+        "decayTime": 0.13
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "stone-launch": {
+      "seed": 634,
+      "params": {
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.18,
+        "waveType": 3,
+        "frequency_start": 0.12,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "enemy-stone-launch": {
+      "seed": 635,
+      "params": {
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.18,
+        "waveType": 3,
+        "frequency_start": 0.10439999999999999,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045
+      },
+      "peak": 0.29,
+      "notes": "Recognizable hostile stone release"
+    },
+    "hit-flesh": {
+      "seed": 637,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.11784,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.22,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet flesh confirmed impact variant"
+    },
+    "hit-flesh-1": {
+      "seed": 638,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.12,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.22,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet flesh confirmed impact variant"
+    },
+    "hit-flesh-2": {
+      "seed": 639,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.12215999999999999,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.22,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet flesh confirmed impact variant"
+    },
+    "hit-metal": {
+      "seed": 640,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.23568,
+        "frequency_slide": -0.13,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet metal confirmed impact variant"
+    },
+    "hit-metal-1": {
+      "seed": 641,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.24,
+        "frequency_slide": -0.13,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet metal confirmed impact variant"
+    },
+    "hit-metal-2": {
+      "seed": 642,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.24431999999999998,
+        "frequency_slide": -0.13,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet metal confirmed impact variant"
+    },
+    "hit-wood": {
+      "seed": 643,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.1473,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet wood confirmed impact variant"
+    },
+    "hit-wood-1": {
+      "seed": 644,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.15,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet wood confirmed impact variant"
+    },
+    "hit-wood-2": {
+      "seed": 645,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.1527,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet wood confirmed impact variant"
+    },
+    "hit-stone": {
+      "seed": 646,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.09820000000000001,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet stone confirmed impact variant"
+    },
+    "hit-stone-1": {
+      "seed": 647,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.1,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet stone confirmed impact variant"
+    },
+    "hit-stone-2": {
+      "seed": 648,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.1018,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet stone confirmed impact variant"
+    },
+    "hit-barrier": {
+      "seed": 649,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.22586,
+        "frequency_slide": 0.08,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet barrier confirmed impact variant"
+    },
+    "hit-barrier-1": {
+      "seed": 650,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.23,
+        "frequency_slide": 0.08,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet barrier confirmed impact variant"
+    },
+    "hit-barrier-2": {
+      "seed": 651,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.23414000000000001,
+        "frequency_slide": 0.08,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet barrier confirmed impact variant"
+    },
+    "hit-magic": {
+      "seed": 652,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.2946,
+        "frequency_slide": -0.08,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet magic confirmed impact variant"
+    },
+    "hit-magic-1": {
+      "seed": 653,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.3,
+        "frequency_slide": -0.08,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet magic confirmed impact variant"
+    },
+    "hit-magic-2": {
+      "seed": 654,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.3054,
+        "frequency_slide": -0.08,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.007,
+        "sustainTime": 0.012,
+        "decayTime": 0.12
+      },
+      "peak": 0.18,
+      "notes": "Quiet magic confirmed impact variant"
+    },
+    "ui-nav": {
+      "seed": 655,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.23,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.09
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "ui-confirm": {
+      "seed": 656,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.27,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.15
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "ui-reject": {
+      "seed": 657,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.15,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.13
+      },
+      "peak": 0.2,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "conversation-open": {
+      "seed": 658,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.23,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.15
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "conversation-close": {
+      "seed": 659,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.21,
+        "frequency_slide": -0.04,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.12
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "inspect": {
+      "seed": 660,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.3,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.35,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.11
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "door": {
+      "seed": 661,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.13,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.2
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "stairs": {
+      "seed": 662,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.2,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.16
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "mechanism": {
+      "seed": 663,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.12,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.23
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "skill-learn": {
+      "seed": 664,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.3,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.32,
+        "pitch_jump_amount": 0.14,
+        "pitch_jump_onset_percent": 0.4
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "rune-gain": {
+      "seed": 665,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.34,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.34,
+        "pitch_jump_amount": 0.18,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "rune-spend": {
+      "seed": 666,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.24,
+        "frequency_slide": -0.07,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.23
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "shrine-activate": {
+      "seed": 667,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.21,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.13,
+        "decayTime": 0.47,
+        "pitch_jump_amount": 0.18,
+        "pitch_jump_onset_percent": 0.5
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "quest-accept": {
+      "seed": 668,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.24,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.2
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "quest-progress": {
+      "seed": 669,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.27,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.14
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "quest-report": {
+      "seed": 670,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.28,
+        "frequency_slide": 0.015,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.08,
+        "decayTime": 0.39,
+        "pitch_jump_amount": 0.12,
+        "pitch_jump_onset_percent": 0.5
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "defeat-soft": {
+      "seed": 673,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.15,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.18
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "hit-significant": {
+      "seed": 674,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.17,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.19
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "amb-leaves": {
+      "seed": 675,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.19,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.18,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.12,
+        "sustainTime": 0.012,
+        "decayTime": 0.29
+      },
+      "peak": 0.17,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "amb-wildlife": {
+      "seed": 676,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.34,
+        "frequency_slide": 0.03,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.23,
+        "pitch_jump_amount": -0.08,
+        "pitch_jump_onset_percent": 0.5
+      },
+      "peak": 0.17,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "amb-tools": {
+      "seed": 677,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.18,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.008,
+        "sustainTime": 0.012,
+        "decayTime": 0.14
+      },
+      "peak": 0.17,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "amb-droplet": {
+      "seed": 678,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.31,
+        "frequency_slide": -0.1,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.18
+      },
+      "peak": 0.17,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "amb-creak": {
+      "seed": 679,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.1,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.36,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.12,
+        "sustainTime": 0.012,
+        "decayTime": 0.4
+      },
+      "peak": 0.17,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "amb-dry": {
+      "seed": 680,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.13,
+        "frequency_slide": -0.15,
+        "lpFilterCutoff": 0.17,
+        "hpFilterCutoff": 0.045,
+        "attackTime": 0.13,
+        "sustainTime": 0.012,
+        "decayTime": 0.3
+      },
+      "peak": 0.17,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "ascend-knight": {
+      "seed": 681,
+      "params": {
+        "waveType": 0,
+        "squareDuty": 0.36,
+        "frequency_start": 0.19,
+        "frequency_slide": -0.09,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.17,
+        "decayTime": 0.58,
+        "attackTime": 0.07,
+        "pitch_jump_amount": 0.18,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.43,
+      "notes": "One-time knight transformation; no idle loop"
+    },
+    "ascended-knight": {
+      "seed": 682,
+      "params": {
+        "waveType": 0,
+        "squareDuty": 0.36,
+        "frequency_start": 0.19,
+        "frequency_slide": -0.09,
+        "lpFilterCutoff": 0.48,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.34,
+      "notes": "Confirmed knight signature release"
+    },
+    "ascend-rogue": {
+      "seed": 684,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.4,
+        "frequency_slide": -0.2,
+        "hpFilterCutoff": 0.12,
+        "lpFilterCutoff": 0.52,
+        "sustainTime": 0.17,
+        "decayTime": 0.58,
+        "attackTime": 0.07,
+        "pitch_jump_amount": 0.18,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.43,
+      "notes": "One-time rogue transformation; no idle loop"
+    },
+    "ascended-rogue": {
+      "seed": 685,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.4,
+        "frequency_slide": -0.2,
+        "hpFilterCutoff": 0.12,
+        "lpFilterCutoff": 0.52,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.34,
+      "notes": "Confirmed rogue signature release"
+    },
+    "ascend-wizard": {
+      "seed": 687,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.31,
+        "frequency_slide": -0.08,
+        "lpFilterCutoff": 0.62,
+        "vibratoDepth": 0.055,
+        "vibratoSpeed": 0.25,
+        "sustainTime": 0.17,
+        "decayTime": 0.58,
+        "attackTime": 0.07,
+        "pitch_jump_amount": 0.18,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.43,
+      "notes": "One-time wizard transformation; no idle loop"
+    },
+    "ascended-wizard": {
+      "seed": 688,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.31,
+        "frequency_slide": -0.08,
+        "lpFilterCutoff": 0.62,
+        "vibratoDepth": 0.055,
+        "vibratoSpeed": 0.25,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.34,
+      "notes": "Confirmed wizard signature release"
+    },
+    "ascend-druid": {
+      "seed": 690,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.25,
+        "frequency_slide": 0.06,
+        "lpFilterCutoff": 0.33,
+        "sustainTime": 0.17,
+        "decayTime": 0.58,
+        "attackTime": 0.07,
+        "pitch_jump_amount": 0.18,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.43,
+      "notes": "One-time druid transformation; no idle loop"
+    },
+    "ascended-druid": {
+      "seed": 691,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.25,
+        "frequency_slide": 0.06,
+        "lpFilterCutoff": 0.33,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.34,
+      "notes": "Confirmed druid signature release"
+    },
+    "ascend-archer": {
+      "seed": 693,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.34,
+        "frequency_slide": -0.21,
+        "lpFilterCutoff": 0.55,
+        "sustainTime": 0.17,
+        "decayTime": 0.58,
+        "attackTime": 0.07,
+        "pitch_jump_amount": 0.18,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.43,
+      "notes": "One-time archer transformation; no idle loop"
+    },
+    "ascended-archer": {
+      "seed": 694,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.34,
+        "frequency_slide": -0.21,
+        "lpFilterCutoff": 0.55,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "attackTime": 0.025,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.34,
+      "notes": "Confirmed archer signature release"
+    },
+    "ascend-cleric": {
+      "seed": 696,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.32,
+        "pitch_jump_amount": 0.18,
+        "pitch_jump_onset_percent": 0.45,
+        "sustainTime": 0.17,
+        "decayTime": 0.58,
+        "attackTime": 0.07
+      },
+      "peak": 0.43,
+      "notes": "One-time cleric transformation; no idle loop"
+    },
+    "ascended-cleric": {
+      "seed": 697,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.32,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "attackTime": 0.025
+      },
+      "peak": 0.34,
+      "notes": "Confirmed cleric signature release"
+    },
+    "ascend-bard": {
+      "seed": 699,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.33,
+        "pitch_jump_amount": 0.18,
+        "pitch_jump_onset_percent": 0.45,
+        "sustainTime": 0.17,
+        "decayTime": 0.58,
+        "lpFilterCutoff": 0.68,
+        "attackTime": 0.07
+      },
+      "peak": 0.43,
+      "notes": "One-time bard transformation; no idle loop"
+    },
+    "ascended-bard": {
+      "seed": 700,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.33,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "lpFilterCutoff": 0.68,
+        "attackTime": 0.025
+      },
+      "peak": 0.34,
+      "notes": "Confirmed bard signature release"
+    },
+    "ascend-healer": {
+      "seed": 702,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.34,
+        "frequency_slide": 0.055,
+        "attackTime": 0.07,
+        "sustainTime": 0.17,
+        "decayTime": 0.58,
+        "pitch_jump_amount": 0.18,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.43,
+      "notes": "One-time healer transformation; no idle loop"
+    },
+    "ascended-healer": {
+      "seed": 703,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.34,
+        "frequency_slide": 0.055,
+        "attackTime": 0.025,
+        "sustainTime": 0.075,
+        "decayTime": 0.32,
+        "pitch_jump_amount": 0.1,
+        "pitch_jump_onset_percent": 0.45
+      },
+      "peak": 0.34,
+      "notes": "Confirmed healer signature release"
+    },
+    "portal-travel": {
+      "seed": 671,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.24,
+        "frequency_slide": 0.08,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.32
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "portal-charge": {
+      "seed": 672,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.21,
+        "frequency_slide": 0.03,
+        "lpFilterCutoff": 0.48,
+        "attackTime": 0.025,
+        "sustainTime": 0.02,
+        "decayTime": 0.17
+      },
+      "peak": 0.28,
+      "notes": "Oct 16 authored Bfxr cue"
+    },
+    "ascended-knight-light": {
+      "seed": 683,
+      "params": {
+        "waveType": 0,
+        "squareDuty": 0.36,
+        "frequency_start": 0.19,
+        "frequency_slide": 0.02,
+        "lpFilterCutoff": 0.4,
+        "sustainTime": 0.02,
+        "decayTime": 0.18,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008,
+        "pitch_jump_amount": 0.04,
+        "pitch_jump_onset_percent": 0.4
+      },
+      "peak": 0.3,
+      "notes": "Quiet transformed knight common attack; no idle loop"
+    },
+    "ascended-rogue-light": {
+      "seed": 686,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.4,
+        "frequency_slide": 0.02,
+        "hpFilterCutoff": 0.12,
+        "lpFilterCutoff": 0.4,
+        "sustainTime": 0.02,
+        "decayTime": 0.18,
+        "attackTime": 0.008,
+        "pitch_jump_amount": 0.04,
+        "pitch_jump_onset_percent": 0.4
+      },
+      "peak": 0.3,
+      "notes": "Quiet transformed rogue common attack; no idle loop"
+    },
+    "ascended-wizard-light": {
+      "seed": 689,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.31,
+        "frequency_slide": 0.09,
+        "lpFilterCutoff": 0.4,
+        "vibratoDepth": 0.055,
+        "vibratoSpeed": 0.25,
+        "sustainTime": 0.02,
+        "decayTime": 0.18,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008,
+        "pitch_jump_amount": 0.04,
+        "pitch_jump_onset_percent": 0.4
+      },
+      "peak": 0.3,
+      "notes": "Quiet transformed wizard common attack; no idle loop"
+    },
+    "ascended-druid-light": {
+      "seed": 692,
+      "params": {
+        "waveType": 3,
+        "frequency_start": 0.25,
+        "frequency_slide": 0.02,
+        "lpFilterCutoff": 0.4,
+        "sustainTime": 0.02,
+        "decayTime": 0.18,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008,
+        "pitch_jump_amount": 0.04,
+        "pitch_jump_onset_percent": 0.4
+      },
+      "peak": 0.3,
+      "notes": "Quiet transformed druid common attack; no idle loop"
+    },
+    "ascended-archer-light": {
+      "seed": 695,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.34,
+        "frequency_slide": 0.02,
+        "lpFilterCutoff": 0.4,
+        "sustainTime": 0.02,
+        "decayTime": 0.18,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008,
+        "pitch_jump_amount": 0.04,
+        "pitch_jump_onset_percent": 0.4
+      },
+      "peak": 0.3,
+      "notes": "Quiet transformed archer common attack; no idle loop"
+    },
+    "ascended-cleric-light": {
+      "seed": 698,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.32,
+        "pitch_jump_amount": 0.04,
+        "pitch_jump_onset_percent": 0.4,
+        "sustainTime": 0.02,
+        "decayTime": 0.18,
+        "lpFilterCutoff": 0.4,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008,
+        "frequency_slide": 0.02
+      },
+      "peak": 0.3,
+      "notes": "Quiet transformed cleric common attack; no idle loop"
+    },
+    "ascended-bard-light": {
+      "seed": 701,
+      "params": {
+        "waveType": 4,
+        "frequency_start": 0.33,
+        "pitch_jump_amount": 0.12,
+        "pitch_jump_onset_percent": 0.4,
+        "sustainTime": 0.02,
+        "decayTime": 0.18,
+        "lpFilterCutoff": 0.4,
+        "hpFilterCutoff": 0.035,
+        "attackTime": 0.008,
+        "frequency_slide": 0.02
+      },
+      "peak": 0.3,
+      "notes": "Quiet transformed bard common attack; no idle loop"
+    },
+    "ascended-healer-light": {
+      "seed": 704,
+      "params": {
+        "waveType": 2,
+        "frequency_start": 0.34,
+        "frequency_slide": 0.02,
+        "attackTime": 0.008,
+        "sustainTime": 0.02,
+        "decayTime": 0.18,
+        "lpFilterCutoff": 0.4,
+        "hpFilterCutoff": 0.035,
+        "pitch_jump_amount": 0.04,
+        "pitch_jump_onset_percent": 0.4
+      },
+      "peak": 0.3,
+      "notes": "Quiet transformed healer common attack; no idle loop"
+    }
+  },
+  "version": 3
 }

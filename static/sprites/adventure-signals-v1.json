@@ -1,0 +1,54 @@
+{
+  "frames": 4,
+  "rows": [
+    {
+      "width": 68,
+      "row": 0,
+      "description": "a rugged small wooden supply chest with iron bands, rolled rope and carpenter tools visible under its closed strapped lid, tiny brass clasp glint; four gentle glint phases; chest stays on ground",
+      "id": "repair_chest",
+      "height": 59
+    },
+    {
+      "width": 68,
+      "row": 1,
+      "description": "the SAME rugged supply chest with lid OPEN and empty dark interior, discarded packing straw; four subtle brass clasp glint phases, chest stays on ground",
+      "id": "repair_chest_empty",
+      "height": 59
+    },
+    {
+      "width": 66,
+      "row": 2,
+      "description": "a low round mossy rune stone with a carved minotaur labyrinth sigil, amber etched lines pulsing in four phases, ancient stone fixed",
+      "id": "ruins_seal",
+      "height": 52
+    },
+    {
+      "width": 66,
+      "row": 3,
+      "description": "the SAME low rune stone, blazing violet labyrinth lines and four changing upward magical wisps while guardian fight is active, stone fixed",
+      "id": "ruins_seal_awake",
+      "height": 68
+    },
+    {
+      "width": 40,
+      "row": 4,
+      "description": "a small flat ornate woodland waystone arrow pointing STRAIGHT UP toward north, ivory arrowhead with green mossy stone surround; four gentle green rune pulse phases; no text or background",
+      "id": "trail_open",
+      "height": 42
+    },
+    {
+      "width": 40,
+      "row": 5,
+      "description": "the SAME north-pointing flat waystone arrow with a rusty chain crossing it and a small red warding rune; four red warning pulse phases, fixed silhouette",
+      "id": "trail_locked",
+      "height": 42
+    }
+  ],
+  "anchor": [
+    64,
+    96
+  ],
+  "source": "art/adventure-sprites/source/signals-v1.png",
+  "cell": 128,
+  "columns": 4
+}

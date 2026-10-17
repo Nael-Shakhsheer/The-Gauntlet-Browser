@@ -2,17 +2,21 @@
 (() => {
   const art = {}, enemies = new Map(), cover = new Map(), traps = new Map(), hazards = new Map(), effectTimes = new Map(), tints = new Map();
   let scene = "";
-  for (const key of ["terrain-effects", "hazard-effects", "impact-effects", "magic-effects", "projectile-effects",
+  const assetKeys=["terrain-effects", "hazard-effects", "impact-effects", "magic-effects", "projectile-effects",
     "objective-rift", "objective-ward", "puzzle-objects", "fork-signposts",
     ...["woodland", "ruins", "cavern", "frost"].map(x => "cover-"+x),
     ...["minotaur", "troll", "serpent", "wolf", "spider", "draco", "chimera"].flatMap(x => [x+"-windup", x+"-idle"]),
-    "dragon-adult-idle", "dragon-adult-windup"]) {
+    "dragon-adult-idle", "dragon-adult-windup", "shrine-guardian-idle", "shrine-guardian-windup"];
+  function imageFor(key) {
+    if(art[key])return art[key];
+    if(!assetKeys.includes(key))return null;
     const image = art[key] = new Image();
     image.src = "/sprites/"+key+(key.startsWith("dragon-adult-") ? "-v2.png" : key.endsWith("-idle") ? ".png" : "-v1.png");
+    return image;
   }
   const clamp = value => Math.max(0, Math.min(1, value));
   function stamp(ctx,key,col,row,cell,x,y,w,h=w,color=null) {
-    const image = art[key];
+    const image = imageFor(key);
     if (!image?.complete || !image.naturalWidth) return false;
     ctx.save(); ctx.imageSmoothingEnabled = false;
     if (color) {
@@ -29,7 +33,7 @@
     ctx.restore(); return true;
   }
   function observe(room) {
-    const key = [room.code,room.stage].join(":");
+    const key = window.GauntletAudio?.sceneKey(room) || [room.code,room.adventure?.area,room.stage].join(":");
     if (key !== scene) { enemies.clear(); cover.clear(); traps.clear(); hazards.clear(); effectTimes.clear(); scene = key; }
     const now = performance.now(), active = new Set();
     for (const e of room.enemies || []) {
@@ -40,6 +44,7 @@
       const record = { ...previous, pending:signature, at:now, progress:a?.progress || 0, remaining:a?.remaining || 0 };
       if (a) {
         record.kind = a.kind;
+        record.healing=Boolean(a.ally);
         if (signature !== previous?.pending) record.facing = facing;
       } else if (previous?.pending) {
         // Stun cancellation has no recovery/charge: do not invent an attack release.
@@ -78,7 +83,7 @@
   function enemy(ctx,e,x,y) {
     window.GauntletAbilityAnimations?.enemy(ctx,e,enemies.get(e.id));
     const a = e.bossAttack || e.roleAttack, record = enemies.get(e.id);
-    const kind = e.kind === "monster" ? "chimera" : e.kind === "dragon" ? "dragon-adult" : e.kind;
+    const kind = e.id === "shrine-guardian" ? "shrine-guardian" : e.kind === "monster" ? "chimera" : e.kind === "dragon" ? "dragon-adult" : e.kind;
     let column, key;
     const elapsed = performance.now()-(record?.released ?? -Infinity);
     if (a) {
@@ -90,16 +95,21 @@
       column = e.charging ? 6+Math.floor(performance.now()/110)%3 : 6+Math.max(0,Math.min(2,Math.floor(releaseElapsed/140))); key = kind+"-idle";
     } else if (e.kind === "draco") {
       column = (e.moving ? 3 : 0)+Math.floor(performance.now()/(e.moving ? 120 : 250))%3; key = "draco-idle";
-    } else return false;
+    } else {
+      // All imported monster sheets use idle 0–2, locomotion 3–5 and release
+      // 6–8. Serpent previously fell through to the hero two-frame convention.
+      column=(e.moving?3:0)+Math.floor(performance.now()/(e.moving?180:280))%3;
+      key=kind+'-idle';
+    }
     const facing = a || e.charging || elapsed < 550 ? record?.facing || (a ? {facingX:a.x-e.x,facingY:a.y-e.y} : e) : e;
     const direction = (Math.round((Math.PI/2-Math.atan2(facing.facingY ?? 1,facing.facingX ?? 0))/(Math.PI/4))+8)%8;
-    return e.kind === "dragon" ? stamp(ctx,key,column,direction+1,116,x-64,y-102,128) : stamp(ctx,key,column,direction+1,68,x-32,y-42,64);
+    return e.kind === "dragon" ? stamp(ctx,key,column,direction+1,116,x-64,y-102,128) : stamp(ctx,key,column,direction+1,e.id==='shrine-guardian'?96:68,x-32,y-42,64);
   }
   function draw(ctx,room) {
     if (!room.environment) return;
     // Keep a complete fallback while the transparent atlases load.
     const region = ["woodland","ruins","cavern","frost"].includes(room.region) ? room.region : "woodland";
-    if (!art["terrain-effects"]?.naturalWidth || !art["cover-"+region]?.naturalWidth) { drawFallback(ctx,room); return; }
+    if (!imageFor('terrain-effects')?.naturalWidth || !imageFor('cover-'+region)?.naturalWidth) { drawFallback(ctx,room); return; }
     const now = performance.now(), frame = Math.floor(now/180)%4;
     ctx.save();
     for (const z of room.environment.zones || []) {
@@ -122,7 +132,7 @@
       const state = cover.get(o.id), broken = o.hp <= 0, column = broken ? 2 : o.hp <= o.maxHp*.5 ? 1 : 0;
       ctx.save();
       if (!broken) { ctx.fillStyle = "#09161c77"; circle(ctx,o.x,o.y+8,26); ctx.fill(); }
-      const shake = now-(state?.hit || -Infinity) < 150 && !broken ? Math.sin(now/15)*2 : 0;
+      const shake = !window.GauntletAudio?.visualSettings().reduced && now-(state?.hit || -Infinity) < 150 && !broken ? Math.sin(now/15)*1 : 0;
       stamp(ctx,"cover-"+(o.iceWall ? 'frost' : region),column,o.kind === "rock" ? 1 : 0,64,o.x-32+shake,o.y-32,64);
       if (broken && now-(state?.broken || -Infinity) < 400) {
         const f = Math.min(3,Math.floor((now-state.broken)/100));

@@ -1,0 +1,89 @@
+{
+  "columns": 4,
+  "overrides": "art/projectile-animations/source/overrides-v1.png",
+  "source": "art/projectile-animations/source/enemy-v1.png",
+  "cell": 96,
+  "rows": [
+    {
+      "description": "a fierce compact orange red fireball with a white hot core at the front and ragged flame tongue tail streaming backward, flames visibly changing shape",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "fireball",
+      "nativeLength": 35,
+      "row": 0
+    },
+    {
+      "description": "a pointed ice blue crystalline comet with a bright frosty core at the front and a jagged snow wake behind, crystalline sparkle and frost tail changing",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "ice_comet",
+      "nativeLength": 35,
+      "row": 1
+    },
+    {
+      "description": "a dense violet black dark-magic orb with a luminous lilac core and smoky purple tendrils trailing backward, rotating tendrils and pulsing core",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "dark_orb",
+      "nativeLength": 34,
+      "row": 2
+    },
+    {
+      "description": "a magenta lavender arcane orb with a white star core and concentric angular magic wisps stretching backward, core and wisps rotating visibly",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "arcane_orb",
+      "nativeLength": 35,
+      "row": 3
+    },
+    {
+      "description": "an electric blue white storm-energy projectile with a jagged lightning front and twisting electric wake, branching bolts visibly changing shape",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "storm_bolt",
+      "nativeLength": 36,
+      "row": 4
+    },
+    {
+      "description": "a green purple poisonous glob of slime, bright acid core and purple poison droplets stretching backward, goo wobbling and droplets shifting",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "venom_glob",
+      "nativeLength": 30,
+      "row": 5
+    },
+    {
+      "description": "a glowing lime green seed dart surrounded by two curling leaf wisps trailing backward, leaf wake fluttering and green core pulsing",
+      "anchor": [
+        78,
+        48
+      ],
+      "id": "nature_seed",
+      "nativeLength": 30,
+      "row": 6
+    },
+    {
+      "description": "one angular gray brown stone projectile tumbling end over end with chips of rock and a short dust wake behind; four distinct stone rotations",
+      "anchor": [
+        48,
+        48
+      ],
+      "id": "tumbling_rock",
+      "nativeLength": 35,
+      "row": 7
+    }
+  ],
+  "frames": 4
+}

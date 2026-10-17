@@ -1,0 +1,74 @@
+﻿{
+    "mirrorSourceRows":  [
+                             0,
+                             1,
+                             2,
+                             3,
+                             4,
+                             3,
+                             2,
+                             1
+                         ],
+    "hero":  "Wizard",
+    "sourceScales":  {
+                         "actions":  0.35294117647058826,
+                         "body":  0.29268292682926828
+                     },
+    "version":  1,
+    "directions":  [
+                       "south",
+                       "south-east",
+                       "east",
+                       "north-east",
+                       "north",
+                       "north-west",
+                       "west",
+                       "south-west"
+                   ],
+    "displayAnchor":  [
+                          32,
+                          54
+                      ],
+    "anchor":  [
+                   48,
+                   84
+               ],
+    "states":  {
+                   "cast":  [
+                                3,
+                                4,
+                                5
+                            ],
+                   "idle":  [
+                                0,
+                                1,
+                                2
+                            ],
+                   "hit":  [
+                               6
+                           ],
+                   "signature":  [
+                                     6,
+                                     7,
+                                     8
+                                 ],
+                   "basic":  [
+                                 0,
+                                 1,
+                                 2
+                             ],
+                   "downed":  [
+                                  7
+                              ],
+                   "move":  [
+                                3,
+                                4,
+                                5
+                            ]
+               },
+    "cell":  96,
+    "sheets":  {
+                   "actions":  "ascended-wizard-actions-v1.png",
+                   "body":  "ascended-wizard-body-v1.png"
+               }
+}

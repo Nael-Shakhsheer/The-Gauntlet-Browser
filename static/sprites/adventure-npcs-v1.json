@@ -1,0 +1,54 @@
+{
+  "frames": 4,
+  "rows": [
+    {
+      "width": 39,
+      "row": 0,
+      "description": "a young woodland village courier with tawny skin, short curly dark hair, mustard tunic, emerald scarf, small brown messenger satchel and brown boots, standing facing south with gentle breathing",
+      "id": "runner_idle",
+      "height": 50
+    },
+    {
+      "width": 39,
+      "row": 1,
+      "description": "the SAME courier jogging toward the viewer, four sequential walking phases, scarf and satchel swinging, same body proportions",
+      "id": "runner_walk",
+      "height": 50
+    },
+    {
+      "width": 39,
+      "row": 2,
+      "description": "the SAME courier explaining directions, four sequential friendly pointing and hand gesture poses, standing facing south",
+      "id": "runner_gesture",
+      "height": 50
+    },
+    {
+      "width": 43,
+      "row": 3,
+      "description": "a middle-aged woodland hunter with warm brown skin, short salt-and-pepper hair and beard, dark green leather jerkin, burgundy torn shoulder cloak, leather quiver, white bandage on left leg; sitting injured with one knee raised, four subtle breathing phases, no standing up",
+      "id": "hunter_injured",
+      "height": 35
+    },
+    {
+      "width": 39,
+      "row": 4,
+      "description": "the SAME hunter standing healthy, same face clothing quiver and burgundy cloak, healed leg bandage visible; four gentle standing breathing phases facing south",
+      "id": "hunter_recovered",
+      "height": 50
+    },
+    {
+      "width": 39,
+      "row": 5,
+      "description": "the SAME recovered hunter standing and raising one hand in gratitude, four sequential friendly gesture poses facing south",
+      "id": "hunter_gesture",
+      "height": 50
+    }
+  ],
+  "anchor": [
+    48,
+    72
+  ],
+  "source": "art/adventure-sprites/source/npcs-v1.png",
+  "cell": 96,
+  "columns": 4
+}

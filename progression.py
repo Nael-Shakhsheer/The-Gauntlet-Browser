@@ -1,5 +1,6 @@
 """Run story, hunter training and physical inn checkpoints."""
 import copy
+import feedback
 import math
 import random
 import secrets
@@ -23,11 +24,23 @@ PAGES = {
         "Spend one point for one rank. Talk to an innkeeper to train. Your upgrades stay with you if the Guild changes your class; their percentages use your new hero's base stats.",
         "Training belongs to this run. Go upstairs, find an unlocked guest room, and use its bed to rest and set your party's checkpoint. Some locked rooms are occupied. Talking to me does not save your run."]),
 }
+PAGES['adventure_caretaker']=('Mara · Cottage recovery',['I can restore your health and mana for 5 shared ordinary Runes. If both are already full, there is no charge. This is treatment, not an inn checkpoint.'])
+PAGES['adventure_runner']=('Village Runner',['We have work for willing hunters. Review the available assignment, report your findings, or ask about the region. You may postpone without losing evidence.'])
 REPLIES = {
+    'adventure_caretaker':['Could you treat my injuries?'],'adventure_runner':['What needs doing?'],
     "wounded": ["What happened to you?", "We will find the dragon.", "We accept your quest."],
     "welcome": ["Yes, we are hunters.", "We will speak to the innkeeper."],
     "training": ["What do hunters earn here?", "Show me the training branches.", "Our training follows our class?", "I understand. Let us begin."],
 }
+PRESENTATIONS = {key:dict(type='npc',portrait=portrait) for key,portrait in {
+    'adventure_runner':'Villager02','adventure_caretaker':'Innkeeper','wounded':'Villager04','welcome':'Villager02','training':'Innkeeper',
+    'adventure_hunter':'Villager04','adventure_recovered':'Villager04','adventure_welcome':'Villager02',
+    'adventure_training':'Innkeeper','adventure_complete':'Villager02','caravan_aftermath':'Villager02'}.items()}
+
+
+def inspect(player,title,text,kind='inspection'):
+    start_dialogue(player,'inspection')
+    player['dialogue'].update(title=title,text=text,presentation=kind)
 
 
 def defaults(room, legacy=False):
@@ -60,22 +73,30 @@ def dialogue(player):
     d = player.get("dialogue")
     if not d:
         return None
+    if d['kind']=='inspection':return {**d,'total':1,'reply':'What happened here?' if d['presentation']=='npc' else None,'button':'Close','presentation':d['presentation'],'portrait':d.get('portrait') if d['presentation']=='npc' else None}
     title, pages = PAGES[d["kind"]]
-    return {**d, "title": title, "text": pages[d["page"]], "total": len(pages),
-            "reply": REPLIES[d["kind"]][d["page"]],
+    presentation=PRESENTATIONS.get(d['kind'],dict(type='inspection',portrait=None))
+    return __import__("dialogue_choices").decorate(player,{**d, "title": title, "text": pages[d["page"]], "total": len(pages),
+            "presentation":presentation['type'],"portrait":presentation['portrait'],
+            "reply": REPLIES[d["kind"]][d["page"]] if presentation['type']=='npc' else None,
             "button": "Accept quest" if d["kind"] == "wounded" and d["page"] == len(pages)-1 else
-                      "Continue" if d["page"] < len(pages)-1 else "Understood"}
+                      "Continue" if d["page"] < len(pages)-1 else "Understood"})
 
 
 def advance(world, room, player, payload):
     d = player.get("dialogue")
     if not d or payload.get("id") != d["id"] or payload.get("page") != d["page"]:
         raise ValueError("This dialogue has changed. Continue the current page.")
+    if d['kind']=='inspection':player['dialogue']=None;return
     if d["page"] < len(PAGES[d["kind"]][1])-1:
         d["page"] += 1
         return
     kind = d["kind"]
     player["dialogue"] = None
+    if kind.startswith('adventure_'):
+        import adventure
+        adventure.advance(world, room, player, kind)
+        return
     if kind == "wounded":
         player["questAccepted"] = True
         room["story"]["quest"] = "active"
@@ -108,6 +129,7 @@ def boss_reward(room):
 
 
 def max_hp(player, classes):
+    if 'magicRunes' in player:return __import__('magic_runes').maxima(player)[0]
     return (classes[player["class"]]["hp"]*(100+4*player.get("skillRanks", {}).get("vitality", 0))+99)//100
 
 
@@ -185,6 +207,10 @@ def interior_walkable(room, player, x, y):
 
 
 def checkpoint(world, room, player, bed_id):
+    if room.get('mode') == 'adventure':
+        import adventure
+        adventure.rest(world, room, player, bed_id)
+        return
     if not player.get("trainingKnown"):
         raise ValueError("Speak to the innkeeper to discover hunter training before resting.")
     bed = next((r for r in room["innRooms"] if "bed_"+r["id"] == bed_id and not r["locked"]), None)
@@ -195,7 +221,7 @@ def checkpoint(world, room, player, bed_id):
     keys = ("bossesDefeated", "miniBossesSinceBoss", "miniBossesRequired", "regularWavesSinceMiniBoss",
             "regularWavesRequired", "bossSequence", "stageWave", "stageWaves", "miniBossStages", "bossStages",
             "puzzlesRequired", "puzzlesCompleted", "puzzleStages", "townsTarget", "townsVisited", "townStages",
-            "townLayout", "townSeed", "townPaths", "townVillagers", "townDecor", "difficulty", "totalStages",
+            "townLayout", "townSeed", "townPaths", "townVillagers", "townDecor", "townPortal", "townDesignVersion", "difficulty", "totalStages",
             "townInstance", "innRooms")
     for key,default in (('objectiveStages',{}),('townPressureStages',[]),('lengthChosen',False)):
         room.setdefault(key,copy.deepcopy(default))
@@ -207,6 +233,7 @@ def checkpoint(world, room, player, bed_id):
     for pid in room["players"]:
         room.setdefault("privateNotices", {})[pid] = "Party restored. Checkpoint set at the upstairs bed in "+bed["name"]+"."
     world._save_checkpoint(room)
+    feedback.emit(room, 'rest', actor=player)
     world._say(room, "system", "The Gauntlet", player["name"]+" rested in "+bed["name"]+". The party's bed checkpoint is set.")
 
 

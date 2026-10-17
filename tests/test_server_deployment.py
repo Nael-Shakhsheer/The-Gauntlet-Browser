@@ -32,10 +32,11 @@ class DeploymentTests(unittest.TestCase):
             worker.start()
             base = f"http://127.0.0.1:{listener.server_port}"
 
-            def request(path, payload=None):
+            def request(path, payload=None,proof=None):
                 data = json.dumps(payload).encode() if payload is not None else None
-                req = Request(base + path, data=data, headers={
-                    "Host": "the-gauntlet.onrender.com", "Content-Type": "application/json"})
+                headers={"Host": "the-gauntlet.onrender.com", "Content-Type": "application/json"}
+                if proof:headers['X-Gauntlet-Recovery']=proof
+                req = Request(base + path, data=data, headers=headers)
                 with urlopen(req, timeout=5) as response:
                     return response.status, response.read()
 
@@ -48,8 +49,22 @@ class DeploymentTests(unittest.TestCase):
                 room = json.loads(raw)
                 status, raw = request("/api/join", {"room": room["room"], "name": "Guest"})
                 self.assertEqual(status, 201)
-                self.assertEqual(json.loads(raw)["room"], room["room"])
-                self.assertEqual(request(f'/api/state?room={room["room"]}&player={room["player"]}')[0], 200)
+                guest=json.loads(raw)
+                self.assertEqual(guest["room"], room["room"])
+                with self.assertRaises(HTTPError):request(f'/api/state?room={room["room"]}&player={room["player"]}')
+                self.assertEqual(request(f'/api/state?room={room["room"]}&player={room["player"]}',proof=room['recovery'])[0], 200)
+                action=dict(room=room['room'],player=room['player'],action='class',**{'class':'Knight'})
+                with self.assertRaises(HTTPError):request('/api/action',action,proof=guest['recovery'])
+                self.assertEqual(request('/api/action',action,proof=room['recovery'])[0],200)
+                self.assertEqual(request('/state-cache.js')[0],200)
+                path=f'/api/state?room={room["room"]}&player={room["player"]}'
+                full=json.loads(request(path,proof=room['recovery'])[1])
+                lean=json.loads(request(path+'&catalog='+full['catalogVersion'],proof=room['recovery'])[1])
+                self.assertIn('classes',full)
+                self.assertNotIn('classes',lean)
+                self.assertIn('movement',lean)
+                refreshed=json.loads(request(path+'&catalog=older-build',proof=room['recovery'])[1])
+                self.assertIn('classes',refreshed)
                 with patch.object(server, 'SIMULATION_LAST_TICK', server.time.monotonic()-6):
                     with self.assertRaises(HTTPError) as failure:
                         request('/healthz')

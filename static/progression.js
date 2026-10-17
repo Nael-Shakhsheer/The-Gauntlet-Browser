@@ -1,16 +1,17 @@
 /* Story dialogue and hunter training use server-owned progress. */
 let storySignature = "", storyBusy = false, trainingBusy = false, trainingDismissed = false;
 const questButton = document.createElement("button");
-questButton.className = "secondary"; questButton.textContent = "Quest";
+questButton.className = 'secondary legacy-quest-menu'; questButton.textContent = "Quest";
 $(".game-menu-items").append(questButton);
 questButton.addEventListener("click", () => {
+  if (latestRoom?.adventure) { openInfo('adventureJournalDialog'); return; }
   const status = latestRoom?.story?.quest;
   $("#questText").textContent = status === "complete" ? "The dragon is defeated. You fulfilled the wounded hunter's request." :
     status === "active" ? "Find and kill the dragon. The final encounter is at stage " + latestRoom.totalStages + ". Speak to innkeepers for training and use upstairs guest beds to save your progress." :
     "Follow the road. A wounded hunter waits in a peaceful clearing after the first or second stage.";
   openInfo("questDialog");
 });
-$("#storyDialog").addEventListener("cancel", event => event.preventDefault());
+$("#storyDialog").addEventListener("cancel", event => {event.preventDefault();if(latestRoom?.dialogue?.choices?.length){const d=latestRoom.dialogue;sendAction('dialogueChoice',{id:d.id,page:d.page,revision:d.revision,choice:'leave'}).then(refresh).catch(e=>notice($('#storyNotice'),e.message));}else if(latestRoom?.dialogue?.presentation!=='npc')$('#storyNext').click();});
 $("#storyNext").addEventListener("click", async () => {
   const d = latestRoom?.dialogue;
   if (!d || storyBusy) return;
@@ -37,21 +38,26 @@ $("#trainingBranches").addEventListener("click", async event => {
 function renderProgression(room) {
   const d = room.dialogue, dialog = $("#storyDialog");
   if (d) {
-    const signature = d.id + ":" + d.page;
+    const signature = d.id + ":" + d.page + ":" + (d.revision||0);
     if (signature !== storySignature) {
       storySignature = signature;
       $("#storyTitle").textContent = d.title; $("#storyText").textContent = d.text;
+      const npc=d.presentation==='npc';dialog.dataset.presentation=npc?'npc':d.presentation||'inspection';
+      (npc?document.querySelector('.player-speaker .speech-box'):document.querySelector('.npc-speaker .speech-box')).append($('#storyNext'));
       $("#storyPlayerName").textContent = room.players.find(p => p.id === room.you)?.name || "You";
-      $("#storyReply").textContent = d.reply || "I am listening.";
-      $("#storyStep").textContent = "DIALOGUE · " + (d.page + 1) + " / " + d.total;
+      $("#storyReply").textContent = d.reply || '';
+      $("#storyStep").textContent = (npc?'CONVERSATION':d.presentation==='signpost'?'DIRECTIONS':'INSPECTION')+' · '+(d.page+1)+' / '+d.total;
+      let choices=document.getElementById('storyChoices');if(!choices){choices=document.createElement('div');choices.id='storyChoices';choices.className='story-choices';document.querySelector('.player-speaker .speech-box').append(choices);}choices.replaceChildren();
+      $('#storyNext').hidden=Boolean(d.choices?.length);
+      for(const response of d.choices||[]){const b=document.createElement('button');b.className='secondary small';b.textContent=response.label;b.onclick=async()=>{if(storyBusy)return;storyBusy=true;for(const x of choices.children)x.disabled=true;try{await sendAction('dialogueChoice',{id:d.id,page:d.page,revision:d.revision,choice:response.id,requestId:crypto.randomUUID().replaceAll('-',''),serviceRevision:d.serviceRevision});}catch(e){notice($('#storyNotice'),e.message);}finally{storyBusy=false;storySignature='';refresh();}};choices.append(b);}
       $("#storyNext").textContent = d.button; notice($("#storyNotice"), "");
     }
     $("#storyNext").disabled = storyBusy;
-    drawDialoguePortraits(room, d);
+    if(d.presentation==='npc')drawDialoguePortraits(room,d);
     if (!dialog.open) { endHeldAttack(); keys.clear(); moveState = { x: 0, y: 0, attack: false }; dialog.showModal(); }
   } else { storySignature = ""; if (dialog.open) dialog.close(); }
   if (room.townInteraction !== "innkeeper") trainingDismissed = false;
-  const training = room.phase === "town" && room.townInteraction === "innkeeper" && room.trainingKnown && !d;
+  const training = !room.adventure && room.phase === "town" && room.townInteraction === "innkeeper" && room.trainingKnown && !d;
   if (!training && $("#trainingDialog").open) $("#trainingDialog").close();
   if (training && !trainingDismissed) {
     if (!$("#trainingDialog").open) openInfo("trainingDialog");
@@ -83,7 +89,9 @@ function drawDialoguePortraits(room, dialogue) {
   const drawn = player && drawImportedHero(left, {...player,status:"alive",moving:false,animationUntil:0,facingX:1,facingY:0},40,48);
   left.restore();
   if (!drawn) { left.fillStyle = player?.color || "#ffe389"; left.font = "bold 32px monospace"; left.fillText((player?.class || "Hero")[0],27,58); }
-  const npc = {wounded:"Villager04",welcome:"Villager02",training:"Innkeeper"}[dialogue.kind];
+  const storyKind=({wounded:'injured',welcome:'runner',adventure_hunter:'injured',adventure_recovered:'recovered',adventure_welcome:'runner'})[dialogue.kind];
+  if (storyKind && window.GauntletAdventureSprites?.npc(right,storyKind,40,48,{gesture:storyKind!=='injured',scale:1.3})) return;
+  const npc=dialogue.portrait;if(!npc)return;
   if (!window.GauntletTownSprites.character(right,npc,40,48,{direction:"west",scale:1.3})) {
     right.fillStyle = "#ffe389"; right.font = "bold 32px monospace"; right.fillText(dialogue.title[0],27,58);
   }
@@ -133,6 +141,9 @@ function drawInnRooms(ctx, room) {
 }
 function drawStoryNpc(ctx, x, y, label, wounded=false, moving=false) {
   drawCharacterShadow(ctx, x, y+14, 17);
+  if (window.GauntletAdventureSprites?.npc(ctx,wounded?'injured':'runner',x,y,{moving})) {
+    ctx.fillStyle='#fff0ca';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText(label,x,y-42);return;
+  }
   ctx.save(); ctx.translate(x, y); if (wounded) ctx.rotate(-.4);
   const imported = window.GauntletTownSprites?.character(ctx, wounded ? "Villager04" : "Villager02", 0, 0, { mode: moving ? "walk" : "idle", scale: 1.05 });
   if (!imported) {
@@ -148,6 +159,8 @@ function drawVillageRunner(ctx, room) {
   if (npc && !npc.done) drawStoryNpc(ctx, npc.x, npc.y, "VILLAGE RUNNER", false, npc.y < 405);
 }
 function drawPeacefulClearing(ctx, room) {
+  const smooth=window.GauntletWorldScenery?.floor(ctx,room,960,540);
+  if(!smooth) {
   const artwork = villageImage(room, "hunter");
   if (artwork) { ctx.imageSmoothingEnabled = false; ctx.drawImage(artwork,0,0,960,540); }
   else {
@@ -157,6 +170,7 @@ function drawPeacefulClearing(ctx, room) {
     ctx.fillStyle = "#604931"; ctx.fillRect(x-8,y,16,50); ctx.fillStyle = "#456b45"; ctx.fillRect(x-40,y-50,80,65);
   }
   ctx.fillStyle = "#778179"; ctx.beginPath(); ctx.arc(525,265,29,0,Math.PI*2); ctx.fill();
+  }
   }
   ctx.fillStyle = "#152321dc"; ctx.fillRect(374,191,212,24);
   drawStoryNpc(ctx,480,250, room.nearbyNpc ? "E · WOUNDED HUNTER" : "WOUNDED HUNTER",true);

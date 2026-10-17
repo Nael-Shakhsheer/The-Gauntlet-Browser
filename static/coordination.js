@@ -8,6 +8,9 @@ gameMenu.className = "game-menu";
 gameMenu.innerHTML = '<summary class="secondary small">Menu</summary><div class="game-menu-items"><button class="secondary" data-guide>How to play</button><button class="secondary" data-audio-open>Sound settings</button><button id="openStats" class="secondary">Run stats</button></div>';
 gameMenu.querySelector(".game-menu-items").append($("#mainMenuGame"));
 $(".game-top-actions").append(gameMenu);
+gameMenu.addEventListener('toggle',releaseControls);
+const technical=document.createElement('button');technical.className='secondary';technical.textContent='Technical details';technical.onclick=()=>openInfo('runtimeDialog');gameMenu.querySelector('.game-menu-items').append(technical);
+$('#runtimeServer').onclick=async()=>{try{$('#runtimeServerReadings').textContent=JSON.stringify(await api('/api/diagnostics?room='+encodeURIComponent(session.room)+'&player='+encodeURIComponent(session.player)),null,2);}catch(e){$('#runtimeServerReadings').textContent=e.message;}};
 const pingFeed = document.createElement("div");
 pingFeed.id = "pingFeed"; pingFeed.setAttribute("aria-live", "polite");
 $(".coordination-tools").append(pingFeed);
@@ -16,6 +19,7 @@ function openInfo(id) {
   endHeldAttack();
   keys.clear(); moveState = { x: 0, y: 0, attack: false }; sendMovement(true);
   gameMenu.open = false;
+  document.querySelectorAll('dialog[open]').forEach(d=>{if(d.id!==id)d.close();});
   $("#" + id).showModal();
 }
 document.addEventListener("click", (event) => {
@@ -25,6 +29,7 @@ document.addEventListener("click", (event) => {
 });
 function renderGuide() {
   const key = (name) => String(keyBindings[name]).toUpperCase();
+  const adventure = Boolean(latestRoom?.adventure);
   const pages = [
     ["Move and explore", `Move with ${key("up")}, ${key("left")}, ${key("down")}, ${key("right")} or the arrow keys. On a phone, hold the direction buttons. Space or Dash gives a short burst during combat. You can keep moving while using abilities or quick pings.`],
     ["Use your three abilities", `Choose one Light, Special and Ultimate. Hold left click on the arena or hold Attack to repeat your equipped Light; ${key("special")} for Special; ${key("ultimate")} for Ultimate. Touch players can tap the ability buttons. Ultimates recharge in 15 seconds, including at the start of every combat stage. Druid summons stay through waves, disappear at the next stage, and recharge after death.`],
@@ -33,6 +38,12 @@ function renderGuide() {
     ["Read and share clues", "In multiplayer, your totem describes a teammate's rune. Share clue sends that inscription to party chat. A teammate holds your answer. Stand on your chosen runes together to open the gate. An NPC companion shares your answer in the HUD and waits for your Share clue before choosing its rune. Solo totems describe your own answer. A disconnected teammate's clue is reassigned to someone still present."],
     ["Towns, training and saves", `Use ${key("revive")} or Interact at doors and NPCs. Trade at the shop and change class once per run at the Guild. Speak to the first village's innkeeper to discover hunter training before leaving. Take the inn stairs upstairs and use a bed in an unlocked room to restore the party and save a checkpoint to disk. Talking to the innkeeper does not save. A restart returns you to your saved bed; progress beyond that village is lost. Use Continue saved run in this browser and keep its site data. Run stats and your dragon quest are under Menu.`]
   ];
+  if (adventure) {
+    pages[0][1] += ` Gather at a trail marker and each connected human presses ${key('revive')} or taps Travel. Offline players and companions do not block travel. Ordinary trails stay open during combat. Map shows discovered locations; Journal shows objectives.`;
+    pages[1][1] = `Start with a basic attack and an active skill. Skills shows your hero’s three branches. Finite exploration milestones earn points once; learn, equip or freely respec in Oakvale. Hold left click or Attack for repeated basics. Active slots use ${key('special')}, ${key('active2')} and ${key('active3')}; Ultimate uses ${key('ultimate')}. The road opens slot two; a completed woodland quest opens slot three. Recharge survives travel and swapping. Druid summons disappear at area changes, then require their normal 8s or 15s recharge.`;
+    pages[4][1] = 'The shrine totem describes your answer in solo play, or a connected human teammate’s answer in co-op. Use Share clue or chat, then stand on the matching runes together. Companions do not need to solve the puzzle. Trails remain open until the guardian awakens.';
+    pages[5][1] = `Use ${key('revive')} or Interact at doors and NPCs. Shops, the Guild and inn work as usual. World objectives, cleared groups, personal equipment and shared Runes save automatically on the local server. Rest upstairs in an unlocked inn bed to choose the party’s return point. A restart or wipe returns to that bed; a wipe loses 40% of Runes once and keeps completed objectives. Without a bed, return to Oakvale’s gate. Free online storage is temporary. Keep browser site data to reconnect.`;
+  }
   $("#guideStep").textContent = `${guidePage + 1} / ${pages.length}`;
   $("#guideHeading").textContent = pages[guidePage][0];
   $("#guideText").textContent = pages[guidePage][1];
@@ -46,6 +57,7 @@ $("#guideNext").addEventListener("click", () => {
 });
 $("#continueRun").classList.toggle("hidden", !localStorage.getItem("gauntlet-resume"));
 $("#continueRun").addEventListener("click", async () => {
+  if(window.openRecovery){await window.openRecovery();return;}
   try {
     const saved = JSON.parse(localStorage.getItem("gauntlet-resume"));
     if (!saved?.room || !saved?.player) throw new Error("No saved run in this browser.");
@@ -94,15 +106,10 @@ $("#pingButtons").addEventListener("click", async (event) => {
 $("#world").addEventListener("pointerdown", async (event) => {
   if (!enemyPingArmed || !latestRoom) return;
   event.preventDefault(); event.stopImmediatePropagation();
-  const rect = event.currentTarget.getBoundingClientRect();
-  const x = (event.clientX - rect.left) / rect.width * 960, y = (event.clientY - rect.top) / rect.height * 540;
-  const nearest = latestRoom.enemies.reduce((best, enemy) => {
-    const distance = Math.hypot((enemy.x - x) * rect.width / 960, (enemy.y - y) * rect.height / 540);
-    return distance < (best?.distance ?? 55) ? { enemy, distance } : best;
-  }, null);
+  const nearest = enemyAtPointer(event,55);
   if (!nearest) return notice($("#combatNotice"), "Tap closer to the enemy, or cancel the mark.");
   armEnemyPing(false);
-  try { await sendAction("ping", { kind: "enemy", targetId: nearest.enemy.id }); refresh(); }
+  try { await sendAction("ping", { kind: "enemy", targetId: nearest.id }); refresh(); }
   catch (error) { notice($("#combatNotice"), error.message); }
 }, true);
 $("#shareClue").addEventListener("click", async () => {
@@ -130,6 +137,7 @@ function drawPings(ctx, room) {
 function renderStats() {
   const room = latestRoom;
   $("#saveStatus").textContent = 'This session is held in server memory. '+(room?.checkpointSavedAt ? "Disk checkpoint: inn after stage "+room.checkpointStage+' · '+new Date(room.checkpointSavedAt * 1000).toLocaleString() + ". Restart recovery returns to that bed; later progress is lost." : "No disk checkpoint yet. A server restart loses this run; rest at an upstairs inn bed to set a checkpoint.");
+  if (room?.adventure) $('#saveStatus').textContent = adventureSaveText(room.adventure);
   const box = $("#overallStats"); box.replaceChildren();
   for (const player of cachedRunTotals) {
     const section = document.createElement("section"); section.className = "run-total";

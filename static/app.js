@@ -2,9 +2,10 @@ const $ = (selector) => document.querySelector(selector);
 const CLASS_ORDER = ["Knight", "Wizard", "Archer", "Cleric", "Rogue", "Druid", "Bard", "Healer"];
 const ABILITY_SPRITE_KEYS = new Set(["shield_bash","cleaving_arc","iron_wall","challenge","guardian_cry","earthshaker","arc_burst","frost_lance","spell_surge","blink","team_aegis","arcane_cataclysm","piercing_volley","snare_shot","eagle_eye","quickstep","rain_of_arrows","deadeye","radiant_flask","sanctified_throw","splash_mend","blessed_vial","sanctuary_rain","cleansing_splash","backstab","fan_of_blades","vanish","shadowstep","death_bloom","execution","briar_burst","thornshot","lightning_bird","fire_wolf","ice_bear","nature_golem","discord_note","quickstring","battle_anthem","fleet_rhythm","grand_crescendo","rallying_chord","life_spark","healing_ray","major_mend","quick_revival","miracle","mass_revival"]);
 function createAbilityIcon(ability) {
-  if (!ABILITY_SPRITE_KEYS.has(ability.id)) return null;
+  const spriteKey=ability.iconKey || ability.id;
+  if (!ABILITY_SPRITE_KEYS.has(spriteKey)) return null;
   const image=document.createElement("img");
-  image.className="ability-sprite"; image.src="/sprites/ability-"+ability.id+"-v1.png";
+  image.className="ability-sprite"; image.src="/sprites/ability-"+spriteKey+"-v1.png";
   image.alt=""; image.setAttribute("aria-hidden","true"); image.width=image.height=64; image.draggable=false;
   image.addEventListener("error",()=>image.remove(),{once:true});
   return image;
@@ -14,9 +15,9 @@ function decorateAbilityChoice(label,ability) {
   const text=document.createElement("span");text.textContent=label.textContent;
   label.classList.add("ability-choice-heading");label.replaceChildren(image,text);
 }
-const ITEM_SPRITE_KEYS = new Set(["healing_draught","warding_tonic","mana_draught","quickstep_elixir","route_lens","ember_oil","piercing_arrows","phoenix_flask","stormguard_charm","iron_sword","oakguard_vest","moonsteel_sword","dragonbone_armor","starfall_blade","aegis_of_dawn","sage_wand","wind_bow","sun_censer","shadow_blades","thorn_staff","travel_lute","mercy_rod"]);
+const ITEM_SPRITE_KEYS = new Set(["healing_draught","warding_tonic","mana_draught","quickstep_elixir","route_lens","ember_oil","piercing_arrows","phoenix_flask","stormguard_charm","iron_sword","oakguard_vest","moonsteel_sword","dragonbone_armor","starfall_blade","aegis_of_dawn","sage_wand","wind_bow","sun_censer","shadow_blades","thorn_staff","travel_lute","mercy_rod","arcane_conductor","rescuers_cuirass","summoners_staff","pursuit_blade"]);
 function createItemSprite(item) {
-  const key = ({arcane_conductor:'sage_wand',rescuers_cuirass:'oakguard_vest',summoners_staff:'thorn_staff',pursuit_blade:'shadow_blades'})[item?.key] || item?.key;
+  const key = item?.key;
   if (!item || !ITEM_SPRITE_KEYS.has(key)) return null;
   const image = document.createElement("img");
   image.className = "item-sprite";
@@ -63,13 +64,17 @@ function decorateHeroIcon(container, role) {
   image.addEventListener("error", () => { container.textContent = SYMBOLS[role]; }, { once: true });
   container.replaceChildren(image); container.classList.add("portrait-frame");
 }
-const DEFAULT_BINDINGS = { up: "w", down: "s", left: "a", right: "d", special: "q", ultimate: "x", revive: "e" };
-const BINDING_LABELS = { up: "Move up", down: "Move down", left: "Move left", right: "Move right", special: "Special attack", ultimate: "Ultimate attack", revive: "Revive / interact" };
+const DEFAULT_BINDINGS = { up: "w", down: "s", left: "a", right: "d", special: "q", active2:"r",active3:"f", ultimate: "x", revive: "e" };
+const BINDING_LABELS = { up: "Move up", down: "Move down", left: "Move left", right: "Move right", special: "Special / Active 1", active2:"Adventure Active 2",active3:"Adventure Active 3", ultimate: "Ultimate attack", revive: "Revive / interact" };
 let keyBindings;
 try { keyBindings = Object.assign({}, DEFAULT_BINDINGS, JSON.parse(localStorage.getItem("gauntlet-keybindings") || "{}")); }
 catch { keyBindings = Object.assign({}, DEFAULT_BINDINGS); }
+for(const action of ['active2','active3']){
+  if(Object.entries(keyBindings).some(([k,v])=>k!==action&&v===keyBindings[action]))keyBindings[action]=['r','f','g','z','c','t'].find(k=>!Object.values(keyBindings).includes(k))||DEFAULT_BINDINGS[action];
+}
 let bindingCapture = null;
-let session = JSON.parse(localStorage.getItem("gauntlet-session") || "null");
+let session=null;
+try{session=JSON.parse(localStorage.getItem('gauntlet-session')||'null');}catch{/* Keep the malformed reference intact; Continue/import remain available. */}
 let lastChatSignature = "";
 let lastPuzzleId = "";
 let lastPuzzleClue = "";
@@ -89,6 +94,7 @@ let guildSelected = [];
 let guildBusy = false;
 let arenaPointerActive = false;
 let polling = false;
+let pollGeneration=0,pollTimer=null,pollAbort=null;
 let moveState = { x: 0, y: 0, attack: false };
 let lastSentMove = "";
 let lastInputSent = 0;
@@ -97,6 +103,50 @@ let inputBusy = false;
 let pendingInput = null;
 let localTarget = null;
 const localMotion = window.GauntletMovement?.create() || {remember(){},update(){},position(){return null;}};
+const inputTransport=window.GauntletInput.create({request:(data,signal)=>api('/api/action',data,data.recovery,{signal,timeoutMs:450}),metric:(key,value)=>window.GauntletDiagnostics?.add(key,value)});
+const areaCamera = window.GauntletCamera.create();
+let landscapeBlocked=false;
+const coarseScreen=window.matchMedia('(pointer: coarse)');
+function updateLandscape() {
+  const touch=coarseScreen.matches || (navigator.maxTouchPoints>0 && window.matchMedia('(hover: none)').matches) || document.documentElement.dataset.touchPreview==='true';
+  const blocked=window.GauntletCamera.landscapeRequired(document.body.classList.contains('is-playing'),touch,window.innerWidth,window.innerHeight);
+  document.body.classList.toggle('needs-landscape',blocked);
+  $('main').inert=blocked;
+  $('#landscapeNotice').classList.toggle('hidden',!blocked);
+  const changed=blocked!==landscapeBlocked;landscapeBlocked=blocked;
+  if(blocked && changed) {
+    keys.clear();moveState={x:0,y:0,attack:false};areaCamera.clear();endHeldAttack();
+    sendAction('stopRevive').catch(()=>{});sendMovement(true);
+  }
+}
+window.addEventListener('resize',updateLandscape);
+coarseScreen.addEventListener('change',updateLandscape);
+function enemyAtPointer(event, radius=40) {
+  const rect=event.currentTarget.getBoundingClientRect();
+  const point=areaCamera.worldPoint(event.clientX,event.clientY,rect);
+  const [w,h]=window.GauntletCamera.size(latestRoom);
+  if(!point || point.x<0 || point.y<0 || point.x>w || point.y>h)return null;
+  return latestRoom.enemies.reduce((best,enemy)=>{
+    const screen=areaCamera.screenPoint(enemy.x,enemy.y,rect);
+    const distance=Math.hypot(screen.x-event.clientX,screen.y-event.clientY);
+    return distance<(best?.distance ?? radius)?{enemy,distance}:best;
+  },null)?.enemy || null;
+}
+const areaViewButton=$('#areaViewButton');
+areaViewButton.addEventListener('pointerdown',event=>{
+  if(event.button!==0)return;
+  event.preventDefault();areaViewButton.setPointerCapture(event.pointerId);
+  areaCamera.press(performance.now(),event.pointerId);
+});
+areaViewButton.addEventListener('pointerup',event=>{event.preventDefault();areaCamera.release(performance.now(),event.pointerId);});
+areaViewButton.addEventListener('pointercancel',()=>areaCamera.clear());
+areaViewButton.addEventListener('lostpointercapture',event=>{
+  // Normal pointerup already releases it; an interrupted hold must end too.
+  areaCamera.release(performance.now(),event.pointerId);
+});
+areaViewButton.addEventListener('click',event=>{if(event.detail===0)areaCamera.peek(performance.now());});
+window.addEventListener('blur',()=>areaCamera.clear());
+document.addEventListener('visibilitychange',()=>{if(document.hidden)areaCamera.clear();});
 const motionTracks = new Map();
 const damageTracks = new Map();
 const DAMAGE_FLASH_MS = 220;
@@ -113,13 +163,15 @@ const forkArt = {};
 const forkLayer = document.createElement("canvas");
 let forkArtRevision = 0;
 let forkTerrainKey = "";
-for (const region of ["woodland", "ruins", "cavern", "frost"]) {
-  const image = fieldArt[region] = new Image();
-  image.onload = () => { fieldArtRevision += 1; terrainKey = ""; };
-  image.src = "/sprites/field-" + region + "-v1.png";
-  const forkImage = forkArt[region] = new Image();
-  forkImage.onload = () => { forkArtRevision += 1; forkTerrainKey = ""; };
-  forkImage.src = "/sprites/fork-" + region + "-v1.png";
+function regionalImage(region,kind) {
+  if(!['woodland','ruins','cavern','frost'].includes(region))region='woodland';
+  const bank=kind==='fork'?forkArt:fieldArt;
+  if(!bank[region]){
+    const image=bank[region]=new Image();
+    image.onload=()=>{if(kind==='fork'){forkArtRevision++;forkTerrainKey='';}else{fieldArtRevision++;terrainKey='';}};
+    image.src='/sprites/'+kind+'-'+region+'-v1.png';
+  }
+  return bank[region];
 }
 const glowLayers = new Map();
 const villageArt = {};
@@ -130,14 +182,17 @@ const VILLAGE_ROOFS = ["#a94f3d", "#426f78", "#c56643", "#906451", "#b6773f", "#
 const VILLAGE_PROPS = ["tree", "gate", "bed", "stairs", "closed-door", "open-door"];
 for (const region of ["woodland", "ruins", "cavern", "frost"]) {
   villageArt[region] = {};
-  for (const kind of ["ground", "buildings", "props", "beds", "interiors", "upstairs", "hunter"]) {
-    const image = villageArt[region][kind] = new Image();
-    image.onload = () => { villageArtRevision++; villageTerrainKey = ""; };
-    image.src = "/sprites/village-" + region + "-" + kind + "-v1.png";
-  }
 }
 function villageImage(room, kind) {
-  const image = (villageArt[room?.region] || villageArt.woodland)[kind];
+  const region = Object.hasOwn(villageArt, room?.region) ? room.region : "woodland";
+  const images = villageArt[region];
+  let image = images[kind];
+  if (!image) {
+    image = images[kind] = new Image();
+    image.onload = () => { villageArtRevision++; villageTerrainKey = ""; };
+    const version = ["buildings", "interiors", "upstairs"].includes(kind) ? "v2" : "v1";
+    image.src = "/sprites/village-" + region + "-" + kind + "-" + version + ".png";
+  }
   return image?.complete && image.naturalWidth ? image : null;
 }
 function drawVillageProp(ctx, room, kind, x, y, width, height, variant = 0) {
@@ -165,8 +220,11 @@ function drawVillageInteriorArt(ctx, room, house, w, h) {
 }
 const heroSprites = {};
 const SPRITE_DIRECTIONS = ["south", "south-east", "east", "north-east", "north", "north-west", "west", "south-west"];
-for (const role of ["Knight", "Wizard", "Serpent", "Minotaur", "Troll", "Spider", "Wolf", "Draco", "Dragon", "Chimera", "Druid", "LightningBird", "FireWolf", "IceBear", "NatureGolem", "Archer", "Cleric", "Rogue", "Bard", "Healer"]) {
-  const base = role === "Dragon" ? "/sprites/dragon-adult-idle-v2" : "/sprites/" + role.toLowerCase() + "-idle";
+const IMPORTED_ROLES=["Knight", "Wizard", "Serpent", "Minotaur", "Troll", "Spider", "Wolf", "Draco", "Dragon", "Chimera", "Druid", "LightningBird", "FireWolf", "IceBear", "NatureGolem", "Archer", "Cleric", "Rogue", "Bard", "Healer", "ShrineGuardian"];
+function importedSprite(role) {
+  if(heroSprites[role])return heroSprites[role];
+  if(!IMPORTED_ROLES.includes(role))return null;
+  const base = role === "Dragon" ? "/sprites/dragon-adult-idle-v2" : role === "ShrineGuardian" ? "/sprites/shrine-guardian-idle" : "/sprites/" + role.toLowerCase() + "-idle";
   const image = new Image();
   const sprite = heroSprites[role] = { image, sheet: null };
   image.src = base + ".png";
@@ -175,22 +233,24 @@ for (const role of ["Knight", "Wizard", "Serpent", "Minotaur", "Troll", "Spider"
     return response.json();
   }).then((metadata) => { sprite.sheet = metadata.spritesheet; })
     .catch(() => { sprite.sheet = null; });
+  return sprite;
 }
 
 function drawImportedHero(ctx, player, x, y, spriteKey = player.class) {
+  if(spriteKey===player.class&&window.GauntletAscendedSprites?.hero(ctx,player,x,y))return true;
   if (spriteKey === player.class && window.GauntletAbilityAnimations?.hero(ctx, player, x, y)) return true;
-  const sprite = heroSprites[spriteKey];
+  const sprite = heroSprites[spriteKey] || importedSprite(spriteKey);
   if (!sprite?.sheet || !sprite.image.complete || !sprite.image.naturalWidth) return false;
   const sheet = sprite.sheet;
   const directionIndex = (Math.round((Math.PI / 2 - Math.atan2(player.facingY ?? 1, player.facingX ?? 0)) / (Math.PI / 4)) + 8) % 8;
   const row = sheet.rows.find((entry) => entry.type === "animation" && entry.direction === SPRITE_DIRECTIONS[directionIndex]);
   if (!row) return false;
   const now = Date.now();
-  let frames = ["Minotaur", "Troll", "Spider", "Wolf", "Draco", "Dragon", "Chimera", "Druid", "LightningBird", "FireWolf", "IceBear", "NatureGolem", "Archer", "Cleric", "Rogue", "Bard", "Healer"].includes(spriteKey) ? (player.moving ? [3, 4, 5] : [0, 1, 2]) : player.moving ? [2, 3] : [0, 1];
+  let frames = ["Minotaur", "Troll", "Spider", "Wolf", "Draco", "Dragon", "Chimera", "Druid", "LightningBird", "FireWolf", "IceBear", "NatureGolem", "Archer", "Cleric", "Rogue", "Bard", "Healer", "ShrineGuardian"].includes(spriteKey) ? (player.moving ? [3, 4, 5] : [0, 1, 2]) : player.moving ? [2, 3] : [0, 1];
   let frameIndex = Math.floor(now / (spriteKey === "Druid" ? (player.moving ? 300 : 550) : 180));
   if (player.status !== "alive") frames = [0];
   else if (player.animationUntil * 1000 > now) {
-    frames = ["Serpent", "Minotaur", "Troll", "Spider", "Wolf", "Draco", "Dragon", "Chimera", "Druid", "LightningBird", "FireWolf", "IceBear", "NatureGolem", "Archer", "Cleric", "Rogue", "Bard", "Healer"].includes(spriteKey) ? [6, 7, 8] : player.animation === "ultimate" ? [8] : player.animation === "special" ? [7] : [4, 5, 6];
+    frames = ["Serpent", "Minotaur", "Troll", "Spider", "Wolf", "Draco", "Dragon", "Chimera", "Druid", "LightningBird", "FireWolf", "IceBear", "NatureGolem", "Archer", "Cleric", "Rogue", "Bard", "Healer", "ShrineGuardian"].includes(spriteKey) ? [6, 7, 8] : player.animation === "ultimate" ? [8] : player.animation === "special" ? [7] : [4, 5, 6];
     frameIndex = Math.max(0, Math.min(frames.length - 1, Math.floor((now - (player.animationUntil * 1000 - 450)) / 130)));
   }
   const column = frames[frameIndex % frames.length];
@@ -207,37 +267,62 @@ function drawImportedHero(ctx, player, x, y, spriteKey = player.class) {
   return true;
 }
 
-async function api(path, data) {
+async function api(path, data, recoveryOverride, options={}) {
+  const metricStart=Date.now();
   if (window.location.protocol === "file:") {
     throw new Error("Open the game at http://127.0.0.1:8000/ with server.py running. This file preview cannot connect to the game server.");
   }
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), path === '/api/rooms' || path === '/api/join' ? 60000 : 5000);
+  const abort=()=>controller.abort();options.signal?.addEventListener('abort',abort,{once:true});
+  const timeout = setTimeout(abort,options.timeoutMs || (path === '/api/rooms' || path === '/api/join' ? 60000 : 5000));
   try {
     const response = await fetch(path, {
       method: data ? "POST" : "GET",
-      headers: data ? { "Content-Type": "application/json" } : {},
+      headers: { ...(data ? { "Content-Type": "application/json" } : {}),
+        ...((recoveryOverride || data?.recovery || session?.recovery) ? {'X-Gauntlet-Recovery':recoveryOverride || data?.recovery || session.recovery} : {}) },
       body: data ? JSON.stringify(data) : undefined,
       signal: controller.signal
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "Something went wrong.");
+    if (!response.ok) {
+      if(path==='/api/action'&&!['input','ping','chat','target','disconnect'].includes(data?.action))window.GauntletAudio?.requestOutcome(false);
+      throw new Error(result.error || "Something went wrong.");
+    }
     return result;
   } catch (error) {
     if (error.name === 'AbortError') throw new Error('Connection timed out. Reconnecting…');
     throw error;
-  } finally { clearTimeout(timeout); }
+  } finally { clearTimeout(timeout);options.signal?.removeEventListener('abort',abort);window.GauntletDiagnostics?.add(data?.action==='input'?'inputAckMs':path.startsWith('/api/state')?'stateRequestMs':'actionRequestMs',Date.now()-metricStart); }
 }
 function sendAction(action, extra) {
   if (!session) return Promise.resolve();
   return api("/api/action", Object.assign({ room: session.room, player: session.player, action }, extra || {}));
 }
 function saveSession(value) {
-  session = value;
+  if(!value || typeof value.room!=='string' || typeof value.player!=='string')throw Error('The server did not confirm a character identity. No existing save was replaced.');
+  if(session && (session.room!==value.room || session.player!==value.player))api('/api/action',{...session,action:'disconnect'},session.recovery).catch(()=>{});
+  resetTransientState();session = {...value};inputTransport.session(session);
   localStorage.setItem("gauntlet-session", JSON.stringify(value));
   localStorage.setItem("gauntlet-resume", JSON.stringify(value));
+  let remembered=[];try{remembered=JSON.parse(localStorage.getItem('gauntlet-sessions')||'[]');if(!Array.isArray(remembered))remembered=[];}catch{}
+  localStorage.setItem('gauntlet-sessions',JSON.stringify([value,...remembered.filter(r=>r.room!==value.room || r.player!==value.player)].slice(0,32)));
   enterLobby();
   refresh();
+}
+function resetTransientState(){
+  window.GauntletChapter?.reset();
+  pollGeneration++;clearTimeout(pollTimer);pollAbort?.abort();pollAbort=null;polling=false;
+  inputTransport.session(null);pendingInput=null;inputBusy=false;inputSequence=0;
+  keys.clear();touchDirections.clear();moveState={x:0,y:0,attack:false};attackPointerId=null;localTarget=null;
+  localMotion.reset?.();areaCamera.clear();motionTracks.clear();damageTracks.clear();abilityRingRecords.clear();
+  lastChatSignature=lastTownSignature=lastRouteSignature=lastLoadoutSignature=lastAbilityBarSignature=lastClassSignature=lastChestSignature=lastGuildSignature=null;
+  $('#chatMessages').replaceChildren();$('#combatNotice').textContent='';
+  $('#chatPanel').classList.remove('hud-open');$('#pouchPanel').classList.remove('hud-open');
+  $('#toggleChat').textContent='Chat';$('#togglePouch').textContent='Pouch';
+  lastPrivateNotice='';privateNoticeUntil=0;lastPuzzleId=lastPuzzleClue='';lastSentMove='';lastInputSent=0;
+  interactBusy=false;interactionOwner=null;actionFeedback='';actionFeedbackUntil=0;revivePointerHandled=false;reviveHoldToken=null;
+  window.GauntletAudio?.reset();window.resetAdventurePanels?.();window.resetHeroSkills?.();
+  document.querySelectorAll('dialog[open]').forEach(d=>d.close());latestRoom=null;
 }
 function enterLobby() {
   $("#entry").classList.add("hidden");
@@ -257,15 +342,16 @@ $("#createForm").addEventListener("submit", async (event) => {
   notice($("#entryNotice"), "");
   try {
     const result = await api("/api/rooms", { name: $("#createName").value });
-    saveSession({ room: result.room, player: result.player });
+    saveSession(result);
   } catch (error) { notice($("#entryNotice"), error.message); }
 });
 $("#joinForm").addEventListener("submit", async (event) => {
   event.preventDefault();
+  if(window.joinCurrentParty)return window.joinCurrentParty();
   notice($("#entryNotice"), "");
   try {
     const result = await api("/api/join", { name: $("#joinName").value, room: $("#roomCode").value });
-    saveSession({ room: result.room, player: result.player });
+    saveSession(result);
   } catch (error) { notice($("#entryNotice"), error.message); }
 });
 function renderKeyBindings() {
@@ -308,6 +394,7 @@ async function returnToMainMenu(approved = false) {
     const saved = latestRoom.checkpointSavedAt;
     $('#leaveRunCopy').textContent = 'Continue can rejoin this session while the server stays running. '+
       (saved ? 'Your disk checkpoint is the inn after stage '+latestRoom.checkpointStage+'. A server restart returns you to that bed; later progress is lost.' : 'There is no disk checkpoint yet. A server restart loses this run. Rest at an upstairs inn bed to set a checkpoint.');
+    if (latestRoom.adventure) $('#leaveRunCopy').textContent = adventureSaveText(latestRoom.adventure) + ' Continue uses this browser identity and server address.';
     endHeldAttack(); keys.clear(); moveState.x=moveState.y=0;sendMovement(true);
     $('#leaveRunDialog').showModal(); return;
   }
@@ -318,15 +405,16 @@ async function returnToMainMenu(approved = false) {
   $("#toggleChat").textContent = "Chat";
   $("#togglePouch").textContent = "Pouch";
   const leaving = session;
-  session = null;
-  try { if (leaving) await api("/api/action", { ...leaving, action: "disconnect" }); } catch { /* The server also detects stale connections. */ }
+  resetTransientState();session = null;
+  if (leaving) api("/api/action", { ...leaving, action: "disconnect" },leaving.recovery,{timeoutMs:1000}).catch(()=>{});
   session = null;
   latestRoom = null;
+  window.GauntletAudio?.reset();
   renderGuild(null);
   localStorage.removeItem("gauntlet-session");
   $("#lobby").classList.add("hidden");
   $("#entry").classList.remove("hidden");
-  document.body.classList.remove("is-playing");
+  document.body.classList.remove("is-playing"); updateLandscape();
   $("#connection").textContent = "READY";
   $("#connection").className = "connection";
   const filePreview = window.location.protocol === "file:";
@@ -334,7 +422,8 @@ async function returnToMainMenu(approved = false) {
     "This file preview cannot reach multiplayer. Open the live server page instead." : "");
   $("#liveGameLink").classList.toggle("hidden", !filePreview);
   notice($("#roomNotice"), "");
-  $("#continueRun").classList.toggle("hidden", !localStorage.getItem("gauntlet-resume"));
+  $("#continueRun").classList.toggle("hidden", !localStorage.getItem("gauntlet-resume") && !window.hasAdventureRefs?.());
+  window.frontMenuReturned?.();
 }
 $("#mainMenu").addEventListener("click", returnToMainMenu);
 $("#mainMenuGame").addEventListener("click", returnToMainMenu);
@@ -344,11 +433,12 @@ async function updateRunOptions() {
   if (!latestRoom || latestRoom.you !== latestRoom.host || runOptionsBusy) return;
   const difficulty = $("#difficultyChoice").value, companion = $("#npcCompanion").checked, stages=Number($('#lengthChoice').value);
   runOptionsBusy = true; $("#runOptions").disabled = true;
-  try { await sendAction("runOptions", { difficulty, companion, stages }); notice($("#roomNotice"), ""); }
+  try { await sendAction("runOptions", { difficulty, companion, stages, mode: $('#modeChoice').value }); notice($("#roomNotice"), ""); }
   catch (error) { notice($("#roomNotice"), error.message); }
   finally { runOptionsBusy = false; refresh(); }
 }
 $("#difficultyChoice").addEventListener("change", updateRunOptions);
+$('#modeChoice').addEventListener('change', updateRunOptions);
 $('#lengthChoice').addEventListener('change', updateRunOptions);
 $("#npcCompanion").addEventListener("change", updateRunOptions);
 $("#startRun").addEventListener("click", async () => {
@@ -368,7 +458,7 @@ $("#abilityChoices").addEventListener("click", async (event) => {
   if (!current.includes(id)) next.push(id);
   const order = { light: 0, special: 1, ultimate: 2 };
   next.sort((a, b) => order[currentRecords.find((option) => option.id === a)?.attackType] - order[currentRecords.find((option) => option.id === b)?.attackType]);
-  try { await sendAction("loadout", { abilities: next }); notice($("#abilityNotice"), next.length + " of 3 selected."); refresh(); }
+  try { await sendAction("chooseAbility", { ability: id }); notice($("#abilityNotice"), next.length + " of 3 selected."); refresh(); }
   catch (error) { notice($("#abilityNotice"), error.message); }
 });
 $("#abilityButtons").addEventListener("click", async (event) => {
@@ -380,16 +470,18 @@ $("#abilityButtons").addEventListener("click", async (event) => {
 async function triggerAbility(category) {
   if (!latestRoom || latestRoom.phase !== "combat") return;
   if (latestRoom.waveCountdown) return;
-  const index = latestRoom.abilitySlots.findIndex((ability) => ability.attackType === category);
-  if (index < 0) return notice($("#combatNotice"), "Choose this ability in your class loadout first.");
+  const index = latestRoom.abilitySlots.findIndex((ability) => latestRoom.adventure ? ability.barSlot===(category==='special'?'active1':category) : ability.attackType === category);
+  if (index < 0) return notice($("#combatNotice"), latestRoom.adventure?'Open Skills to unlock and equip this action slot in Oakvale.':'Choose this ability in your class loadout first.');
   if (latestRoom.abilitySlots[index].summonAlive) return notice($("#combatNotice"), latestRoom.abilitySlots[index].name + " is still alive.");
   try { await sendAction("ability", { slot: index + 1 }); notice($("#combatNotice"), ""); refresh(); }
   catch (error) { notice($("#combatNotice"), error.message); }
 }
 async function triggerDash() {
-  if (!latestRoom || latestRoom.phase !== "combat" || latestRoom.dashCooldown) return;
+  if (!latestRoom) return;
+  if (document.querySelector("dialog[open]") || document.querySelector(".game-menu[open]")) return;
+  if (latestRoom.dashBlockedReason || latestRoom.dashCooldown) {notice($("#combatNotice"), latestRoom.dashBlockedReason || "Dash is recharging.");return;}
   if (latestRoom.players.find(player => player.id === latestRoom.you)?.status !== 'alive') return;
-  try { await sendAction("dash"); refresh(); }
+  try { await sendAction("dash", {scene:latestRoom.movement?.scene}); refresh(); }
   catch (error) { notice($("#combatNotice"), error.message); }
 }
 $("#chestSwapChoices").addEventListener("click", async (event) => {
@@ -510,9 +602,10 @@ $("#attackButton").textContent = "Hold · Attack";
 $("#attackButton").addEventListener("pointerdown", beginHeldAttack);
 window.addEventListener("pointerup", endHeldAttack);
 window.addEventListener("pointercancel", endHeldAttack);
-document.addEventListener("visibilitychange", () => { if (document.hidden) { keys.clear(); moveState.x = moveState.y = 0; endHeldAttack(); } });
+document.addEventListener("visibilitychange", () => { if (document.hidden) releaseControls(); });
 $("#dashButton").addEventListener("pointerdown", (event) => { event.preventDefault(); triggerDash(); });
 $("#interactButton").addEventListener("click", async () => {
+  if(revivePointerHandled){revivePointerHandled=false;return;}
   try { await interactWithWorld(); }
   catch (error) { notice($("#combatNotice"), error.message); }
 });
@@ -525,12 +618,7 @@ function chooseTarget(id) {
 $('#targetButton').addEventListener('click',()=>chooseTarget(null));
 $('#world').addEventListener('pointerdown',(event)=>{
   if (event.button===0 && latestRoom?.phase==='combat') {
-    const rect=event.currentTarget.getBoundingClientRect();
-    const x=(event.clientX-rect.left)*960/rect.width,y=(event.clientY-rect.top)*540/rect.height;
-    const hit=latestRoom.enemies.reduce((best,e)=>{
-      const distance=Math.hypot((e.x-x)*rect.width/960,(e.y-y)*rect.height/540);
-      return distance<(best?.distance ?? 40)?{id:e.id,distance}:best;
-    },null);
+    const hit=enemyAtPointer(event);
     chooseTarget(hit?.id || null);
   }
   beginHeldAttack(event);
@@ -595,6 +683,8 @@ function renderGuild(room) {
     "Change class once per run. Your current hero and heroes taken by teammates are off limits. You can back out without using your change.";
   $("#guildHeroes").classList.toggle("hidden", Boolean(preview));
   $("#guildSkills").classList.toggle("hidden", !preview);
+  if(room.adventure && preview)$('#guildIntro').textContent='Begin this hero with its basic attack and starter active. Milestone points are refunded into the new tree; earlier stat training stays. Health, mana, dash and action-slot recharge are kept. Confirming uses your only class change.';
+  $('#guildAbilityChoices').classList.toggle('hidden',Boolean(room.adventure));
   const heroes = $("#guildHeroes");
   if (!heroes.children.length) {
     CLASS_ORDER.forEach((name) => {
@@ -630,7 +720,7 @@ function renderGuild(room) {
       button.innerHTML = '<b></b><span></span><small></small>';
       button.querySelector("b").textContent = ability.attackType.toUpperCase() + " · " + ability.name;
       decorateAbilityChoice(button.querySelector("b"),ability);
-      button.querySelector("span").textContent = ability.description;
+      button.querySelector(":scope > span").textContent = ability.description;
       button.querySelector("small").textContent = ability.cooldown + (ability.kind === "summon" ? "s recharge after death" : "s cooldown") + " · " + ability.manaCost + " MP";
       choices.append(button);
     });
@@ -649,7 +739,7 @@ function renderAbilityChoices(room) {
   const mine = room.players.find((player) => player.id === room.you);
   const panel = $("#abilityLoadout");
   const className = mine && mine.class;
-  panel.classList.toggle("hidden", room.phase !== "lobby" || !className);
+  panel.classList.toggle("hidden", room.phase !== "lobby" || !className || room.mode==='adventure');
   const options = className ? room.abilityOptions[className] || [] : [];
   const signature = JSON.stringify([className, options, room.selectedAbilities, room.phase]);
   if (signature === lastLoadoutSignature) return;
@@ -665,7 +755,7 @@ function renderAbilityChoices(room) {
     button.innerHTML = '<b></b><span></span><small></small>';
     button.querySelector("b").textContent = ability.attackType.toUpperCase() + " · " + ability.name + (selected ? " · EQUIPPED" : "");
     decorateAbilityChoice(button.querySelector("b"),ability);
-    button.querySelector("span").textContent = ability.description;
+    button.querySelector(":scope > span").textContent = ability.description;
     button.querySelector("small").textContent = ability.attackType === "light" ? "Left click · " + ability.cooldown + "s cooldown" :
       String(keyBindings[ability.attackType]).toUpperCase() + " · " + ability.cooldown + (ability.kind === "summon" ? "s recharge after death" : "s cooldown") + (ability.manaCost ? " · " + ability.manaCost + " MP" : "");
     choices.append(button);
@@ -675,6 +765,12 @@ function renderAbilityChoices(room) {
 function renderAbilityBar(room) {
   const bar = $("#abilityButtons");
   const own = room.players.find((player) => player.id === room.you);
+  const portrait=$("#hudHeroPortrait");
+  const hero=own?.class?.toLowerCase();
+  if(portrait){
+    portrait.classList.toggle('hidden',!hero);
+    if(hero && portrait.dataset.hero!==hero){portrait.dataset.hero=hero;portrait.src='/sprites/portrait-'+hero+'-v1.png';}
+  }
   const abilities=room.abilitySlots || [], attack=$("#attackButton");
   const signature=JSON.stringify([room.code,room.you,abilities.map(a=>[a.id,a.attackType])]);
   if(signature!==lastAbilityBarSignature) {
@@ -720,7 +816,7 @@ function animateAbilityRings(now) {
     const progress=alive?0:confirmedReady?1:Math.min(.995,Math.max(0,1-elapsedRemaining/total));
     ring.style.strokeDashoffset=String(100*(1-progress));
     button.dataset.charge=ready?"ready":alive?"active":"charging";
-    const key=ability.attackType==="light"?"Hold":String(keyBindings[ability.attackType]).toUpperCase();
+    const key=ability.attackType==="light"?"Hold":String(keyBindings[ability.barSlot==='active1'?'special':ability.barSlot || ability.attackType]).toUpperCase();
     const state=alive?"Active":!available?"Unavailable":!enoughMana?"Need mana":confirmedReady?"Ready":"Charging";
     status.textContent=key+(alive?" · Active":!enoughMana?" · Need MP":ability.manaCost?" · "+ability.manaCost+" MP":"");
     button.setAttribute("aria-label",ability.name+" · "+state+" · "+key+(ability.manaCost?" · "+ability.manaCost+" mana":""));
@@ -757,9 +853,13 @@ function renderClasses(room) {
     $("#difficultyChoice").value = room.difficulty || "medium";
     $('#lengthChoice').value=String(room.totalStages || 25);
     $("#npcCompanion").checked = Boolean(room.npcCompanion);
+    $('#modeChoice').value = room.mode || 'gauntlet';
   }
   $("#runOptions").disabled = room.phase !== "lobby" || room.you !== room.host || runOptionsBusy;
   $('#testerModeHint').classList.toggle('hidden',!room.testerMode);
+  $('#lengthOption').classList.toggle('hidden', room.mode === 'adventure');
+  $('#adventureModeHint').classList.toggle('hidden', room.mode !== 'adventure');
+  if (room.mode === 'adventure') $('#testerModeHint').classList.add('hidden');
 }
 function renderPlayers(room) {
   const list = $("#players");
@@ -781,10 +881,10 @@ function renderPlayers(room) {
     list.append(item);
   });
   const own = room.players.find((player) => player.id === room.you);
-  const ready = room.players.length > 0 && room.players.every((player) => player.bot || (player.class && player.abilityCount === 3));
+  const ready = room.players.length > 0 && room.players.every((player) => player.bot || (player.class && (room.mode==='adventure' || player.abilityCount === 3)));
   const start = $("#startRun");
   start.disabled = room.you !== room.host || !ready || room.phase !== "lobby";
-  start.textContent = room.phase !== "lobby" ? "Run in progress" : room.you !== room.host ? "Waiting for host" : ready ? "Begin the run" : own && own.class && own.abilityCount !== 3 ? "Choose one of each ability" : own && own.class ? "Waiting for party loadouts" : "Choose a class to begin";
+  start.textContent = room.phase !== "lobby" ? "Run in progress" : room.you !== room.host ? "Waiting for host" : ready ? (room.mode === 'adventure' ? 'Begin Adventure' : "Begin the run") : own && own.class && own.abilityCount !== 3 ? "Choose one of each ability" : own && own.class ? "Waiting for party loadouts" : "Choose a class to begin";
 }
 function renderChat(room) {
   const signature = room.chat.map((message) => message.id).join("|");
@@ -805,8 +905,20 @@ function renderChat(room) {
   box.scrollTop = box.scrollHeight;
 }
 function renderRoom(room, roundTrip = 0) {
+  document.body.dataset.visualScene=room.phase;
+  window.GauntletStateCache?.merge(room,latestRoom);
+  const renderStarted=performance.now();window.GauntletDiagnostics?.add('stateAgeMs',(room.movement?.age||0)*1000);
+  if(latestRoom?.movement?.scene && room.movement?.scene!==latestRoom.movement.scene){releaseControls();inputTransport.cancel();localMotion.reset?.();}
+  inputTransport.session(session,room.movement?.sequence||0);
+  inputTransport.observe?.(room.movement||{});
+  if(room.mode!=='adventure' && room.phase!=='lobby' && session)
+    localStorage.setItem('gauntlet-wave-resume',JSON.stringify(session));
   inputSequence = Math.max(inputSequence, room.inputSequence || 0);
   window.GauntletAudio?.observe(room);
+  window.GauntletFeedback?.observe(room);
+  window.GauntletDungeonSprites?.observe(room);
+  window.GauntletAscendedSprites?.observe(room);
+  window.GauntletCombatVisuals?.observe(room);
   // Repair notices still arriving from a process started before the UTF-8 fix.
   if (room.privateNotice) room.privateNotice=room.privateNotice.replace(/\u00e2\u20ac\u201d/g,'—');
   localMotion.remember(currentMovement(), performance.now());
@@ -838,6 +950,7 @@ function renderRoom(room, roundTrip = 0) {
   renderChat(room);
   const active = room.phase !== "lobby";
   document.body.classList.toggle("is-playing", active);
+  updateLandscape();
   $("#arenaPanel").classList.toggle("hidden", !active);
   $("#classPanel").classList.toggle("hidden", active);
   const regionLabel = ({ woodland: "Woodland", ruins: "Ruins", cavern: "Cavern", frost: "Frostlands" })[room.region] || "Gauntlet";
@@ -861,6 +974,7 @@ function renderRoom(room, roundTrip = 0) {
   $("#runeCount").textContent = room.runes + " RUNES";
   const own = room.players.find((player) => player.id === room.you);
   $("#hpLabel").textContent = own ? "HP " + own.hp + " / " + own.maxHp : "HP";
+  $('#barrierLabel').textContent=own?.barrier?'Barrier '+own.barrier:'';$('#barrierLabel').classList.toggle('hidden',!own?.barrier);
   $("#hpFill").style.width = own && own.maxHp ? Math.max(0, Math.min(100, own.hp / own.maxHp * 100)) + "%" : "0%";
   $('.health-meter').classList.toggle('health-critical',Boolean(own && own.hp/own.maxHp<.3));
   $("#manaLabel").textContent = "MANA " + Math.floor(room.mana) + " / " + room.maxMana;
@@ -870,11 +984,12 @@ function renderRoom(room, roundTrip = 0) {
   $(".hud-actions").classList.toggle("hidden", ["lobby", "defeat", "cleared"].includes(room.phase));
   $("#attackButton").classList.toggle("hidden", room.phase !== "combat");
   $("#attackButton").disabled = room.phase !== "combat" || Boolean(room.waveCountdown) || own?.status !== "alive";
-  $("#dashButton").classList.toggle("hidden", room.phase !== "combat");
-  $("#dashButton").disabled = room.phase !== "combat" || Boolean(room.dashCooldown) || own?.status !== 'alive';
-  $("#dashButton").textContent = own?.status !== 'alive' ? 'Dash unavailable' : room.dashCooldown ? "Dash · " + room.dashCooldown + "s" : "Space · Dash";
+  $("#dashButton").classList.toggle("hidden", !room.adventure && room.phase !== "combat");
+  $("#dashButton").disabled = Boolean(room.dashBlockedReason) || Boolean(room.dashCooldown) || own?.status !== 'alive';
+  $("#dashButton").textContent = room.dashBlockedReason ? 'Dash unavailable' : room.dashCooldown ? "Dash · " + room.dashCooldown + "s" : "Space · Dash";
   $("#dashButton").style.setProperty('--dash-ready', (100*(1-Math.min(1,(room.dashCooldownRemaining ?? room.dashCooldown)/(room.dashCooldownDuration || 5))))+'%');
-  $("#dashButton").setAttribute('aria-label', own?.status !== 'alive' ? 'Dash unavailable while downed' : room.dashCooldown ? 'Dash recharging: '+room.dashCooldown+' seconds' : 'Dash ready. Space or tap.');
+  $("#dashButton").title=room.dashBlockedReason||'Dash in your movement direction';
+  $("#dashButton").setAttribute('aria-label', room.dashBlockedReason ? room.dashBlockedReason : room.dashCooldown ? 'Dash recharging: '+room.dashCooldown+' seconds' : 'Dash ready. Space or tap.');
   $("#reviveButton").classList.toggle("hidden", room.phase !== "combat");
   const interactive = ["town", "puzzle", "chest", "peace"].includes(room.phase);
   $("#interactButton").classList.toggle("hidden", !interactive);
@@ -922,12 +1037,16 @@ function renderRoom(room, roundTrip = 0) {
   else if (room.phase === "town") notice($("#combatNotice"), lockedVillageGate ? "Every present hunter must speak to the innkeeper before leaving this village." : room.townInterior ? (room.nearbyHouse ? "Press E at the door to return to the village." : room.nearbyNpc ? "Press E to interact with " + room.nearbyNpc.name + "." : room.innFloor === 2 ? "Rest at a bed in an unlocked room to set the party checkpoint." : "Find the shopkeeper inside, or return through the door.") : room.nearbyHouse ? "Press E to enter " + room.nearbyHouse.name + "." : room.nearbyNpc && room.nearbyNpc.id === "gate" ? "Gather at the exit and press E to vote. Everyone must be ready." : room.firstTownTrainingRequired ? "Speak to the innkeeper to discover hunter training. Rest upstairs to save your run." : "Visit the Inn, Store, Alchemy Lab, or Guild. Gather at the south gate when everyone is ready to leave.");
   else if (room.phase === "peace") notice($("#combatNotice"), room.questAccepted ? "Quest accepted · gather at the northern exit." : "Speak to the wounded hunter beside the road.");
   else if (room.phase === "puzzle") notice($("#combatNotice"), room.puzzle?.cooperative ? "Your totem holds a teammate's answer. Share clues, then choose your runes together." : "Find your totem, then stand on the rune it describes.");
+  if (typeof renderAdventure === 'function') renderAdventure(room);
+  window.renderHeroSkills?.(room);
+  renderInteraction(room);
+  window.GauntletDiagnostics?.add('stateRenderMs',performance.now()-renderStarted);
 }
 function updateMotionTracks(room) {
   window.GauntletCombatEnvironment?.observe(room);
   window.GauntletProjectiles?.observe(room);
   window.GauntletAbilityAnimations?.observe(room);
-  const scene = [room.code, room.stage, room.phase, room.townInterior, room.innFloor, room.puzzle?.id].join(":");
+  const scene = [room.code, room.adventure?.area, room.stage, room.phase, room.townInterior, room.innFloor, room.puzzle?.id].join(":");
   const now = performance.now();
   if (room.code !== damageRoom) { damageTracks.clear(); damageRoom = room.code; }
   if (scene !== motionScene) { motionTracks.clear(); lastSnapshotAt = 0; motionScene = scene; lastSentMove = ""; }
@@ -960,6 +1079,7 @@ function interpolatedPosition(track, now) {
   return { x: track.x + (track.targetX - track.x) * fraction, y: track.y + (track.targetY - track.y) * fraction };
 }
 function animateWorld(now) {
+  const frameStart=performance.now();
   if (latestRoom && latestRoom.phase !== "lobby" && !document.hidden) {
     animateAbilityRings(now);
     const direction = currentMovement();
@@ -978,6 +1098,7 @@ function animateWorld(now) {
     drawWorld({ ...latestRoom, players: smooth("player", latestRoom.players),
       enemies: smooth("enemy", latestRoom.enemies), summons: smooth("summon", latestRoom.summons || []), projectiles: smooth("projectile", latestRoom.projectiles || []) });
   }
+  window.GauntletDiagnostics?.add('renderMs',performance.now()-frameStart);
   requestAnimationFrame(animateWorld);
 }
 requestAnimationFrame(animateWorld);
@@ -1329,8 +1450,35 @@ function showPuzzleDialogue() {
     $("#puzzlePanel").classList.add("hidden");
   }, 3000);
 }
+let interactBusy=false,interactionOwner=null,revivePointerHandled=false,actionFeedback='',actionFeedbackUntil=0;
+function interactionFeedback(text){actionFeedback=text;actionFeedbackUntil=Date.now()+3000;notice($('#combatNotice'),text);}
+function renderInteraction(room){
+  if(room.interaction===undefined)return;
+  const target=room.interaction,button=$('#interactButton');
+  document.body.classList.toggle('has-interaction',Boolean(target));
+  button.classList.toggle('hidden',!target);button.disabled=Boolean(interactBusy || target&&!target.available);
+  if(target){button.textContent=interactBusy?'Interacting…':(target.hold?'Hold ':'')+String(keyBindings.revive).toUpperCase()+' · '+target.label;button.title=target.reason||'Within '+target.range+'px · '+target.distance+'px away';}
+  $('#reviveButton').classList.add('hidden');
+  if(Date.now()<actionFeedbackUntil)notice($('#combatNotice'),actionFeedback);
+  else if(target?.reason)notice($('#combatNotice'),target.reason);
+}
+function releaseControls(){
+  keys.clear();moveState={x:0,y:0,attack:false};touchDirections.clear();attackPointerId=null;
+  sendMovement(true);stopHeldRevive();
+}
+let reviveHoldToken=null;
+function stopHeldRevive(){const token=reviveHoldToken;reviveHoldToken=null;sendAction('stopRevive',{holdToken:token}).catch(()=>{});}
 async function interactWithWorld() {
-  await sendAction("interact");
+  if(interactBusy)return;
+  const owner=session,target=latestRoom?.interaction;
+  if(latestRoom?.interaction===null){interactionFeedback('Move closer to a door, person, object, ally or trail.');return;}
+  if(target&&!target.available){interactionFeedback(target.reason);return;}
+  interactBusy=true;interactionOwner=owner;
+  if(target?.kind==='revive')reviveHoldToken=crypto.randomUUID();
+  try{await sendAction("interact",{target:target?.id,requestId:crypto.randomUUID(),holdToken:reviveHoldToken});if(owner!==session)return;
+    if(target && target.kind!=='revive')interactionFeedback(target.label+' · done');
+  }catch(error){if(owner===session)interactionFeedback(error.message);throw error;}
+  finally{if(interactionOwner===owner){interactBusy=false;interactionOwner=null;}}
   if (latestRoom?.phase === "puzzle" && latestRoom.puzzle?.atTotem) showPuzzleDialogue();
   refresh();
 }
@@ -1364,22 +1512,28 @@ function refresh() {
   if (polling || !session) return;
   polling = true;
   const requestedSession = session;
+  const generation=pollGeneration;pollAbort=new AbortController();
   const requestedAt = performance.now();
-  api("/api/state?room=" + encodeURIComponent(session.room) + "&player=" + encodeURIComponent(session.player))
-    .then((room) => { if (session === requestedSession) renderRoom(room, performance.now() - requestedAt); })
+  api("/api/state?room=" + encodeURIComponent(session.room) + "&player=" + encodeURIComponent(session.player)+(window.GauntletStateCache?.query(latestRoom,requestedSession)||''),undefined,requestedSession.recovery,{signal:pollAbort.signal,timeoutMs:1500})
+    .then((room) => { if (session === requestedSession) {
+      try{renderRoom(room, performance.now() - requestedAt);}
+      catch(error){console.error('Client state rendering failed:',error);throw error;}
+    } })
     .catch((error) => {
       if (session !== requestedSession) return;
-      if (error.message === "Room or player not found.") {
+      if(/refresh required/.test(error.message))latestRoom=null; // Next poll requests complete UI data.
+      if (error.message === "Room or player not found." || error.message.includes('Private character recovery proof')) {
         session = null;
         latestRoom = null;
+        window.GauntletAudio?.reset();
         renderGuild(null);
         localStorage.removeItem("gauntlet-session");
         $("#lobby").classList.add("hidden");
         $("#entry").classList.remove("hidden");
-        document.body.classList.remove("is-playing");
+        document.body.classList.remove("is-playing"); updateLandscape();
         $("#connection").textContent = "READY";
         $("#connection").className = "connection";
-        notice($("#entryNotice"), "This run is unavailable. Runs survive a server restart after the first inn checkpoint. Create or join a room to start again.");
+        notice($("#entryNotice"), "This identity is unavailable on this server. Use Continue or import an Adventure backup. Gauntlet restart recovery needs an inn checkpoint. Original save files are not replaced.");
         notice($("#roomNotice"), "");
         return;
       }
@@ -1388,10 +1542,11 @@ function refresh() {
       notice($("#roomNotice"), "Connection lost. Reconnecting automatically; saved runs resume at the latest inn after a server restart.");
       notice($("#combatNotice"), "Connection lost · reconnecting…");
     })
-    .finally(() => { polling = false; setTimeout(refresh, Math.max(0, 50 - (performance.now() - requestedAt))); });
+    .finally(() => { if(generation===pollGeneration && session===requestedSession){polling = false;pollTimer=setTimeout(refresh, Math.max(0, 50 - (performance.now() - requestedAt)));} });
 }
 function currentMovement() {
-  if (document.querySelector("dialog[open]") || latestRoom?.movementLocked) return { x: 0, y: 0, attack: false };
+  if(landscapeBlocked)return {x:0,y:0,attack:false};
+  if (document.querySelector("dialog[open],.game-menu[open]") || latestRoom?.movementLocked) return { x: 0, y: 0, attack: false };
   let x = moveState.x, y = moveState.y;
   if (keys.has(String(keyBindings.left).toLowerCase()) || keys.has("arrowleft")) x -= 1;
   if (keys.has(String(keyBindings.right).toLowerCase()) || keys.has("arrowright")) x += 1;
@@ -1400,35 +1555,29 @@ function currentMovement() {
   return { x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)), attack: moveState.attack || keys.has("attack") };
 }
 const keys = new Set();
-function sendMovement(force) {
+function sendMovement(force,eventAt=performance.now()) {
   if (!session || !latestRoom || !["combat", "town", "routes", "stage_exit", "puzzle", "chest", "peace"].includes(latestRoom.phase)) return;
   const now = performance.now();
-  if (!force && now - lastInputSent < 90) return;
   const direction = currentMovement();
   localMotion.remember(direction, now);
   const signature = direction.x + "," + direction.y + "," + direction.attack;
-  if (!force && signature === lastSentMove && now - lastInputSent < 500) return;
   lastInputSent = now;
   lastSentMove = signature;
-  pendingInput = { session, direction:{...direction,targetId:localTarget} };
-  flushMovement();
+  inputTransport.session(session,latestRoom.movement?.sequence||0);
+  inputTransport.send({...direction,targetId:localTarget,epoch:latestRoom.movement?.epoch||0},latestRoom.movement?.scene,force,eventAt);
 }
 function flushMovement() {
-  if (inputBusy || !pendingInput) return;
-  const next = pendingInput; pendingInput = null;
-  if (next.session !== session) return;
-  inputBusy = true;
-  api('/api/action', {room:session.room,player:session.player,action:'input',...next.direction,sequence:++inputSequence})
-    .catch(() => {}).finally(() => {inputBusy=false;flushMovement();});
+  sendMovement(true);
 }
 window.addEventListener("keydown", (event) => {
   if (!event.key) return;
-  if (document.querySelector("dialog[open]")) return;
+  if(landscapeBlocked)return;
+  if (document.querySelector("dialog[open],.game-menu[open]")) return;
   const key = event.key.toLowerCase();
   if (bindingCapture) {
     event.preventDefault();
-    if (/^[1-3]$/.test(key) || event.code === "Space") {
-      notice($("#entryNotice"), "Space is reserved for dash; 1–3 are reserved for utilities.");
+    if (/^[1-3]$/.test(key) || event.code === "Space" || key==='v') {
+      notice($("#entryNotice"), "Space is reserved for dash; 1–3 for utilities; V for area view.");
       return;
     }
     if ([...Object.entries(keyBindings)].some(([action, bound]) => action !== bindingCapture && String(bound).toLowerCase() === key)) {
@@ -1442,6 +1591,9 @@ window.addEventListener("keydown", (event) => {
     return;
   }
   if (event.target.closest("input,textarea,select")) return;
+  if(key==='v' && latestRoom && window.GauntletCamera.scrolls(latestRoom)) {
+    event.preventDefault();if(!event.repeat)areaCamera.press(performance.now());return;
+  }
   if (latestRoom?.phase==='combat' && (key==='tab' || key==='escape')) {
     event.preventDefault();
     if (!event.repeat) {
@@ -1462,32 +1614,47 @@ window.addEventListener("keydown", (event) => {
   }
   if (Object.values(keyBindings).some((bound) => String(bound).toLowerCase() === key) || ["arrowleft", "arrowright", "arrowup", "arrowdown"].includes(key)) event.preventDefault();
   if (key === String(keyBindings.special).toLowerCase()) { if (!event.repeat) triggerAbility("special"); return; }
+  if(latestRoom?.adventure && key===String(keyBindings.active2).toLowerCase()){if(!event.repeat)triggerAbility('active2');return;}
+  if(latestRoom?.adventure && key===String(keyBindings.active3).toLowerCase()){if(!event.repeat)triggerAbility('active3');return;}
   if (key === String(keyBindings.ultimate).toLowerCase()) { if (!event.repeat) triggerAbility("ultimate"); return; }
   if (key === String(keyBindings.revive).toLowerCase()) {
     if (!event.repeat) {
-      if (latestRoom && latestRoom.phase === "combat") sendAction("revive").catch(() => {});
-      else interactWithWorld().catch((error) => notice($("#combatNotice"), error.message));
+      interactWithWorld().catch((error) => notice($("#combatNotice"), error.message));
     }
     return;
   }
-  if (!event.repeat) { keys.add(key); sendMovement(true); }
+  if (!event.repeat) { keys.add(key); sendMovement(true,event.timeStamp<1e8?event.timeStamp:performance.now()); }
 });
 window.addEventListener("keyup", (event) => {
   if (!event.key) return;
   const key = event.key.toLowerCase();
+  if(key==='v')areaCamera.release(performance.now());
   keys.delete(key);
-  if (key === String(keyBindings.revive).toLowerCase() && latestRoom && latestRoom.phase === "combat") sendAction("stopRevive").catch(() => {});
+  if (key === String(keyBindings.revive).toLowerCase() && latestRoom && latestRoom.phase === "combat") stopHeldRevive();
   sendMovement(true);
 });
-window.addEventListener("blur", () => { keys.clear(); moveState = { x: 0, y: 0, attack: false }; endHeldAttack(); sendAction("stopRevive").catch(() => {}); });
+window.addEventListener("blur", releaseControls);
+const touchDirections=new Map();
+function updateTouchDirections(){moveState.x=Math.max(-1,Math.min(1,[...touchDirections.values()].reduce((s,v)=>s+v[0],0)));moveState.y=Math.max(-1,Math.min(1,[...touchDirections.values()].reduce((s,v)=>s+v[1],0)));sendMovement(true);}
 document.querySelectorAll("[data-move]").forEach((button) => {
   const vector = button.dataset.move.split(",").map(Number);
-  const start = (event) => { event.preventDefault(); moveState.x = vector[0]; moveState.y = vector[1]; sendMovement(true); };
-  const stop = (event) => { event.preventDefault(); moveState.x = moveState.y = 0; sendMovement(true); };
+  const start = (event) => { event.preventDefault();button.setPointerCapture?.(event.pointerId);touchDirections.set(event.pointerId,vector);updateTouchDirections(); };
+  const stop = (event) => { event.preventDefault();touchDirections.delete(event.pointerId);updateTouchDirections(); };
   button.addEventListener("pointerdown", start);
   button.addEventListener("pointerup", stop);
-  button.addEventListener("pointerleave", stop);
+  button.addEventListener("pointerleave", event=>{if(!button.hasPointerCapture?.(event.pointerId))stop(event);});
   button.addEventListener("pointercancel", stop);
+  button.addEventListener('lostpointercapture',stop);
+});
+$('#interactButton').addEventListener('pointerdown',event=>{
+  if(latestRoom?.interaction?.kind!=='revive')return;
+  event.preventDefault();revivePointerHandled=true;event.currentTarget.setPointerCapture?.(event.pointerId);
+  interactWithWorld().catch(error=>interactionFeedback(error.message));
+});
+for(const type of ['pointerup','pointercancel','lostpointercapture'])$('#interactButton').addEventListener(type,()=>{if(revivePointerHandled)stopHeldRevive();});
+document.querySelectorAll('dialog').forEach(dialog=>{
+  new MutationObserver(()=>releaseControls()).observe(dialog,{attributes:true,attributeFilter:['open']});
+  dialog.addEventListener('close',releaseControls);
 });
 function drawRegionScenery(ctx, room, theme, w, h) {
   let seed = 2166136261;
@@ -1541,11 +1708,13 @@ function renderWorldToast(room) {
   if (showing && !room.privateNotice) toast.textContent = lastPrivateNotice;
   toast.classList.toggle("hidden", !showing || room.phase === "lobby");
 }
-function drawPuzzleRoom(ctx, puzzle, w, h) {
+function drawPuzzleRoom(ctx, puzzle, w, h, room = null) {
+  if (!window.GauntletAdventureSprites?.backdrop(ctx,room || {},w,h,true) && !window.GauntletWorldScenery?.floor(ctx,room || {},w,h,true)) {
   ctx.fillStyle = "#17152a"; ctx.fillRect(14, 14, w - 28, h - 28);
   ctx.strokeStyle = "#c3a7eb"; ctx.lineWidth = 9; ctx.strokeRect(20, 20, w - 40, h - 40);
   ctx.strokeStyle = "#78659a"; ctx.lineWidth = 3; ctx.setLineDash([10, 9]);
   ctx.strokeRect(34, 34, w - 68, h - 68); ctx.setLineDash([]);
+  }
   const glyphs = { SUN: "☼", MOON: "☾", LEAF: "❧", FLAME: "♨", WAVE: "≋", STAR: "★" };
   const runeColors = { SUN: "#ffe27c", MOON: "#c4d8ff", LEAF: "#a7ed9c", FLAME: "#ff9a68", WAVE: "#83dcf4", STAR: "#f4eaff" };
   puzzle.runes.forEach((rune) => {
@@ -1581,49 +1750,35 @@ function drawPuzzleRoom(ctx, puzzle, w, h) {
   ctx.fillText(puzzle.targetSigil ? "FOR " + puzzle.clueForName.toUpperCase() + " · " + puzzle.targetSigil : "TOTEM · FIND CLUE", totem.x, totem.y + 51);
 }
 function drawTownObjects(ctx, room, w, h) {
+  const depthEntries=[];
   const houses = room.townHouses || [];
   const paths = room.townPaths || [];
   const region = Object.hasOwn(villageArt, room.region) ? room.region : "woodland";
-  const key = [room.code, room.townInstance, room.townSeed, region, villageArtRevision, forkArtRevision, w, h, JSON.stringify(paths)].join(":");
+  const key = [room.code, room.townInstance, room.townSeed, region, villageArtRevision, forkArtRevision, window.GauntletWorldScenery?.revision(), w, h, JSON.stringify(paths)].join(":");
   if (key !== villageTerrainKey) {
     villageTerrainKey = key; villageLayer.width = w / 2; villageLayer.height = h / 2;
     const g = villageLayer.getContext("2d"); g.imageSmoothingEnabled = false;
     const ground = villageImage(room, "ground");
-    if (ground) g.drawImage(ground, 0, 0, w / 2, h / 2);
+    g.save();g.scale(.5,.5);
+    const smoothGround=window.GauntletWorldScenery?.floor(g,{...room,phase:'village-ground',adventure:null},w,h);
+    g.restore();
+    if (smoothGround) { /* Village paths, shops and decorations are drawn above the regional material. */ }
+    else if (ground) g.drawImage(ground, 0, 0, w / 2, h / 2);
     else { g.fillStyle = ({ woodland: "#35543b", ruins: "#716b50", cavern: "#273c52", frost: "#bbcbd3" })[region]; g.fillRect(0, 0, w / 2, h / 2); }
-    const trail = forkArt[region];
-    let pattern = null;
-    if (trail?.complete && trail.naturalWidth) {
-      const tile = document.createElement("canvas"); tile.width = 24; tile.height = 48;
-      tile.getContext("2d").drawImage(trail, 230, 210, 24, 48, 0, 0, 24, 48);
-      pattern = g.createPattern(tile, "repeat");
-    }
-    for (const width of [44, 30]) {
-      g.strokeStyle = width === 44 ? ({woodland:"#857348",ruins:"#75664d",cavern:"#25364b",frost:"#728fa3"})[region] : pattern || "#c6ad72";
-      g.lineWidth = width / 2; g.lineJoin = "round"; g.lineCap = "round";
-      for (const [x, y] of (room.townDecor?.plazas || [])) {
-        g.fillStyle = g.strokeStyle; g.beginPath(); g.arc(x/2, y/2, width/2, 0, Math.PI*2); g.fill();
-      }
-      for (const path of paths) {
-        g.beginPath(); path.forEach(([x, y], i) => i ? g.lineTo(x / 2, y / 2) : g.moveTo(x / 2, y / 2)); g.stroke();
-      }
-    }
+    window.GauntletTownSprites?.paintPaths(g,room);
   }
   ctx.imageSmoothingEnabled = false; ctx.drawImage(villageLayer, 0, 0, w, h);
-  (room.townDecor?.trees || []).forEach(([x, y], i) => {
-    if (drawVillageProp(ctx, room, "tree", x - 40, y - 64, 80, 104)) return;
-    ctx.fillStyle = "#69452f"; ctx.fillRect(x - 5, y + 4, 10, 25);
-    ctx.fillStyle = i % 2 ? "#397b49" : "#438750"; ctx.fillRect(x - 22, y - 18, 44, 29); ctx.fillRect(x - 15, y - 30, 31, 17);
-    ctx.fillStyle = "#71a65b"; ctx.fillRect(x - 9, y - 25, 13, 7);
-  });
+  depthEntries.push(...(window.GauntletTownSprites?.environment(room) || []));
+  if(room.townPortal)depthEntries.push({key:room.townInstance+':portal',visibleBounds:()=>window.GauntletTownSprites?.portalBounds(room),depth:room.townPortal.y+16,occluder:true,bounds:{x:room.townPortal.x-64,y:room.townPortal.y-90,width:128,height:125},draw:()=>window.GauntletTownSprites?.portal(ctx,room,{structureOnly:true}),after:()=>window.GauntletTownSprites?.portal(ctx,room,{markerOnly:true})});
   houses.forEach((house, index) => {
+    const draw=()=>{
     const x = house.x, y = house.y, nearby = room.nearbyHouse && room.nearbyHouse.id === house.id;
     const roofs = ["#a94f3d", "#426f78", "#c56643", "#906451", "#b6773f"];
     const buildingArt = villageImage(room, "buildings");
     const row = VILLAGE_BUILDINGS.indexOf(house.id);
     const roof = Math.max(0, VILLAGE_ROOFS.indexOf(house.roof?.toLowerCase()));
     if (buildingArt && row >= 0) {
-      ctx.drawImage(buildingArt, roof * 80, row * 72, 80, 72, x - 80, y - 93, 160, 144);
+      ctx.drawImage(buildingArt, roof * 80, row * 80, 80, 80, x - 80, y - 101, 160, 160);
     } else {
     // Procedural fallback while a sprite is loading.
     ctx.fillStyle = "#18271c88"; ctx.fillRect(x - 68, y - 17, 140, 76);
@@ -1636,47 +1791,60 @@ function drawTownObjects(ctx, room, w, h) {
     ctx.fillStyle = "#fff0c2"; ctx.fillRect(x - 34, y - 23, 3, 19); ctx.fillRect(x - 43, y - 15, 22, 3); ctx.fillRect(x + 30, y - 23, 3, 19); ctx.fillRect(x + 21, y - 15, 22, 3);
     ctx.fillStyle = "#633d32"; ctx.fillRect(x - 11, y + 2, 22, 35); ctx.fillStyle = "#e8c47b"; ctx.fillRect(x + 5, y + 19, 3, 3);
     }
+    };
+    const label=()=>{const x=house.x,y=house.y,nearby=room.nearbyHouse&&room.nearbyHouse.id===house.id;
     ctx.fillStyle = "#152321dd"; ctx.fillRect(x - 56, y - 94, 112, 16);
     ctx.fillStyle = "#f3e7c6"; ctx.font = "bold 9px monospace"; ctx.textAlign = "center"; ctx.fillText(house.name.toUpperCase(), x, y - 83);
-    if (nearby) { ctx.strokeStyle = "#ffe389"; ctx.lineWidth = 2; ctx.strokeRect(x - 73, y - 80, 146, 137); ctx.fillStyle = "#fff0c8"; ctx.fillText("E · ENTER", x, y + 54); }
+    if (nearby) { ctx.strokeStyle = "#ffe389"; ctx.lineWidth = 2; ctx.strokeRect(x - 73, y - 85, 146, 142); ctx.fillStyle = "#fff0c8"; ctx.fillText("E · ENTER", x, y + 54); }
+    };
+    depthEntries.push({key:room.townInstance+':'+house.id,depth:house.y+35,occluder:true,bounds:{x:house.x-80,y:house.y-101,width:160,height:165},visibleBounds:()=>{const img=villageImage(room,'buildings'),row=VILLAGE_BUILDINGS.indexOf(house.id),roof=Math.max(0,VILLAGE_ROOFS.indexOf(house.roof?.toLowerCase()));return row>=0?window.GauntletWorldScenery?.spriteBounds(img,roof*80,row*80,80,80,house.x-80,house.y-101,160,160):null;},draw,after:label});
   });
   if (room.players.some((player) => player.townExitReady)) {
+    depthEntries.push({depth:Infinity,draw:()=>{
     ctx.fillStyle = "#fff0c8"; ctx.font = "bold 11px monospace"; ctx.textAlign = "center";
     ctx.fillText("READY " + room.townExitVotes + " / " + room.townExitTotal, 480, 524);
+    }});
   }
-  drawVillagers(ctx, room);
-  drawTownNpcs(ctx, room);
+  drawVillagers(ctx, room,depthEntries);
+  drawTownNpcs(ctx, room,depthEntries);
+  return depthEntries;
 }
-function drawVillagers(ctx, room) {
+function drawVillagers(ctx, room,depthEntries=null) {
   // Scenery only: no service, interaction prompt, collision or dialogue.
   for (const [index, villager] of (room.townVillagers || []).entries()) {
+    const draw=()=>{
     const { x, y, shirt, skin, hair, hat } = villager;
     drawCharacterShadow(ctx, x, y + 14, 12, "#17221b55");
-    if (window.GauntletTownSprites?.character(ctx, "Villager" + String(index % 8 + 1).padStart(2, "0"), x, y, { direction: SPRITE_DIRECTIONS[index % 8], phase: index * 137, scale: .85 })) continue;
+    if (window.GauntletTownSprites?.character(ctx, "Villager" + String(index % 8 + 1).padStart(2, "0"), x, y, { direction: SPRITE_DIRECTIONS[index % 8], phase: index * 137, scale: .85 })) return;
     ctx.fillStyle = "#393438"; ctx.fillRect(x - 7, y + 5, 5, 10); ctx.fillRect(x + 2, y + 5, 5, 10);
     ctx.fillStyle = shirt; ctx.fillRect(x - 9, y - 9, 18, 18);
     ctx.fillStyle = skin; ctx.fillRect(x - 7, y - 21, 14, 12); ctx.fillRect(x - 12, y - 5, 3, 9); ctx.fillRect(x + 9, y - 5, 3, 9);
     ctx.fillStyle = hair; ctx.fillRect(x - 8, y - 23, 16, 5);
     if (hat) { ctx.fillStyle = "#bd9c66"; ctx.fillRect(x - 11, y - 24, 22, 4); ctx.fillRect(x - 6, y - 29, 12, 5); }
+    };
+    if(depthEntries)depthEntries.push({actor:true,depth:villager.y+14,occluder:true,bounds:{x:villager.x-22,y:villager.y-40,width:44,height:64},draw});else draw();
   }
 }
-function drawTownNpcs(ctx, room) {
+function drawTownNpcs(ctx, room,depthEntries=null) {
   const colors = { merchant: "#dfad62", alchemist: "#8ac8aa", innkeeper: "#c59478", guildmaster: "#b7a1df", gate: "#8bd2df" };
-  const labels = { merchant: "MERCHANT", alchemist: "ALCHEMIST", innkeeper: "INNKEEPER", guildmaster: "GUILDMASTER", gate: "TRAIL GATE" };
+  const labels = { caretaker:"MARA · RECOVERY", merchant: "MERCHANT", alchemist: "ALCHEMIST", innkeeper: "INNKEEPER", guildmaster: "GUILDMASTER", gate: "TRAIL GATE" };
   Object.entries(room.townNpcs || {}).forEach(([id, pos]) => {
+    const draw=()=>{
     const x = pos.x, y = pos.y, color = colors[id] || "#e8d598";
     const nearby = room.nearbyNpc && room.nearbyNpc.id === id;
     if (id.startsWith("stairs_") || id.startsWith("bed_") || id.startsWith("locked_")) return;
     if (id === "gate") {
-      if (!drawVillageProp(ctx, room, "gate", x - 76, y - 83, 152, 112)) {
+      if (!window.GauntletTownSprites?.detail(ctx,room,0,x,y+28,1.6) && !drawVillageProp(ctx, room, "gate", x - 76, y - 83, 152, 112)) {
       ctx.fillStyle = "#638c83"; ctx.fillRect(x - 48, y - 53, 13, 61); ctx.fillRect(x + 35, y - 53, 13, 61); ctx.fillRect(x - 48, y - 57, 96, 11);
       }
-      ctx.fillStyle = "#152321e8"; ctx.fillRect(x - 66, y - 44, 132, 17);
-      ctx.fillStyle = nearby ? "#ffe389" : "#c5ead3"; ctx.font = "10px monospace"; ctx.textAlign = "center"; ctx.fillText("EXIT · E TO VOTE", x, y - 39);
+      if (!room.adventure) {
+        ctx.fillStyle = "#152321e8"; ctx.fillRect(x - 66, y - 44, 132, 17);
+        ctx.fillStyle = nearby ? "#ffe389" : "#c5ead3"; ctx.font = "10px monospace"; ctx.textAlign = "center"; ctx.fillText("EXIT · E TO VOTE", x, y - 39);
+      }
       return;
     }
     drawCharacterShadow(ctx, x, y + 18, 20, "#0e1720aa");
-    const importedNpc = window.GauntletTownSprites?.character(ctx, ({ merchant: "Merchant", alchemist: "Alchemist", innkeeper: "Innkeeper", guildmaster: "Guildmaster" })[id], x, y, { mode: nearby ? "gesture" : "idle", scale: 1.15 });
+    const importedNpc = window.GauntletTownSprites?.character(ctx, ({ caretaker:"Innkeeper", merchant: "Merchant", alchemist: "Alchemist", innkeeper: "Innkeeper", guildmaster: "Guildmaster" })[id], x, y, { mode: nearby ? "gesture" : "idle", scale: 1.15 });
     if (!importedNpc) {
     ctx.fillStyle = "#24202a"; ctx.fillRect(x - 12, y - 15, 24, 33);
     ctx.fillStyle = color; ctx.fillRect(x - 10, y - 14, 20, 25);
@@ -1690,6 +1858,8 @@ function drawTownNpcs(ctx, room) {
     ctx.fillStyle = nearby ? "#ffe389" : "#f5e6c9"; ctx.font = "bold 10px monospace"; ctx.textAlign = "center";
     ctx.fillText((nearby ? "E · " : "") + labels[id], x, y + 34);
     if (nearby) { ctx.strokeStyle = "#ffe389"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y - 4, 27, 0, Math.PI * 2); ctx.stroke(); }
+    };
+    if(depthEntries)depthEntries.push({actor:id!=='gate',depth:pos.y+(id==='gate'?28:18),occluder:true,bounds:{x:pos.x-(id==='gate'?80:32),y:pos.y-(id==='gate'?90:52),width:id==='gate'?160:64,height:id==='gate'?130:92},draw});else draw();
   });
 }
 function drawTownInterior(ctx, room, w, h) {
@@ -1735,9 +1905,10 @@ function drawTownInterior(ctx, room, w, h) {
   ctx.fillText(room.nearbyHouse ? "E · RETURN TO TOWN" : "WALK TO THE DOOR", 480, 522);
 }
 function drawForkBackdrop(target, room) {
+  if(window.GauntletWorldScenery?.floor(target,room,960,540))return;
   // room.region remains the area just left until _advance_stage selects a route.
-  const region = Object.hasOwn(forkArt, room.region) ? room.region : "woodland";
-  const image = forkArt[region];
+  const region = ['woodland','ruins','cavern','frost'].includes(room.region) ? room.region : "woodland";
+  const image = regionalImage(region,'fork');
   const w = target.canvas.width, h = target.canvas.height;
   const key = [region, forkArtRevision, fieldArtRevision, w, h].join(":");
   if (key !== forkTerrainKey) {
@@ -1754,7 +1925,7 @@ function drawForkBackdrop(target, room) {
         frost: ["#c0d0d9", "#708a9f", "#99b5c4", "#abc5d2"]
       }[region];
       ctx.fillStyle = palette[0]; ctx.fillRect(0, 0, w, h);
-      const field = fieldArt[region];
+      const field = regionalImage(region,'field');
       if (field.complete && field.naturalWidth) ctx.drawImage(field, 0, 0, w, h);
       // Keep the exact server corridors visible even before fork art loads.
       const paths = [[[480, 540], [480, 320], [260, 170], [0, 170]], [[480, 540], [480, 320], [700, 170], [960, 170]]];
@@ -1884,15 +2055,17 @@ function drawCombatEffects(ctx, room) {
   });
 }
 function drawArenaBackdrop(target, room, theme, w, h) {
-  const region = fieldArt[room.region] ? room.region : "woodland";
-  const image = fieldArt[region];
-  const key = [room.code, room.stage, region, fieldArtRevision, w, h].join(":");
+  if (window.GauntletAdventureSprites?.backdrop(target,room,w,h)) return;
+  if (window.GauntletWorldScenery?.floor(target,room,w,h)) return;
+  const region = ['woodland','ruins','cavern','frost'].includes(room.region) ? room.region : "woodland";
+  const image = regionalImage(region,'field');
+  const key = [room.code, room.adventure?.area, room.stage, region, fieldArtRevision, w, h].join(":");
   if (key !== terrainKey) {
     terrainLayer.width = w; terrainLayer.height = h;
     const ctx = terrainLayer.getContext("2d");
     ctx.imageSmoothingEnabled = false;
     if (image.complete && image.naturalWidth) {
-      ctx.drawImage(image, 0, 0, w, h);
+      window.GauntletCamera.backdrop(ctx,image,w,h);
     } else {
       // Keep a playable field while the regional artwork loads.
       ctx.fillStyle = theme.base; ctx.fillRect(0, 0, w, h);
@@ -1906,6 +2079,10 @@ function drawArenaBackdrop(target, room, theme, w, h) {
       ctx.fillRect(0, 0, w, 14); ctx.fillRect(0, h - 14, w, 14);
       ctx.fillRect(0, 0, 14, h); ctx.fillRect(w - 14, 0, 14, h);
       drawRegionScenery(ctx, room, theme, w, h);
+    }
+    if(room.adventure && (w>960 || h>540)) {
+      ctx.strokeStyle='#8f80544a';ctx.lineWidth=36;ctx.lineJoin='round';
+      room.adventure.exits.forEach(e=>{ctx.beginPath();ctx.moveTo(w/2,h*.55);ctx.lineTo(e.x,e.y);ctx.stroke();});
     }
     terrainKey = key;
   }
@@ -2012,7 +2189,19 @@ function drawWorld(room) {
   const canvas = $("#world");
   if (!canvas || !room || room.phase === "lobby") return;
   const ctx = canvas.getContext("2d");
-  const w = canvas.width, h = canvas.height;
+  const rect=canvas.getBoundingClientRect();
+  const cw=Math.max(1,Math.round(rect.width)),ch=Math.max(1,Math.round(rect.height));
+  if(canvas.width!==cw || canvas.height!==ch){canvas.width=cw;canvas.height=ch;}
+  const camera=areaCamera.frame(room,cw,ch,performance.now());
+  const [w,h]=window.GauntletCamera.size(room);
+  areaViewButton.classList.toggle('hidden',!camera.large);
+  areaViewButton.setAttribute('aria-pressed',String(camera.overview));
+  areaViewButton.textContent=camera.overview?'Whole area · viewing':'Area view · V';
+  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#14251c';ctx.fillRect(0,0,cw,ch);
+  const shake=window.GauntletFeedback?.offset() || [0,0];
+  window.GauntletAbilityAnimations?.beginFrame();
+  ctx.save();ctx.translate(camera.x+shake[0],camera.y+shake[1]);ctx.scale(camera.zoom,camera.zoom);
+  ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();
   const themes = {
     woodland: { base: "#243d32", a: "#294638", b: "#304d3c", detail: "#50724d", trim: "#4a4633" },
     ruins: { base: "#393b39", a: "#414440", b: "#494a43", detail: "#777465", trim: "#655b4b" },
@@ -2022,20 +2211,25 @@ function drawWorld(room) {
   const theme = themes[room.region] || themes.woodland;
   if (room.phase !== "town" && room.phase !== "routes") drawArenaBackdrop(ctx, room, theme, w, h);
   const ownTownInterior = room.phase === "town" && Boolean(room.townInterior);
-  if (room.phase === "puzzle" && room.puzzle) drawPuzzleRoom(ctx, room.puzzle, w, h);
+  if (room.phase === "puzzle" && room.puzzle) drawPuzzleRoom(ctx, room.puzzle, w, h, room);
+  const townDepthEntries=[];
   if (room.phase === "town") {
     if (ownTownInterior) drawTownInterior(ctx, room, w, h);
-    else drawTownObjects(ctx, room, w, h);
+    else townDepthEntries.push(...drawTownObjects(ctx, room, w, h));
   }
   if (room.phase === "routes") drawRouteGates(ctx, room);
   if (room.phase === "peace") drawPeacefulClearing(ctx, room);
-  if (room.phase === "town" && !ownTownInterior) drawVillageRunner(ctx, room);
+  if (room.phase === "town" && !ownTownInterior && room.townWelcome && !room.townWelcome.done)
+    townDepthEntries.push({depth:room.townWelcome.y+14,draw:()=>drawVillageRunner(ctx,room)});
+  if (room.adventure && !ownTownInterior && typeof drawAdventure === 'function') drawAdventure(ctx, room,room.phase==='town'?townDepthEntries:null);
+  window.drawHeroSkillZones?.(ctx,room);
   window.GauntletCombatEnvironment.draw(ctx, room);
   window.GauntletCombatEnvironment.objectives(ctx, room);
-  if (room.phase === "combat") window.GauntletCombatEnvironment.warnings(ctx, room);
+  window.GauntletAscendedSprites?.ground(ctx,room);
   if (room.phase === "stage_exit") drawStageExit(ctx, room);
   if (room.phase === "chest" && room.chest) drawTreasureChest(ctx, room.chest);
-  (room.phase === "combat" ? room.enemies : []).forEach((enemy) => {
+  const actorLabels=[];
+  const drawEnemy=(enemy,labels=true) => {
     if (enemy.kind==='rift') {window.GauntletCombatEnvironment.structure(ctx,enemy,localTarget===enemy.id,false,room.region);return;}
     const x = enemy.x, y = enemy.y, color = enemy.baseColor || "#85977a";
     const spriteScale = enemy.boss ? (enemy.bossPhase === 2 ? 3.2 : 2.3) : enemy.miniBoss ? 1.9 : enemy.kind === "draco" ? 1.25 : 1.5;
@@ -2049,7 +2243,7 @@ function drawWorld(room) {
     ctx.save(); ctx.translate(x, y); ctx.scale(spriteScale, spriteScale); ctx.translate(-x, -y);
     let imported;
     drawDamageTint(ctx, "enemy", enemy, x, y, (ctx) => {
-    const spriteKey = {serpent:"Serpent",minotaur:"Minotaur",troll:"Troll",spider:"Spider",wolf:"Wolf",draco:"Draco",dragon:"Dragon",monster:"Chimera"}[enemy.kind];
+    const spriteKey = enemy.id==='shrine-guardian' ? 'ShrineGuardian' : {serpent:"Serpent",minotaur:"Minotaur",troll:"Troll",spider:"Spider",wolf:"Wolf",draco:"Draco",dragon:"Dragon",monster:"Chimera"}[enemy.kind];
     imported = window.GauntletCombatEnvironment?.enemy(ctx, enemy, x, y) || spriteKey && drawImportedHero(ctx, { ...enemy, status: "alive" }, x, y, spriteKey);
     if (!imported) {
     ctx.fillStyle = color;
@@ -2095,30 +2289,33 @@ function drawWorld(room) {
     ctx.restore();
     const barWidth = enemy.kind === "dragon" ? (enemy.bossPhase === 2 ? 180 : 140) : enemy.boss ? (enemy.bossPhase === 2 ? 100 : 72) : enemy.miniBoss || localTarget===enemy.id ? 60 : 40;
     const barY = enemy.kind === "dragon" && imported ? Math.max(18, y - 96 * spriteScale - 12) : enemy.boss ? y - 88 : enemy.miniBoss ? y - 68 : imported ? y - 50 : y - 32;
+    if(labels)actorLabels.push(()=>{
     ctx.fillStyle = "#211720"; ctx.fillRect(x - barWidth / 2, barY, barWidth, 4);
     ctx.fillStyle = enemy.boss ? "#f0c76c" : enemy.miniBoss ? "#d99159" : "#e66e68";
     ctx.fillRect(x - barWidth / 2 + 1, barY + 1, (barWidth - 2) * Math.max(0, enemy.hp) / enemy.maxHp, 2);
     ctx.fillStyle = "#eee2d2"; ctx.font = enemy.boss ? "bold 11px monospace" : "10px monospace"; ctx.textAlign = "center";
     if (enemy.boss || localTarget===enemy.id) ctx.fillText(enemy.name, x, barY - 4);
-  });
-  if (room.phase === "combat") (room.summons || []).forEach((summon) => drawSummon(ctx, summon));
+    });
+  };
   const visiblePlayers = room.phase === "puzzle" || ownTownInterior ? room.players.filter((player) => player.id === room.you) : room.players.filter((player) => !player.indoors && player.connected !== false);
-  visiblePlayers.forEach((player) => {
+  const drawPlayer=(player,labels=true) => {
     if (room.phase === "combat" && player.id === room.you && player.status === "alive" && moveState.attack) {
       const reach = Math.min(320, Math.max(50, room.attackRange || 150));
       ctx.save(); ctx.globalAlpha = 0.18; ctx.strokeStyle = player.color; ctx.lineWidth = 1;
       ctx.setLineDash([7, 7]); ctx.beginPath(); ctx.arc(player.x, player.y, reach, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
     }
-    ctx.globalAlpha = player.invisible ? 0.35 : 1;
+    ctx.globalAlpha *= player.invisible ? 0.35 : 1;
     const x = player.x, y = player.y, color = player.color, role = player.class;
+    if(player.ascended&&!window.GauntletAscendedSprites?.supports(role)){ctx.save();ctx.strokeStyle='#e7cd87';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y+12,27,0,Math.PI*2);ctx.stroke();ctx.restore();}
     const abilityMotion = window.GauntletAbilityAnimations?.motion(player);
-    const bob = abilityMotion ? 0 : Math.sin(Date.now() / (role === "Druid" ? 550 : 180) + x) * (role === "Druid" ? .25 : 1.2);
+    const bob = player.ascended||abilityMotion ? 0 : Math.sin(Date.now() / (role === "Druid" ? 550 : 180) + x) * (role === "Druid" ? .25 : 1.2);
     const characterScale = room.phase === "town" ? 0.78 : 1.65;
-    const nameOffset = room.phase === "town" ? 28 : heroSprites[role]?.sheet ? 61 : 37;
+    const nameOffset = player.ascended?(room.phase==='town'?42:84):room.phase === "town" ? 28 : heroSprites[role]?.sheet ? 61 : 37;
     if (player.id===room.you && player.status==='alive') {
       ctx.save();ctx.strokeStyle='#fff1af';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y+12,23,0,Math.PI*2);ctx.stroke();ctx.restore();
     }
     drawCharacterShadow(ctx, x, y + 12 * characterScale, 11 * characterScale);
+    if(player.barrier>0){ctx.save();ctx.strokeStyle='#a9f1ed';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y+12*characterScale,18*characterScale,8*characterScale,0,0,Math.PI*2);ctx.stroke();ctx.restore();}
     if (abilityMotion) window.GauntletAbilityAnimations?.ground(ctx, player);
     ctx.save(); ctx.translate(x, y + bob); ctx.scale(characterScale, characterScale); ctx.translate(-x, -y);
     drawDamageTint(ctx, "player", player, x, y, (ctx) => {
@@ -2161,10 +2358,11 @@ function drawWorld(room) {
       ctx.fillRect(x + 10, y - 22, 3, 37); ctx.fillRect(x + 7, y - 24, 9, 4); ctx.fillRect(x + 10, y - 31, 3, 18);
     }
     }
-    if (!abilityMotion && player.armorColor) { ctx.fillStyle = player.armorColor; ctx.fillRect(x - 8, y - 9, 16, 13); ctx.fillRect(x - 11, y - 7, 4, 10); ctx.fillStyle = "#ffffff55"; ctx.fillRect(x - 6, y - 8, 3, 8); }
-    if (!abilityMotion && player.weaponColor) { ctx.fillStyle = "#171722"; ctx.fillRect(x + 10, y - 11, 5, 29); ctx.fillStyle = player.weaponColor; ctx.fillRect(x + 11, y - 12, 3, 28); ctx.fillRect(x + 8, y - 4, 9, 4); }
+    if (!player.ascended && !abilityMotion && player.armorColor) { ctx.fillStyle = player.armorColor; ctx.fillRect(x - 8, y - 9, 16, 13); ctx.fillRect(x - 11, y - 7, 4, 10); ctx.fillStyle = "#ffffff55"; ctx.fillRect(x - 6, y - 8, 3, 8); }
+    if (!player.ascended && !abilityMotion && player.weaponColor) { ctx.fillStyle = "#171722"; ctx.fillRect(x + 10, y - 11, 5, 29); ctx.fillStyle = player.weaponColor; ctx.fillRect(x + 11, y - 12, 3, 28); ctx.fillRect(x + 8, y - 4, 9, 4); }
     });
     ctx.restore();
+    if(labels)actorLabels.push(()=>{
     ctx.fillStyle = "#fff4d5"; ctx.font = room.phase === "town" ? "bold 9px monospace" : "bold 12px monospace"; ctx.textAlign = "center";
     if (room.phase!=='combat' || player.status!=='alive') ctx.fillText(player.name, x, y - nameOffset);
     else if (player.id===room.you) {
@@ -2173,26 +2371,47 @@ function drawWorld(room) {
     if (player.status !== "alive") {
       ctx.fillStyle = "#ff8585"; ctx.fillText(player.status === "downed" ? "DOWN!" : "FALLEN", x, y + nameOffset);
     }
+    });
     ctx.globalAlpha = 1;
-  });
+  };
+  const depthEntries=[...(window.GauntletWorldScenery?.objects(room,w,h) || []),...(window.GauntletOpening?.objects(ctx,room)||[]),...townDepthEntries];
+  for(const enemy of room.phase==='combat'?room.enemies:[]){
+    const s=enemy.boss?(enemy.bossPhase===2?3.2:2.3):enemy.miniBoss?1.9:enemy.kind==='draco'?1.25:1.5;
+    const large=enemy.kind==='dragon';depthEntries.push({actor:true,depth:enemy.y+(enemy.boss?30:18),occluder:true,bounds:{x:enemy.x-(large?64:32)*s,y:enemy.y-(large?102:42)*s,width:(large?128:64)*s,height:(large?128:64)*s},draw:()=>drawEnemy(enemy)});
+  }
+  if(room.phase==='combat')for(const summon of room.summons || [])depthEntries.push({actor:true,depth:summon.y+18,occluder:true,bounds:{x:summon.x-82,y:summon.y-108,width:164,height:170},draw:()=>drawSummon(ctx,summon)});
+  for(const player of visiblePlayers){const s=room.phase==='town'?.78:1.65;
+    depthEntries.push({depth:player.y+(room.phase==='town'?10:20),occluder:true,player:{local:player.id===room.you},bounds:player.ascended?{x:player.x-42*s,y:player.y-72*s,width:84*s,height:96*s}:{x:player.x-24*s,y:player.y-42*s,width:48*s,height:64*s},draw:(_ctx,cutback)=>drawPlayer(player,!cutback)});
+  }
+  if(window.GauntletWorldScenery)window.GauntletWorldScenery.renderDepth(ctx,depthEntries);
+  else for(const entry of depthEntries.sort((a,b)=>a.depth-b.depth))entry.draw(ctx);
+  // Names, health and recovery cues remain readable above cosmetic foliage.
   if (room.phase === "combat") (room.summons || []).forEach((summon) => drawSummonLabel(ctx, summon));
   drawCombatEffects(ctx, room);
   window.GauntletAbilityAnimations?.front(ctx, room);
+  window.GauntletCombatVisuals?.front(ctx,room);
   window.GauntletProjectiles?.rain(ctx, room);
   if (room.phase === 'combat') (room.summons || []).forEach(s => window.GauntletAbilityAnimations?.summonFront(ctx, s));
+  window.GauntletFeedback?.draw(ctx,room);
+  window.GauntletDungeonSprites?.portals(ctx,room);
+  // Useful labels and exact danger boundaries remain above optional feedback.
+  for(const label of actorLabels){ctx.save();label();ctx.restore();}
+  for(const e of room.enemies||[]){if(e.awarenessCue){ctx.save();ctx.font='bold 20px Georgia';ctx.textAlign='center';ctx.fillStyle=e.awarenessCue==='!'?'#ff7469':'#f4d580';ctx.strokeStyle='#142322';ctx.lineWidth=3;ctx.strokeText(e.awarenessCue,e.x,e.y-55);ctx.fillText(e.awarenessCue,e.x,e.y-55);ctx.restore();}}
+  if(room.phase==='combat')window.GauntletCombatEnvironment.warnings(ctx,room);
   if (typeof drawPings === "function") drawPings(ctx, room);
   if (room.phase === "cleared" || room.phase === "defeat") {
     ctx.fillStyle = room.phase === "defeat" ? "rgba(14, 8, 18, .82)" : "rgba(12, 20, 17, .72)";
     ctx.fillRect(0, 0, w, h);
     ctx.textAlign = "center"; ctx.fillStyle = room.phase === "defeat" ? "#e5857b" : "#f0d18a";
     ctx.font = "bold 32px monospace";
-    ctx.fillText(room.phase === "defeat" ? "EVIL CLAIMS THE FIELD" : "THE DRAGON IS DEFEATED!", w / 2, h / 2);
+    ctx.fillText(room.adventure?.opening?'THE ROAD WAS OVERRUN':room.phase === "defeat" ? "EVIL CLAIMS THE FIELD" : "THE DRAGON IS DEFEATED!", w / 2, h / 2);
   }
+  ctx.restore();
 }
 if (window.location.protocol === "file:") {
   $("#entry").classList.remove("hidden");
   $("#lobby").classList.add("hidden");
-  document.body.classList.remove("is-playing");
+  document.body.classList.remove("is-playing"); updateLandscape();
   $("#connection").textContent = "OPEN SERVER PAGE";
   $("#connection").className = "connection connecting";
   notice($("#entryNotice"), "This file preview cannot reach multiplayer. Open the live server page instead.");

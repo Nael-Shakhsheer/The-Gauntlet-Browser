@@ -8,16 +8,21 @@ import zipfile
 
 
 def source_files(root, include_checkpoints=False, runtime_only=False):
-    ignored={'.git','.codex','.agents','__pycache__','.venv','node_modules','releases'}
+    ignored={'.git','.codex','.agents','__pycache__','.venv','node_modules','releases',
+             '.test-tmp','.pytest_cache','.ruff_cache'}
     files=[]
     for p in root.rglob('*'):
         rel=p.relative_to(root)
         if not p.is_file() or set(rel.parts)&ignored or p.suffix=='.pyc':continue
+        if (p.name=='.env' or p.name.startswith('.env.')) and p.name!='.env.example':continue
+        if p.suffix.lower() in ('.pem','.key','.pfx'):continue
+        if p.suffix.lower()=='.log':continue
         if rel.as_posix()=='PACKAGE_MANIFEST.json':continue
         if rel.parts[0]=='data' and not (include_checkpoints and len(rel.parts)==3 and rel.parts[1]=='checkpoints' and p.suffix=='.json'):continue
         if runtime_only:
             if rel.parts[0]=='art' and (len(rel.parts)<2 or rel.parts[1]!='audio'):continue
-            if rel.parts[0]=='reports' and p.suffix.lower() in ('.png','.jpg','.jpeg'):continue
+            if rel.parts[0]=='reports':continue
+            if rel.parts[:2]==('art','audio') and p.suffix.lower()=='.wav':continue
         files.append((rel.as_posix(),p))
     return sorted(files)
 

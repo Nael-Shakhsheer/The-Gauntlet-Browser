@@ -2,7 +2,7 @@
 (() => {
   const root=document.currentScript?.dataset.spriteRoot || '/sprites/';
   const packs={},shots=new Map(),fields=new Map();let scene='';
-  for(const key of ['missiles','spells','enemy']){const img=packs[key]=new Image();img.src=root+'flight-'+key+'-v1.png';}
+  function pack(key){if(!packs[key]){const img=packs[key]=new Image();img.src=root+'flight-'+key+'-v1.png';}return packs[key];}
   const rows={
     quick_arrow:['missiles',0,36,'tip','#e5d6ad'],snare_arrow:['missiles',1,39,'tip','#a3e985'],
     deadeye_arrow:['missiles',2,78,'tip','#ffe89b'],rain_arrow:['missiles',3,34,'tip','#e9ecdc'],
@@ -26,16 +26,19 @@
     if(shot.effectKind==='rock')return 'tumbling_rock';
     if(shot.effectKind==='lightning')return 'bird_lightning';
     if(shot.side==='hero')return heroStyles[shot.abilityId] || ({Archer:'quick_arrow',Rogue:'flying_dagger',Knight:'flying_dagger',Cleric:'radiant_flask',Druid:'briar_pod',Bard:'quickstring_note',Healer:'life_spark'})[shot.class] || 'arc_bolt';
-    if(shot.class==='Archer')return 'quick_arrow';
-    if(['Rogue','Knight'].includes(shot.class) && shot.effectKind!=='boss_orb')return 'flying_dagger';
     const owner=room?.enemies?.find(e=>e.id===shot.ownerId);
-    if(owner?.affinity && affinityStyles[owner.affinity])return affinityStyles[owner.affinity];
+    // Monster kits describe combat rules, not the weapon art. Keep the element
+    // on the shot even after its owner dies or leaves the visible entity list.
+    const affinity=shot.affinity || owner?.affinity;
+    if(affinity && affinityStyles[affinity])return affinityStyles[affinity];
+    if(shot.class==='Archer' && !shot.ownerKind)return 'quick_arrow';
+    if(['Rogue','Knight'].includes(shot.class) && !shot.ownerKind && shot.effectKind!=='boss_orb')return 'flying_dagger';
     const color=String(shot.color || '').toLowerCase();
     const known={'#f47745':'fireball','#85dcf2':'ice_comet','#79618e':'dark_orb','#bb83ff':'arcane_orb','#e9dd72':'storm_bolt','#92d64f':'venom_glob','#64c78d':'nature_seed'};
     return known[color] || (shot.class==='Healer'||shot.class==='Cleric'?'holy_bolt':'arcane_orb');
   }
   function observe(room) {
-    const key=[room.code,room.stage].join(':');
+    const key=window.GauntletAudio?.sceneKey(room)||[room.code,room.adventure?.area,room.stage].join(':');
     if(key!==scene || !['combat','chest','stage_exit','cleared'].includes(room.phase)){shots.clear();fields.clear();scene=key;}
     const now=performance.now(),live=new Set();
     for(const shot of room.projectiles || []){live.add(shot.id);if(!shots.has(shot.id))shots.set(shot.id,{at:now,style:style(shot,room)});}
@@ -63,7 +66,7 @@
   }
   function variant(ctx,key,x,y,angle=0,age=0,scale=1) {
     const r=rows[key];if(!r)return false;
-    const speed=r[0]==='missiles'?110:80,frame=Math.floor(Math.max(0,age)/speed)%4,img=packs[r[0]];
+    const speed=r[0]==='missiles'?110:80,frame=Math.floor(Math.max(0,age)/speed)%4,img=pack(r[0]);
     ctx.save();ctx.imageSmoothingEnabled=false;ctx.translate(x,y);ctx.rotate(angle);ctx.scale(scale,scale);
     const tip=r[3]==='tip',anchor=tip?78:48;
     if(img?.complete && img.naturalWidth)ctx.drawImage(img,frame*96,r[1]*96,96,96,-anchor,-48,96,96);
@@ -72,10 +75,10 @@
   }
   function draw(ctx,shot) {
     const record=shots.get(shot.id),key=record?.style || style(shot),r=rows[key];
-    const age=performance.now()-(record?.at ?? performance.now()),angle=Math.atan2(shot.vy||0,shot.vx||1);
+    const age=performance.now()-(record?.at ?? performance.now()),angle=Math.atan2(shot.vy??0,shot.vx??1);
     const scale=shot.side==='enemy'?Math.min(1.7,Math.max(.8,(shot.radius||7)/10)):1;
     ctx.save();ctx.translate(shot.x,shot.y);ctx.rotate(angle);ctx.fillStyle=r[4];
-    if(!key.includes('flask')&&!key.includes('vial')&&key!=='tumbling_rock') {
+    if(!window.GauntletAudio?.visualSettings().reduced&&!key.includes('flask')&&!key.includes('vial')&&key!=='tumbling_rock') {
       const length=key==='deadeye_arrow'?80:r[2],magic=r[0]!=='missiles';
       for(let i=0;i<5;i++){
         const phase=(age/60+i*1.7)%5;ctx.globalAlpha=(1-phase/5)*.4;

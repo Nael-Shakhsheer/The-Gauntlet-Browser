@@ -90,8 +90,7 @@ class HunterStoryTests(unittest.TestCase):
         occupied=next(r for r in room["innRooms"] if r["locked"])
         p.update(townInterior="inn",innFloor=2,x=occupied["x"],y=335)
         self.assertFalse(progression.interior_walkable(room,p,p["x"],320))
-        world.action(room["code"],p["id"],{"action":"interact"})
-        self.assertIn("locked",room["privateNotices"][p["id"]])
+        with self.assertRaisesRegex(ValueError,'Occupied'):world.action(room["code"],p["id"],{"action":"interact"})
 
     def test_only_upstairs_beds_create_checkpoints_and_disk_restore_returns_to_same_room(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -155,6 +154,20 @@ class HunterStoryTests(unittest.TestCase):
             saved["stage"]+=3;restored._enter_town(saved);restored._save_checkpoint(saved)
             self.assertEqual(file.read_bytes(),before)
 
+    def test_checkpoint_before_portal_design_restores_its_bed_after_wipe(self):
+        with tempfile.TemporaryDirectory() as directory:
+            world,room,players=self.party(storage_dir=directory);world._enter_town(room);rest_at_bed(world,room)
+            checkpoint=room['checkpoint'];bed=checkpoint['bed'];rooms=copy.deepcopy(room['innRooms'])
+            for source in (room,checkpoint):
+                for key in ('townPortal','townDesignVersion'):source.pop(key,None)
+            world.storage.save(room)
+            restored=GameWorld(storage_dir=directory);saved=restored.rooms[room['code']]
+            saved['phase']='defeat';restored.action(saved['code'],players[0]['id'],{'action':'checkpointResume'})
+            p=saved['players'][players[0]['id']]
+            self.assertEqual(saved['checkpoint']['bed'],bed);self.assertEqual(saved['innRooms'],rooms)
+            self.assertEqual((p['townInterior'],p['innFloor']),('inn',2))
+            self.assertEqual(saved['townDesignVersion'],2)
+
     def test_rewards_are_once_per_run_even_after_repeat_tutorial_or_boss_retry(self):
         world,room,players=self.party();world._enter_town(room);rest_at_bed(world,room)
         p=players[0]; progression.reward(p,"first_inn");self.assertEqual(p["skillPoints"],1)
@@ -165,6 +178,7 @@ class HunterStoryTests(unittest.TestCase):
 
     def test_enemy_retargets_living_hero_and_downing_does_not_shorten_rescue_timer(self):
         world,room,players=self.party();p,q=players;p.update(status="downed",hp=0,downedUntil=self.now+8,x=200,y=200)
+        room['environment']={} # This retargeting case requires an open sightline, independent of random cover.
         q.update(x=700,y=200,hp=1000,maxHp=1000)
         e=room["enemies"][0];room["enemies"]=[e];e.update(x=180,y=200,targetId=p["id"],moveDecisionAt=self.now+99,moveGoal=[200,200])
         self.tick(world);self.assertEqual(e["targetId"],q["id"]);self.assertGreater(e["moveGoal"][0],300)

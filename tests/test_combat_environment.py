@@ -233,14 +233,15 @@ class CombatEnvironmentTests(unittest.TestCase):
         self.assertTrue(terrain.line_clear(self.room,self.p,{"x":goal[0],"y":goal[1]}))
         self.assertGreater(math.hypot(goal[0]-100,goal[1]-100),70)
 
-    def test_each_dialogue_has_player_reply_and_correct_npc(self):
+    def test_dialogue_presentation_keeps_objects_free_of_portraits_and_replies(self):
         for kind,(title,pages) in progression.PAGES.items():
             progression.start_dialogue(self.p,kind)
             for page in range(len(pages)):
                 self.p["dialogue"]["page"]=page
                 d=progression.dialogue(self.p)
                 self.assertEqual(d["title"],title)
-                self.assertTrue(d["reply"])
+                if d['presentation']=='npc':self.assertTrue(d['reply']);self.assertTrue(d['portrait'])
+                else:self.assertIsNone(d['reply']);self.assertIsNone(d['portrait'])
                 self.assertEqual(d["text"],pages[page])
 
 
