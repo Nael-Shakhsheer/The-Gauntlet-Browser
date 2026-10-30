@@ -1,5 +1,5 @@
 {
-  "createdUTC": "2026-10-29T18:37:19.054700+00:00",
+  "createdUTC": "2026-10-30T21:25:42.763653+00:00",
   "checkpointFilesIncluded": false,
   "releaseCandidate": true,
   "devToolsExcluded": true,
@@ -289,8 +289,8 @@
       "sha256": "b089f4ef03847445c7b07bedab2d9fe8e91cca67a234cf3c8d47ff8a0b73f7f0"
     },
     "static/app.js": {
-      "bytes": 168901,
-      "sha256": "c8706509fc53a892283d70d5c500314945afc77de51f91b12be6ceca77c358c0"
+      "bytes": 169395,
+      "sha256": "bbddd86044d853625d01a402ac8c47ab09de6c969a97995706ab47e74c4c383a"
     },
     "static/ascended-sprites.js": {
       "bytes": 11164,
@@ -1149,8 +1149,8 @@
       "sha256": "ac928af621af2a43cf442f112d40a6c8960917f4188b6ef3184bdde7cb093318"
     },
     "static/index.html": {
-      "bytes": 38981,
-      "sha256": "372270dadec36aeeff4046bc1e0e3695874cefa8df5f1127c3467332e709f02d"
+      "bytes": 39083,
+      "sha256": "1d05e1837ca7c2e2a76fcb98f0c33f1eb7f230f918899f46b1e9a1f4949f2f96"
     },
     "static/input-transport.js": {
       "bytes": 2648,

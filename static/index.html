@@ -75,7 +75,7 @@
         <p id="roomNotice" class="notice room-notice" role="status"></p>
         <div id="classPanel" class="panel class-panel">
           <div class="section-heading"><div><p class="eyebrow">BUILD YOUR PARTY</p><h2>Choose a class</h2></div><span id="partyCount" class="count-pill">0 / 4</span></div>
-          <p class="subtle">Each class is unique within the party. Choose one Light, one Special, and one Ultimate ability.</p>
+          <p id="classLoadoutHint" class="subtle">Each class is unique within the party. Choose one Light, one Special, and one Ultimate ability.</p>
           <fieldset id="runOptions" class="run-options">
             <legend>Run options · host chooses</legend>
             <label><span>Mode</span><select id="modeChoice"><option value="gauntlet">Gauntlet · stage campaign</option><option value="adventure">Adventure · five-region campaign</option></select></label>
@@ -83,7 +83,7 @@
             <label id="lengthOption"><span>Run length</span><select id="lengthChoice"><option value="9">Tester · 9 stages</option><option value="20">Short · 20 stages</option><option value="25" selected>Standard · 25 stages</option><option value="30">Long · 30 stages</option></select></label>
             <label id="challengeOption"><span>Gauntlet rules</span><select id="challengeChoice"><option value="classic">Classic</option><option value="seeded">Seeded modifiers · extra kill Runes</option></select></label>
             <label id="challengeSeedOption"><span>Modifier seed</span><input id="challengeSeed" type="number" min="0" max="2147483647" step="1" value="0"></label>
-            <p id="adventureModeHint" class="subtle hidden">Adventure is a connected woodland around Oakvale. Explore freely, help the missing hunter, repair a shortcut and secure the old ruins. Separate automatic local saves; rest at the inn to set your return point.</p>
+            <p id="adventureModeHint" class="subtle hidden">Explore five connected regions, from Oakvale’s woodland to the dragon’s volcanic lair. Learn abilities through Skills and return to contacts to report quests. Adventure saves automatically on this server; inn beds set recovery points. Free hosted storage is temporary: export backups.</p>
             <label class="companion-choice"><input id="npcCompanion" type="checkbox"><span>Add NPC companion</span></label>
             <p id="testerModeHint" class="subtle hidden">Tester compresses 25-stage combat progression into 9 stages, with bosses at 3, 6 and 9 and Dracos from 7.</p>
             <p id="gauntletChallengeHint" class="subtle"></p>

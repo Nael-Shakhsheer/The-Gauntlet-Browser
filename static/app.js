@@ -932,11 +932,12 @@ function renderClasses(room) {
   for(const id of ['challengeOption','challengeSeedOption','gauntletChallengeHint'])$('#'+id).classList.toggle('hidden',room.mode==='adventure');
   $('#gauntletChallengeHint').textContent=room.gauntletChallenge?room.gauntletChallenge.name+' · '+room.gauntletChallenge.rules+' Seed '+room.gauntletChallenge.seed+'.':'Classic rules. Seeded modifiers vary between faster fragile packs and lower combat mana regeneration. The seed reproduces modifier selection; ordinary campaign randomness remains.';
   $('#adventureModeHint').classList.toggle('hidden', room.mode !== 'adventure');
+  $('#classLoadoutHint').textContent = room.mode === 'adventure' ? 'Each class is unique within the party. Choose your hero; learn and equip abilities through Skills during your adventure.' : 'Each class is unique within the party. Choose one Light, one Special, and one Ultimate ability.';
   if (room.mode === 'adventure') $('#testerModeHint').classList.add('hidden');
 }
 function renderPlayers(room) {
   const list = $("#players");
-  const signature = JSON.stringify([room.phase, room.host, room.you, room.players.map((player) =>
+  const signature = JSON.stringify([room.phase, room.mode, room.host, room.you, room.players.map((player) =>
     [player.id, player.name, player.class, player.hp, player.maxHp, player.status, player.reviving, player.abilityCount])]);
   if (list.dataset.signature === signature) return;
   list.dataset.signature = signature;
@@ -949,7 +950,7 @@ function renderPlayers(room) {
     item.querySelector(".player-dot").style.background = player.color;
     decorateHeroIcon(item.querySelector(".player-dot"), player.class);
     item.querySelector(".player-name").textContent = player.name + (player.bot ? " · NPC" : player.id === room.host ? " · host" : "");
-    item.querySelector(".player-class").textContent = player.reviving ? "Reviving an ally…" : !player.class ? (player.bot ? "Random hero on start" : "Choosing class") : player.abilityCount === 3 ? player.class + " · ready" : player.class + " · abilities " + player.abilityCount + "/3";
+    item.querySelector(".player-class").textContent = player.reviving ? "Reviving an ally…" : !player.class ? (player.bot ? "Random hero on start" : "Choosing class") : room.mode === 'adventure' ? player.class + ' · ' + (room.phase === 'lobby' ? 'ready' : 'Adventure') : player.abilityCount === 3 ? player.class + " · ready" : player.class + " · abilities " + player.abilityCount + "/3";
     item.querySelector(".player-health").textContent = player.class ? (player.status === "alive" ? player.hp + "/" + player.maxHp + " HP" : player.status.toUpperCase()) : "";
     list.append(item);
   });
@@ -957,7 +958,7 @@ function renderPlayers(room) {
   const ready = room.players.length > 0 && room.players.every((player) => player.bot || (player.class && (room.mode==='adventure' || player.abilityCount === 3)));
   const start = $("#startRun");
   start.disabled = room.you !== room.host || !ready || room.phase !== "lobby";
-  start.textContent = room.phase !== "lobby" ? "Run in progress" : room.you !== room.host ? "Waiting for host" : ready ? (room.mode === 'adventure' ? 'Begin Adventure' : "Begin the run") : own && own.class && own.abilityCount !== 3 ? "Choose one of each ability" : own && own.class ? "Waiting for party loadouts" : "Choose a class to begin";
+  start.textContent = room.phase !== "lobby" ? "Run in progress" : room.you !== room.host ? "Waiting for host" : ready ? (room.mode === 'adventure' ? 'Begin Adventure' : "Begin the run") : own && own.class && room.mode !== 'adventure' && own.abilityCount !== 3 ? "Choose one of each ability" : own && own.class ? (room.mode === 'adventure' ? 'Waiting for party classes' : "Waiting for party loadouts") : "Choose a class to begin";
 }
 function renderChat(room) {
   const signature = room.chat.map((message) => message.id).join("|");
