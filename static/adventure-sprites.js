@@ -14,7 +14,14 @@
     network:[[[960,270],[745,300],[480,300],[245,270],[0,270]]],
     border:[[[480,0],[440,170],[530,360],[480,540]]],
     fields:[[[0,270],[275,280],[470,340],[520,440],[480,540]],[[275,280],[275,180],[565,200],[760,180]],[[470,340],[570,355],[740,290],[960,362]],[[565,200],[740,190],[960,173]]],
-    eastern_threshold:[[[0,173],[270,210],[440,320],[640,330],[790,345]],[[640,330],[810,410],[960,420]]],
+    eastern_threshold:[[[0,173],[270,210],[440,320],[640,330],[790,345]],[[640,330],[810,410],[960,420]],[[440,320],[480,430],[480,540]]],
+    irrigation_channels:[[[480,0],[460,240],[420,315],[730,260],[960,270]],[[730,260],[820,420],[960,421]]],
+    farmstead:[[[0,270],[300,280],[500,320],[650,190]],[[500,320],[480,140],[480,0]],[[500,320],[680,410]]],
+    pump_exterior:[[[480,540],[340,340],[520,250],[740,290],[960,270]]],
+    sluice_entry:[[[0,270],[480,270],[960,270]],[[480,270],[450,390],[650,400]]],
+    sluice_gallery:[[[0,270],[480,270],[960,270]],[[480,270],[480,0]],[[480,270],[480,365]]],
+    sluice_alcove:[[[480,540],[510,330],[490,190]]],
+    pump_chamber:[[[0,270],[480,270],[700,370]],[[480,270],[360,400],[0,432]]],
     mill:[[[480,0],[470,170],[480,225],[665,280],[960,270]],[[480,225],[390,325],[290,360]],[[665,280],[690,360]]],
     cellar:[[[0,270],[450,270],[570,290],[665,250]],[[450,270],[480,160],[480,0]]],
     caravan:[[[0,370],[330,360],[470,380],[660,340],[830,260],[832,120]]],
@@ -45,19 +52,49 @@
     if(!entry.metadata)fetch(root+'adventure-'+key+'-v1.json').then(r=>r.ok?r.json():Promise.reject()).then(data=>{entry.metadata=data;revision++;}).catch(()=>{});
   }
   const dryLayers=new Map();
+  function seeded(seed){let n=seed>>>0;return()=>{n=(Math.imul(n,1664525)+1013904223)>>>0;return n/4294967296;};}
+  function traceRoute(g,points){
+    g.moveTo(...points[0]);
+    for(let i=1;i<points.length-1;i++)g.quadraticCurveTo(...points[i],(points[i][0]+points[i+1][0])/2,(points[i][1]+points[i+1][1])/2);
+    g.lineTo(...points[points.length-1]);
+  }
+  function fieldPlot(g,x,y,w,h,restored,seed){
+    const rng=seeded(seed),bed=document.createElement('canvas');bed.width=w;bed.height=h;const b=bed.getContext('2d');
+    b.fillStyle=restored?'#7c80524a':'#75664d4d';b.fillRect(0,0,w,h);
+    // Broken, shallow furrows follow the soil instead of outlining a rectangle.
+    for(let yy=12;yy<h-5;yy+=12+Math.floor(rng()*3)){
+      const start=5+Math.floor(rng()*10),end=w-5-Math.floor(rng()*12);
+      for(let xx=start;xx<end;){const length=Math.min(end-xx,22+Math.floor(rng()*48));
+        b.fillStyle=restored?'#52634250':'#4f493748';b.fillRect(xx,yy,length,1);
+        b.fillStyle='#c3ac7e30';b.fillRect(xx+2,yy+2,Math.max(1,length-4),1);xx+=length+2+Math.floor(rng()*6);}
+    }
+    for(let i=0;i<w*h/85;i++){b.fillStyle=i%3?'#a5946820':'#514b3922';b.fillRect(Math.floor(rng()*w),Math.floor(rng()*h),2+Math.floor(rng()*5),1+Math.floor(rng()*2));}
+    for(let i=0;i<w*h/1300;i++){const px=12+Math.floor(rng()*(w-24)),py=12+Math.floor(rng()*(h-24));b.fillStyle=restored?'#6c875a90':'#8c875b70';b.fillRect(px,py,1,3);b.fillRect(px-2,py,2,1);b.fillStyle=restored?'#a0ae6c80':'#b2a07360';b.fillRect(px+1,py-1,2,1);}
+    // Soft alpha margins retain crisp small pixels, without boxed plot borders.
+    b.globalCompositeOperation='destination-in';
+    const horizontal=b.createLinearGradient(0,0,w,0);horizontal.addColorStop(0,'#0000');horizontal.addColorStop(.07,'#000');horizontal.addColorStop(.93,'#000');horizontal.addColorStop(1,'#0000');b.fillStyle=horizontal;b.fillRect(0,0,w,h);
+    const vertical=b.createLinearGradient(0,0,0,h);vertical.addColorStop(0,'#0000');vertical.addColorStop(.12,'#000');vertical.addColorStop(.88,'#000');vertical.addColorStop(1,'#0000');b.fillStyle=vertical;b.fillRect(0,0,w,h);
+    g.drawImage(bed,x,y);
+  }
   function dryLand(ctx,room){
     const a=room.adventure,area=a.area,w=room.areaSize[0],h=room.areaSize[1],restored=a.chapter?.find(q=>q.id==='irrigation')?.found.includes('sluice_open');
     const key=[area,w,h,Boolean(restored)].join(':');let ground=dryLayers.get(key);
     if(!ground){ground=document.createElement('canvas');ground.width=960;ground.height=540;const g=ground.getContext('2d');
-      const fade=g.createLinearGradient(0,0,960,0);fade.addColorStop(0,area==='fields'?'#71864b20':'#a89b6330');fade.addColorStop(.45,'#b5a26965');fade.addColorStop(1,'#c0a875a0');g.fillStyle=fade;g.fillRect(0,0,960,540);
-      for(let i=0;i<85;i++){const x=100+(i*157)%835,y=50+(i*83)%450;g.strokeStyle='#65593a4a';g.lineWidth=1;g.beginPath();g.moveTo(x,y);g.lineTo(x+9,y+4);g.lineTo(x+7,y+10);g.moveTo(x+9,y+4);g.lineTo(x+16,y);g.stroke();}
+      const fade=g.createLinearGradient(0,0,960,0);fade.addColorStop(0,area==='fields'?'#71864b10':'#a89b6320');fade.addColorStop(.45,'#b5a26938');fade.addColorStop(1,'#c0a87560');g.fillStyle=fade;g.fillRect(0,0,960,540);
+      // Field-scale passable soil plots, not additional barriers or implied water.
+      const plots=area==='fields'?[[105,95,275,135],[510,80,320,140],[185,350,375,120]]:area==='farmstead'?[[100,105,310,130],[535,340,290,145]]:area==='irrigation_channels'?[[80,385,380,105],[565,75,265,115]]:[[105,95,260,115],[590,365,260,110]];
+      for(const [x,y,pw,ph] of plots)fieldPlot(g,x,y,pw,ph,restored&&x<300,phase(area,x,y));
+      // Feather the dry soil along the same curved paths as the base layer.
+      // A single stroke per band keeps junctions free of darker overlapping wedges.
+      g.save();g.globalCompositeOperation='destination-out';g.lineJoin=g.lineCap='round';g.strokeStyle='#000';
+      for(const [width,alpha]of[[100,.06],[84,.08],[70,.12],[58,.18],[46,.28]]){g.lineWidth=width;g.globalAlpha=alpha;g.beginPath();for(const path of paths[area]||[])traceRoute(g,path);g.stroke();}g.restore();
       if(area==='eastern_threshold'){
         // The fixed shed footprint exactly matches the authoritative wood barrier.
         // The existing granary sheet is drawn below, over this stable ground layer.
         for(const [x,y] of [[200,120],[530,455],[880,120]]){g.strokeStyle='#514c35';g.lineWidth=5;g.beginPath();g.moveTo(x,y);g.lineTo(x,y-48);g.moveTo(x,y-24);g.lineTo(x-19,y-39);g.moveTo(x,y-30);g.lineTo(x+17,y-50);g.stroke();}
         for(let i=0;i<7;i++){g.fillStyle='#6a6343';g.fillRect(655+i*30,440,4,22);g.fillRect(655+i*30,447,33,3);}
         g.fillStyle='#554f38';g.fillRect(455,130,4,35);g.fillRect(441,140,32,4);g.fillStyle='#a48e5c';g.fillRect(449,126,15,12);
-      }else if(restored){g.fillStyle='#718e4b66';g.fillRect(180,310,500,50);}
+      }
       dryLayers.set(key,ground);while(dryLayers.size>2)dryLayers.delete(dryLayers.keys().next().value);
     }
     ctx.drawImage(ground,0,0,w,h);
@@ -82,6 +119,7 @@
   }
   function backdrop(ctx,room,w=960,h=540,puzzle=false) {
     const a=room.adventure;if(!a||a.area==='home')return false;
+    if(window.GauntletCampaignScenery?.floor(ctx,room,w,h))return true;
     if(!puzzle&&window.GauntletDungeonSprites?.floor(ctx,room,w,h))return true;
     if(window.GauntletWorldScenery?.floor(ctx,room,w,h,puzzle))return true;
     const area=puzzle?'puzzle':a.area,img=field(area);
@@ -97,7 +135,7 @@
         const authored=paths[area]||[];
         for(const [width,alpha] of [[50,.10],[40,.18],[30,.48]]){
           g.strokeStyle=g.createPattern(tile,'repeat');g.lineWidth=width;g.globalAlpha=alpha;
-          for(const path of authored){g.beginPath();path.forEach(([x,y],i)=>g[i?'lineTo':'moveTo'](x*w/960,y*h/540));g.stroke();}
+          g.beginPath();for(const path of authored)traceRoute(g,path.map(([x,y])=>[x*w/960,y*h/540]));g.stroke();
         }
         g.globalAlpha=1;
       }
@@ -107,6 +145,7 @@
   }
   function scenery(ctx,room) {
     const a=room.adventure;if(!a)return;
+    if(window.GauntletCampaignScenery?.groundDecor(ctx,room))return;
     window.GauntletRegionSprites?.scenery(ctx,room);
     if(a.dungeon&&!window.GauntletDungeonSprites?.scenery(ctx,room)){
       if(a.dungeon.type==='underground'){
@@ -131,23 +170,31 @@
         ctx.fillStyle='#8e9c92';ctx.fillRect(b.x+3,b.y+3,b.width-6,3);
       }
     }
-    if(a.area==='fields'||a.area==='eastern_threshold')dryLand(ctx,room);
+    if(['fields','eastern_threshold','irrigation_channels','farmstead','pump_exterior'].includes(a.area))dryLand(ctx,room);
+    if(['irrigation_channels','farmstead','pump_exterior'].includes(a.area)){
+      ctx.save();ctx.scale(room.areaSize[0]/960,room.areaSize[1]/540);
+      for(const b of room.environment?.barriers||[]){
+        const x=b.x*960/room.areaSize[0],y=b.y*540/room.areaSize[1],w=b.width*960/room.areaSize[0],h=b.height*540/room.areaSize[1];
+        if(b.material==='water')waterSurface(ctx,x,y,w,h,{seed:b.id});
+        else if(!window.GauntletRegionSprites?.barrier(ctx,{...b,x,y,width:w,height:h},a.area)){
+          if(b.material!=='stone'||!window.GauntletDungeonSprites?.barrier(ctx,{...b,x,y,width:w,height:h},false)){ctx.fillStyle=b.material==='wood'?'#675d41':'#58675f';ctx.fillRect(x,y,w,h);}
+        }
+      }
+      if(a.area==='farmstead')stamp(ctx,'hunter_tracks',420,360,{scale:.7});ctx.restore();
+    }
     if(a.area==='bridge')bridge(ctx,room);
     if(['brook','mill_trail','yard','hollow','watch','network','border','fields','mill','eastern_threshold'].includes(a.area)){
       const w=room.areaSize?.[0]||960,h=room.areaSize?.[1]||540;ctx.save();ctx.scale(w/960,h/540);
       if(a.area==='brook'){
-        const img=packs.landmarks.image;ctx.fillStyle='#267577';ctx.fillRect(295,205,120,65);
-        if(img.complete&&img.naturalWidth)for(let y=205;y<270;y+=13)for(let x=295;x<415;x+=20)ctx.drawImage(img,112,145,28,26,x,y,20,Math.min(13,270-y));
-        for(let i=0;i<12;i++){ctx.fillStyle=i%2?'#637e46':'#829456';const x=290+i*11;ctx.fillRect(x,201+(i%3),13,5);ctx.fillRect(x,269-(i%2),13,5);}
-        ctx.fillStyle='#66894e';ctx.fillRect(290,205,5,65);ctx.fillRect(415,205,5,65);waterRipples(ctx,300,210,110,55,performance.now()+phase('brook',295,205));
+        waterSurface(ctx,295,205,120,65,{seed:'brook'});
       }
-      if(a.area==='yard'){stamp(ctx,'camp_bench',380,260);stamp(ctx,'road_wagon',620,220,{scale:.75});campfire(ctx,480,350);}
+      if(a.area==='yard'){stamp(ctx,'camp_bench',380,260);stamp(ctx,'road_wagon',620,220,{scale:.75});}
       if(a.area==='hollow')stamp(ctx,'hunter_tracks',800,135,{scale:.7});
       if(a.area==='watch')stamp(ctx,'burned_watch',525,200,{scale:.65});
       if(a.area==='border')stamp(ctx,'road_wagon',690,260,{scale:.7});
-      if(a.area==='fields'){const restored=a.chapter?.find(q=>q.id==='irrigation')?.found.includes('sluice_open');for(let row=0;row<7;row++)for(let col=0;col<18;col++){const x=190+col*28,y=115+row*31;ctx.fillStyle='#57492c55';ctx.fillRect(x,y,21,3);ctx.fillStyle=restored&&row>4?'#78a456':'#6d6844';ctx.fillRect(x+8,y-7,3,7);ctx.fillRect(x+4,y-5,10,2);}if(restored){ctx.fillStyle='#5c9695';ctx.fillRect(240,318,390,7);}}
+      if(a.area==='fields'&&a.chapter?.find(q=>q.id==='irrigation')?.found.includes('sluice_open'))waterSurface(ctx,240,318,390,7,{seed:'restored-fields',banks:false});
       if(a.area==='eastern_threshold'&&!window.GauntletRegionSprites?.feature(ctx,{id:'empty_granary',x:660,y:190},a)){ctx.fillStyle='#756b45';ctx.fillRect(600,140,120,65);}
-      if(a.area==='mill'){ctx.fillStyle='#435e5c';ctx.fillRect(290,385,400,10);}
+      if(a.area==='mill')irrigationWater(ctx);
       ctx.restore();
     }
     if(a.area==='road')stamp(ctx,'road_wagon',425*(room.areaSize?.[0]||960)/960,265*(room.areaSize?.[1]||540)/540);
@@ -165,6 +212,19 @@
         ctx.fillStyle='#70a85d';ctx.fillRect(x,y,5,4);ctx.fillRect(x+3,y-4,3,5);ctx.fillStyle='#e9ce86';ctx.fillRect(x+1,y-5,2,2);}
     }
     if(a.area==='home'&&a.complete){stamp(ctx,'celebration_banner',380,96);stamp(ctx,'celebration_banner',580,96,{age:performance.now()+210});}
+    if(a.area==='fields'&&a.campaignExtension?.facts?.includes('repair:dunmere_reserve')){
+      const sx=(room.areaSize?.[0]||960)/960,sy=(room.areaSize?.[1]||540)/540;
+      stamp(ctx,'workbench_used',300*sx,408*sy,{scale:.7});waterSurface(ctx,275*sx,417*sy,95*sx,8*sy,{seed:'dunmere-reserve',banks:false});
+    }
+    if(['home','dunmere'].includes(a.area)&&a.campaign){
+      const c=a.campaign,npc=a.features.find(f=>f.id===(a.area==='home'?'edda':'tovin'));
+      if(npc){ctx.save();const x=npc.x+42,y=npc.y+30;
+        if(c.workers){ctx.fillStyle='#a08a58';ctx.fillRect(x,y,18,9);ctx.fillStyle='#d1bf83';ctx.fillRect(x+2,y+1,14,3);}
+        if(c.letters&&a.area==='home'){ctx.fillStyle='#786447';ctx.fillRect(x+25,y-18,23,19);ctx.fillStyle='#e2d0a0';ctx.fillRect(x+29,y-14,7,8);ctx.fillRect(x+38,y-12,7,9);}
+        if(c.seedDestination===(a.area==='home'?'oakvale':'dunmere')||c.pumpingRestored&&a.area==='dunmere')for(let i=0;i<5;i++){ctx.fillStyle='#695938';ctx.fillRect(x+i*8,y+17,7,9);ctx.fillStyle='#84ad62';ctx.fillRect(x+2+i*8,y+13,3,8);}
+        if(a.area==='dunmere'&&c.relief){ctx.fillStyle=c.relief==='workers'?'#d5c69a':'#6ca2a1';ctx.fillRect(x+50,y+6,11,8);ctx.fillRect(x+64,y+6,11,8);}
+        ctx.restore();}
+    }
   }
   function campfire(ctx,x,y) {
     stamp(ctx,'camp_fire',x,y);
@@ -174,30 +234,47 @@
     const cycle=age%4300;
     if(cycle<700){ctx.save();ctx.globalAlpha=.3*(1-cycle/700);ctx.fillStyle='#ecac55';ctx.fillRect(x+3,y-34-Math.floor(cycle/100),1,2);ctx.restore();}
   }
+  const waterLayers=new Map();
+  function waterSurface(ctx,x,y,width,height,{seed='water',banks=true}={}){
+    const w=Math.max(1,Math.ceil(width)),h=Math.max(1,Math.ceil(height)),key=[seed,w,h,banks].join(':');let surface=waterLayers.get(key);
+    if(!surface){surface=document.createElement('canvas');surface.width=w;surface.height=h;const g=surface.getContext('2d'),rng=seeded(phase(String(seed),w,h));
+      const depth=g.createLinearGradient(0,0,0,h);depth.addColorStop(0,'#365e60');depth.addColorStop(.45,'#477b78');depth.addColorStop(1,'#355f62');g.fillStyle=depth;g.fillRect(0,0,w,h);
+      // One continuous surface per channel, with quiet irregular current streaks.
+      // No rectangular crop/tile borders or bright checkerboard foam.
+      for(let i=0;i<w*h/85;i++){const px=Math.floor(rng()*w),py=Math.floor(rng()*h);g.fillStyle=i%3?'#719b8b18':'#173e4a18';g.fillRect(px,py,5+Math.floor(rng()*26),1+Math.floor(rng()*2));}
+      if(banks){
+        // Uneven moss/silt margins read as banks rather than a framed blue panel.
+        for(let px=0;px<w;){const length=4+Math.floor(rng()*9),top=1+Math.floor(rng()*3),bottom=1+Math.floor(rng()*3);g.fillStyle='#61744d';g.fillRect(px,0,length,top);g.fillRect(px,h-bottom,length,bottom);g.fillStyle='#2b4f4780';g.fillRect(px,top,length,1);g.fillRect(px,h-bottom-1,length,1);g.fillStyle='#91a16b50';g.fillRect(px+1,0,Math.max(1,length-3),1);px+=length;}
+        for(let py=0;py<h;){const length=4+Math.floor(rng()*7),left=1+Math.floor(rng()*3),right=1+Math.floor(rng()*3);g.fillStyle='#61744d';g.fillRect(0,py,left,length);g.fillRect(w-right,py,right,length);g.fillStyle='#2b4f4780';g.fillRect(left,py,1,length);g.fillRect(w-right-1,py,1,length);py+=length;}
+        for(let i=0;i<w/38;i++){const px=5+Math.floor(rng()*(w-10)),py=rng()<.5?1:h-3;g.fillStyle='#82966c90';g.fillRect(px,py,1,3);g.fillRect(px+2,py+1,1,2);}
+      }
+      waterLayers.set(key,surface);while(waterLayers.size>16)waterLayers.delete(waterLayers.keys().next().value);
+    }
+    ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(surface,x,y,width,height);ctx.restore();
+    waterRipples(ctx,x+4,y+4,width-8,height-8,performance.now()+phase(String(seed),x,y));
+  }
+  function irrigationWater(ctx){
+    ctx.save();ctx.lineJoin=ctx.lineCap='round';
+    const path=()=>{ctx.beginPath();traceRoute(ctx,[[290,385],[360,390],[435,385],[515,389],[600,384],[690,385]]);};
+    for(const[width,color]of[[19,'#625f43'],[14,'#697751'],[9,'#487876']]){ctx.lineWidth=width;ctx.strokeStyle=color;path();ctx.stroke();}
+    ctx.restore();waterRipples(ctx,295,382,390,10,performance.now());
+  }
   function waterRipples(ctx,left,top,width,height,age) {
-    if(reducedMotion())return;
+    if(reducedMotion()||width<8||height<3)return;
     ctx.save();ctx.beginPath();ctx.rect(left,top,width,height);ctx.clip();
-    const shift=Math.floor(age/170)%24;
-    for(let y=top-24+shift,i=0;y<top+height;y+=24,i++){
-      const x=left+8+(i%3)*7;
-      ctx.fillStyle='#67c6bc99';ctx.fillRect(x,y,13,1);ctx.fillRect(x+13,y+2,5,1);
-      ctx.fillStyle='#b1e1ca88';ctx.fillRect(x+3,y+4,8,1);
+    const rng=seeded(phase('ripples',Math.round(left),Math.round(top))),count=Math.min(14,2+Math.floor(width*height/2600));
+    for(let i=0;i<count;i++){
+      const x=Math.round(left+rng()*Math.max(1,width-18)+Math.sin(age/2300+i)*2),y=Math.round(top+rng()*Math.max(1,height-3));
+      ctx.globalAlpha=.09+.04*Math.sin(age/1700+i*1.7);ctx.fillStyle='#b0cbb9';ctx.fillRect(x,y,5+Math.floor(rng()*12),1);
     }
     ctx.restore();
   }
   function bridge(ctx,room) {
     const a=room.adventure,b=a.bridgeLayout;if(!b)return;
-    const img=packs.landmarks.image,meta=packs.landmarks.metadata;
-    const ready=img.complete&&img.naturalWidth&&meta;
     const {left,right}=b.river,height=room.areaSize?.[1]||540,age=performance.now()+phase('bridge',b.sprite.x,b.sprite.y);
     // Fixed river/banks from the imported art. Only ripple highlights move.
     ctx.save();ctx.imageSmoothingEnabled=false;
-    ctx.fillStyle='#176e77';ctx.fillRect(left,0,right-left,height);
-    if(ready)for(let y=0;y<height;y+=26){
-      ctx.drawImage(img,112,145,28,26,left+12,y,right-left-24,26);
-      ctx.drawImage(img,91,144,12,26,left,y,12,26);
-      ctx.drawImage(img,154,144,12,26,right-12,y,12,26);
-    }
+    waterSurface(ctx,left,0,right-left,height,{seed:'bridge-river'});
     waterRipples(ctx,left+12,0,right-left-24,b.crossing.top,age);
     waterRipples(ctx,left+12,b.crossing.bottom,right-left-24,height-b.crossing.bottom,age+300);
     if(!a.bridge)waterRipples(ctx,left+12,b.crossing.top,right-left-24,b.crossing.bottom-b.crossing.top,age+700);
@@ -220,6 +297,10 @@
     ctx.restore();
   }
   function feature(ctx,f,a,near) {
+    if(window.GauntletCampaignArt?.feature(ctx,f,a,near))return true;
+    if(window.GauntletCampaignScenery?.feature(ctx,f,a))return true;
+    if(f.id==='sluice_survey'&&f.claimed)return window.GauntletDungeonSprites?.stamp(ctx,'survey_cache_open',f.x,f.y+18,{scale:.8});
+    if(f.portrait&&window.GauntletTownSprites?.character(ctx,f.portrait,f.x,f.y,{scale:.85,phase:phase(f.id,f.x,f.y)}))return true;
     if(window.GauntletRegionSprites?.feature(ctx,f,a))return true;
     if(f.id==='ridge_barrier')return stamp(ctx,'trail_locked',f.x,f.y+18,{staticFrame:true});
     if(window.GauntletDungeonSprites?.feature(ctx,f,a))return true;
@@ -230,6 +311,8 @@
     if(f.kind==='witness')return npc(ctx,'runner',f.x,f.y,{gesture:near});
     if(['brook_outlet','mill_wheel','watch_register','network_seal','pumping_register','dry_ditch','rooted_crop','empty_granary','field_restored','additive_ledger','channel_west','channel_east','sluice_open','cellar_begin','dry_spring','east_landmark','ridge_barrier'].includes(f.id))return stamp(ctx,f.id==='dry_spring'?'moss_cache':f.id.includes('channel')||f.id==='sluice_open'?'workbench_stocked':f.id==='cellar_begin'?'ruins_seal':'woodland_sign',f.x,f.y+18,{scale:.7});
     if(f.kind==='talk')return npc(ctx,'runner',f.x,f.y,{gesture:near});
+    if(f.kind==='clue')return stamp(ctx,'woodland_sign',f.x,f.y+18,{scale:.55});
+    if(f.kind==='mechanism')return stamp(ctx,f.id==='warden_begin'?'ruins_seal':f.id==='seed_supply'?'moss_cache':'workbench_stocked',f.x,f.y+18,{scale:.7});
     if(f.kind==='hunter')return npc(ctx,f.id==='hunter'?'injured':'recovered',f.x,f.y,{gesture:near && f.id!=='hunter'});
     if(f.id==='watch')return true; // Its arch/bench story landmark is drawn in scenery.
     const id={east_landmark:'woodland_sign',cache:'moss_cache',tracks:'hunter_tracks',sign:'woodland_sign',rootwater_sign:'woodland_sign',kit:'repair_chest',altar:a.shrineRestored?'shrine_restored':'shrine_corrupt',
@@ -245,6 +328,7 @@
   }
   function trail(ctx,e,near=false,room=null) {
     if(window.GauntletDungeonSprites?.trail(ctx,e,room))return true;
+    if(window.GauntletReleaseVisuals?.trail(ctx,e,near,room))return true;
     ctx.save();ctx.translate(e.x,e.y);ctx.rotate(({north:0,east:Math.PI/2,south:Math.PI,west:-Math.PI/2})[e.edge]||0);
     if(near&&!e.locked){ctx.shadowColor='#b6f599';ctx.shadowBlur=9;}
     const drawn=stamp(ctx,e.locked?'trail_locked':'trail_open',0,10); // Steady waystones; nearby glow is static.
@@ -256,12 +340,20 @@
     ctx.restore();return drawn;
   }
   function mapIcon(area,a={}) {
+    const campaign=window.GauntletCampaignScenery?.mapIcon(area,a);if(campaign)return campaign;
+    // Reuse recognizable existing landmarks while the regional artwork is
+    // authored. No runtime quest/item IDs depend on these cosmetic aliases.
+    if(area?.startsWith('city_'))area=['city_refuge','city_homes'].includes(area)?'home':area==='city_approach'?'road':'ruins';
+    else if(area?.startsWith('veil_'))area=area==='veil_haven'?'home':/sanct|siphon|grove|pools/.test(area)?'shrine':'clearing';
+    else if(area?.startsWith('cinder_'))area=['cinder_foothills','cinder_ravine','cinder_upper','cinder_antechamber'].includes(area)?'camp':area==='cinder_lair'?'ruins':'road';
     area=({brook:'shrine',mill_trail:'road',yard:'camp',hollow:'clearing',watch:'clearing',network:'ruins',border:'road',dunmere:'home',fields:'camp',eastern_threshold:'road',mill:'ruins',cellar:'ruins'})[area]||area;
     if(!['road','crossroads','camp','clearing','shrine','bridge','ruins','home'].includes(area))area='road';
     const state=area==='bridge'&&a.bridge?'-repaired':area==='shrine'&&a.shrineRestored?'-restored':'';
     return root+'adventure-map-'+area+state+'-v1.png';
   }
   function featureBounds(f,a){
+    const campaign=window.GauntletCampaignArt?.featureBounds(f,a);if(campaign)return campaign;
+    const scenery=window.GauntletCampaignScenery?.featureBounds(f,a);if(scenery)return scenery;
     const regional=window.GauntletRegionSprites?.bounds(f,a);if(regional)return regional;
     if(f.kind==='travel_shrine')return window.GauntletDungeonSprites?.bounds('portal_shrine',f.x,f.y+18,.6);
     const id={ridge_barrier:'trail_locked',east_landmark:'woodland_sign',kit:'repair_chest',cache:'moss_cache',tracks:'hunter_tracks',sign:'woodland_sign',rootwater_sign:'woodland_sign',altar:a.shrineRestored?'shrine_restored':'shrine_corrupt',repair:a.bridge?'workbench_used':'workbench_stocked',seal:a.locked?'ruins_seal_awake':'ruins_seal'}[f.id];
@@ -271,5 +363,5 @@
     }return null;
   }
   function groundPaths(room,w,h){return (paths[room.adventure?.area]||[]).map(path=>path.map(([x,y])=>[x*w/960,y*h/540]));}
-  window.GauntletAdventureSprites={stamp,npc,backdrop,scenery,feature,featureBounds,trail,mapIcon,groundPaths};
+  window.GauntletAdventureSprites={stamp,npc,backdrop,scenery,feature,featureBounds,trail,mapIcon,groundPaths,waterSurface};
 })();

@@ -12,7 +12,7 @@ AREA='caravan'
 FACTS=('encounter_started','initial_threat_cleared','watch_event_observed',
        'withdrawal_unlocked','oakvale_reached','opening_complete')
 MUSTER=(1040,150)
-MANIFEST='The manifest lists missing grain deliveries from Dunmere, dated before the dragon attack. A note says: "Brook cloudy. Ask the hunter about the old watch." Dunmere is beyond this playable chapter.'
+MANIFEST='The manifest lists missing grain deliveries from Dunmere, dated before the dragon attack. A note says: "Brook cloudy. Ask the hunter about the old watch." The grain road beyond the woodland leads to Dunmere.'
 
 
 def active(room):

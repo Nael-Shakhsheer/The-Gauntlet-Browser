@@ -91,13 +91,14 @@ def walkable(room,x,y,radius=12):
                 for b in (room.get('environment') or {}).get('barriers', [])))
 
 
-def ground_clear(room, ax, ay, bx, by):
+def ground_clear(room, ax, ay, bx, by, radius=12):
     steps = max(1, math.ceil(math.hypot(bx-ax, by-ay)/8))
-    return all(walkable(room, ax+(bx-ax)*i/steps, ay+(by-ay)*i/steps) for i in range(1, steps+1))
+    return all(walkable(room, ax+(bx-ax)*i/steps, ay+(by-ay)*i/steps,radius) for i in range(1, steps+1))
 
 
 def move(room,actor,x,y,*,avoid=False):
     width, height = dimensions(room)
+    radius=actor.get('bodyRadius',12)
     if actor.get('rootUntil', 0) > time.monotonic():
         actor['moving'] = False
         return
@@ -105,22 +106,22 @@ def move(room,actor,x,y,*,avoid=False):
     for obstacle in obstacles(room):
         dx,dy = actor["x"]-obstacle["x"],actor["y"]-obstacle["y"]
         distance = math.hypot(dx,dy)
-        if distance < obstacle["radius"]+12:
+        if distance < obstacle["radius"]+radius:
             dx,dy = (dx/max(.001,distance),dy/max(.001,distance)) if distance else (1,0)
-            actor["x"],actor["y"] = obstacle["x"]+dx*(obstacle["radius"]+13),obstacle["y"]+dy*(obstacle["radius"]+13)
+            actor["x"],actor["y"] = obstacle["x"]+dx*(obstacle["radius"]+radius+1),obstacle["y"]+dy*(obstacle["radius"]+radius+1)
     start_x,start_y = actor["x"],actor["y"]
     dx,dy = x-start_x,y-start_y
     steps = max(1,math.ceil(math.hypot(dx,dy)/8))
     for _ in range(steps):
         nx,ny = max(28,min(width-28,actor["x"]+dx/steps)),max(30,min(height-30,actor["y"]+dy/steps))
-        if walkable(room,nx,actor["y"]): actor["x"] = nx
-        if walkable(room,actor["x"],ny): actor["y"] = ny
+        if walkable(room,nx,actor["y"],radius): actor["x"] = nx
+        if walkable(room,actor["x"],ny,radius): actor["y"] = ny
     if avoid and math.hypot(actor["x"]-start_x,actor["y"]-start_y) < math.hypot(dx,dy)*.3:
         # Deterministic detour; does not mirror the player's movement input.
         side = 1 if sum(ord(c) for c in actor["id"])%2 else -1
         for sign in (side,-side):
             nx,ny = start_x-dy*sign,start_y+dx*sign
-            if 28<=nx<=width-28 and 30<=ny<=height-30 and ground_clear(room,start_x,start_y,nx,ny):
+            if 28<=nx<=width-28 and 30<=ny<=height-30 and ground_clear(room,start_x,start_y,nx,ny,radius):
                 actor["x"],actor["y"] = nx,ny
                 break
 

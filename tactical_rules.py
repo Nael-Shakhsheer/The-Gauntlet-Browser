@@ -10,6 +10,12 @@ ABILITY_DETAILS = {
 }
 
 BUILD_ITEMS = {
+    'pilgrim_standard': dict(name='Pilgrim Standard',rarity='Rare',price=34,sell=17,kind='armor',slot='tool',armor=0,color='#d5cb90',effect='pilgrim',
+        effectLabel='Support fields follow you / 40% shorter duration',description='Banner, Beacon, Hallowed Ground and Living Spring follow their caster, but last 40% less time. No armor. Existing pulses and cooldowns stay. Source: Orren’s reopened workshop after the water report.'),
+    'forked_lens': dict(name='Forked Storm Lens',rarity='Rare',price=36,sell=18,kind='weapon',slot='tool',damage=2,color='#acbee8',effect='forked',
+        effectLabel='Arc Bolt +2 chains / first hit -30%',description='+2 damage. Arc Bolt gains two jumps and 150px chain reach, but its initial projectile damage is 30% lower. Other abilities are unchanged. Source: returning caravan after the watch report.'),
+    'pack_whistle': dict(name='Packleader’s Whistle',rarity='Rare',price=36,sell=18,kind='weapon',slot='tool',damage=2,color='#a4bc81',effect='pack',
+        effectLabel='Summons follow selected target / owner damage -25%',description='+2 damage. Your Druid summons prioritize your selected visible enemy within 320px of each summon. Otherwise they attack the nearest foe. Your direct damage is reduced 25%. Source: Orren’s reopened workshop.'),
     'arcane_conductor': dict(name='Arcane Conductor', rarity='Rare', price=34, sell=17,
         kind='weapon', slot='tool', damage=3, color='#b9a4ff', effect='conductor',
         effectLabel='Projectile chain / -20% projectile damage',
@@ -34,7 +40,7 @@ def effects(player):
 
 def direct_factor(player, now, *, consume=False):
     active = effects(player)
-    factor = .75 if 'summoner' in active and player.get('class') == 'Druid' else 1
+    factor = .75 if active & {'summoner','pack'} and player.get('class') == 'Druid' else 1
     if 'pursuit' in active:
         factor *= .85
         if player.get('pursuitUntil', 0) > now and not player.get('pursuitSpent'):
@@ -66,6 +72,19 @@ def decorate_projectile(player, shot):
     if 'conductor' in effects(player):
         shot['damage'] = max(1, round(shot['damage']*.8))
         shot['conductorJump'] = True
+
+
+def finish_projectile(player,shot):
+    # Runs after learned ability modifiers have supplied their native chains.
+    if shot.get('summonId'):return
+    if 'forked' in effects(player) and shot.get('abilityId')=='arc_burst':
+        shot.update(damage=max(1,round(shot['damage']*.7)),chainTargets=shot.get('chainTargets',0)+2,chainRange=max(150,shot.get('chainRange',0)))
+
+
+def summon_target(room,owner,summon,nearest):
+    if owner.get('class')!='Druid' or 'pack' not in effects(owner):return nearest
+    import combat_environment as terrain
+    return next((e for e in room['enemies'] if e['id']==owner.get('preferredTarget') and math.dist((e['x'],e['y']),(summon['x'],summon['y']))<=320 and terrain.line_clear(room,summon,e)),nearest)
 
 def root(enemy, now, duration):
     if enemy.get('structure') or enemy.get('rootResistUntil', 0) > now: return

@@ -48,7 +48,7 @@
     }
     if(now-(r?.hitAt??-Infinity)<130)return{sheet:'body',frame:6,dir:direction(p)};
     if(p.basicPreparation>0)return{sheet:'actions',frame:0,dir:direction(p)};
-    const walking=p.moving&&p.class!=='Wizard';
+    const walking=p.moving;
     return{sheet:'body',frame:(walking?3:0)+Math.floor(now/(walking?(p.class==='Knight'?220:165):360))%3,dir:direction(p)};
   }
   function featureMask(hero,q,img){
@@ -66,7 +66,7 @@
     const hover=p.class==='Wizard'&&p.status==='alive'?-6-(still()?0:Math.round(Math.sin(performance.now()/440))):0;
     const reaction=q.sheet==='body'&&q.frame===6?1:0;
     ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(img,q.frame*96,q.dir*96,96,96,x-48+reaction,y-72+hover,96,96);
-    if(!reduced()&&p.status==='alive'){ctx.globalAlpha*=.14;ctx.drawImage(featureMask(p.class,q,img),x-48,y-72+hover);}
+    if(!reduced()&&p.status==='alive'){ctx.globalAlpha*=.07;ctx.drawImage(featureMask(p.class,q,img),x-48,y-72+hover);}
     if(p.class==='Wizard'&&!reduced()&&!still()&&p.status==='alive'){
       ctx.globalAlpha=.65;ctx.strokeStyle=colors.Wizard;ctx.lineWidth=1;
       if(Math.floor(performance.now()/150)%5<2){ctx.beginPath();ctx.moveTo(x-10,y-29+hover);ctx.lineTo(x-14,y-24+hover);ctx.lineTo(x-9,y-21+hover);ctx.lineTo(x-12,y-15+hover);ctx.stroke();}
@@ -77,7 +77,7 @@
     if(document.hidden)return;const now=performance.now();
     for(const p of room.players||[]){const r=actors.get(p.id);if(!p.ascended||!r||p.status!=='alive'||p.connected===false||p.indoors)continue;
       if(!reduced())for(const [i,t]of r.trails.entries()){
-        const age=(now-t.at)/320;if(age<0||age>1)continue;ctx.save();ctx.globalAlpha=(1-age)*(p.class==='Rogue'?.18:.55);ctx.fillStyle=colors[p.class];
+        const age=(now-t.at)/320;if(age<0||age>1)continue;ctx.save();ctx.globalAlpha=(1-age)*(p.class==='Rogue'?.1:.3);ctx.fillStyle=colors[p.class];
         if(p.class==='Rogue'&&i%2===0){const pack=ensure(p.class);if(loaded(pack?.body)){const scale=room.phase==='town'?.78:1.65;ctx.imageSmoothingEnabled=false;ctx.drawImage(pack.body,t.frame*96,t.dir*96,96,96,t.x-48*scale,t.y-72*scale,96*scale,96*scale);}}
         else if(p.class==='Druid'){ctx.beginPath();ctx.moveTo(t.x,t.y+15);ctx.lineTo(t.x+4,t.y+11);ctx.lineTo(t.x+7,t.y+15);ctx.lineTo(t.x+2,t.y+17);ctx.fill();}
         else if(p.class==='Archer'){ctx.fillRect(t.x,t.y+12,5,1);ctx.fillRect(t.x+2,t.y+10,1,5);}
@@ -101,4 +101,44 @@
   function reset(){actors.clear();masks.clear();scene='';lastAt=0;epoch='';cursor=0;}
   document.addEventListener('visibilitychange',()=>{if(document.hidden)reset();});
   window.GauntletAscendedSprites={observe,hero,ground,reset,pose,supports:hero=>supported.has(hero),diagnostics:()=>({loadedForms:packs.size,actors:actors.size,trails:[...actors.values()].reduce((n,r)=>n+r.trails.length,0),masks:masks.size})};
+})();
+
+// Native normal-form reactions share the existing hero scale and floor anchors.
+(() => {
+  const root=document.currentScript?.dataset.spriteRoot||'/sprites/';
+  const offsets={Knight:-72,Wizard:-80,Archer:-78,Cleric:-76,Rogue:-76,Druid:-76,Bard:-77,Healer:-79};
+  const packs=new Map(),actors=new Map();let scene='',lastAt=-Infinity;
+  const direction=p=>(Math.round((Math.PI/2-Math.atan2(p.facingY??1,p.facingX??0))/(Math.PI/4))+8)%8;
+  function ensure(hero){
+    if(!(hero in offsets))return null;
+    if(!packs.has(hero)){const img=new Image(),pack={img,error:false};packs.set(hero,pack);img.onerror=()=>{pack.error=true;};img.src=root+'normal-hero-'+hero.toLowerCase()+'-reactions-v5.png';}
+    return packs.get(hero);
+  }
+  function reset(){actors.clear();scene='';lastAt=-Infinity;}
+  function observe(room){
+    const now=performance.now(),key=[room.code,room.you,room.adventure?.area||'',room.stage,room.townInterior||''].join('|');
+    const continuous=scene===key&&now-lastAt<1400&&!document.hidden;
+    if(!continuous)actors.clear();scene=key;lastAt=now;const live=new Set();
+    if(document.hidden)return;
+    for(const p of room.players||[]){
+      if(p.ascended||p.connected===false||!ensure(p.class)||live.size>=16)continue;
+      live.add(p.id);const old=actors.get(p.id),same=old?.hero===p.class;
+      const hit=continuous&&same&&p.status==='alive'&&old.status==='alive'&&(p.damageTaken||0)>old.damageTaken;
+      actors.set(p.id,{hero:p.class,damageTaken:p.damageTaken||0,status:p.status,hitAt:hit?now:same?old.hitAt:-Infinity});
+    }
+    for(const id of actors.keys())if(!live.has(id))actors.delete(id);
+  }
+  function pose(p){
+    if(p.ascended||!(p.class in offsets))return null;
+    if(p.status&&p.status!=='alive')return{frame:1,dir:direction(p)};
+    if(performance.now()-(actors.get(p.id)?.hitAt??-Infinity)<130)return{frame:0,dir:direction(p)};
+    return null;
+  }
+  function hero(ctx,p,x,y){
+    const q=pose(p);if(!q)return false;const pack=ensure(p.class),img=pack?.img;
+    if(!img?.complete||!img.naturalWidth||pack.error)return false;
+    ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(img,q.frame*96,q.dir*96,96,96,x-48,y+offsets[p.class],96,96);ctx.restore();return true;
+  }
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)reset();});
+  window.GauntletHeroReactions={observe,hero,pose,reset,diagnostics:()=>({packs:packs.size,actors:actors.size,errors:[...packs].filter(([,p])=>p.error).map(([hero])=>hero),decodedBytes:[...packs.values()].reduce((n,p)=>n+(p.img.complete&&p.img.naturalWidth?192*768*4:0),0)})};
 })();

@@ -16,12 +16,14 @@
   };
   const badge=add($('#adventureFeedback').parentElement,'button','','secondary small adventure-save-badge hidden');badge.type='button';badge.onclick=()=>window.openRecovery();badge.setAttribute('role','status');
   const saveNotice=window.GauntletMovement.createSaveNotice();
-  let badgeTimer;
+  let badgeTimer,badgeSignature='';
   window.renderSaveBadge=info=>{
-    if(!info){badge.classList.add('hidden');return;}const now=performance.now();saveNotice.update(info,now);
+    if(!info){clearTimeout(badgeTimer);badgeSignature='';badge.classList.add('hidden');return;}const now=performance.now();saveNotice.update(info,now);
+    const signature=JSON.stringify([info.worldId,info.revision,info.error,info.savedAt,info.storage.label]);
+    badge.classList.toggle('hidden',!saveNotice.visible(now));if(signature===badgeSignature)return;badgeSignature=signature;
     badge.textContent=info.error?'Save failed · recovery':info.savedAt?'Adventure saved':'Not saved yet';badge.dataset.failed=String(Boolean(info.error));
+    badge.dataset.tone=info.error?'error':'success';const region=$(info.error?'#hudCritical':'#hudEvents');if(region&&badge.parentElement!==region)region.append(badge);
     badge.title=(info.error||'Last confirmed disk save')+' · '+info.storage.label;
-    badge.classList.toggle('hidden',!saveNotice.visible(now));
     clearTimeout(badgeTimer);if(!info.error)badgeTimer=setTimeout(()=>badge.classList.add('hidden'),2600);
   };
   function summary(parent,s){
@@ -44,7 +46,7 @@
     for(const ref of [session,resume])if(ref&&!rows.some(r=>r.room===ref.room&&r.player===ref.player))rows.push(ref);
     for(const ref of rows){const card=add(list,'section','','adventure-quest');
       try{const s=await api('/api/adventure/summary',ref);add(card,'p','Slot 1 · Current Adventure','eyebrow');summary(card,s);
-        const go=add(card,'button','Continue this character','primary small');go.onclick=()=>{$('#adventureContinueDialog').close();saveSession(ref);};
+        const go=add(card,'button','Continue this character','primary small');go.onclick=()=>{$('#adventureContinueDialog').close();saveSession(ref);window.GauntletRecap?.request();};
         add(card,'button','Export backup','secondary small').onclick=()=>download(ref).catch(e=>msg(e.message));
         const backupCard=add(card,'section','','adventure-backup-slot');add(backupCard,'h4','Slot 2 · Adventure Backup');
         try{const slots=await api('/api/adventure/slots',ref);
@@ -95,13 +97,22 @@
       add(card,'button','Restore as separate copy','secondary small').onclick=async()=>{try{const result=await cloud('/api/cloud/preview',{worldId:w.worldId});preview=result;const target=$('#adventureImportSummary');target.replaceChildren();summary(target,result.summary);const select=$('#adventureImportCharacter');select.replaceChildren();result.summary.characters.filter(c=>!c.bot).forEach(c=>add(select,'option',c.name+' · '+c.hero).value=String(c.slot));$('#adventureContinueDialog').close();openInfo('adventureImportDialog');}catch(e){msg(e.message);}};
     });
   }catch(e){msg(e.message);}};
-  window.renderRewardChoices=room=>{const box=$('#adventureRewardChoices');box.replaceChildren();const pending=room.adventure?.pendingRewards||[];if(!pending.length)return;add(box,'h3','Your reward choices');
-    pending.forEach(row=>{const card=add(box,'section','','adventure-quest');add(card,'h4',row.title);row.options.forEach(item=>{
-      const choice=add(card,'div','','reward-option');add(choice,'strong',item.name+(item.alreadyOwned?' · already owned':''));add(choice,'p',item.description);appendEquipmentComparison(choice,item,room);
-      const replace=add(choice,'select','');replace.setAttribute('aria-label','Sell pouch item to make room');add(replace,'option','Select a pouch item to sell').value='';room.inventory.forEach(i=>add(replace,'option',i.name+' · '+i.sell+' shared Runes').value=i.id);replace.classList.toggle('hidden',room.inventory.length<10);
-      for(const [delivery,label] of [['pouch',room.inventory.length>=10?'Sell selected pouch item and take':'Take '+item.name],['sell','Sell reward · '+item.sell+' shared Runes']])add(choice,'button',label,'secondary small').onclick=async event=>{const button=event.currentTarget;button.disabled=true;try{await sendAction('adventureReward',{reward:row.id,item:item.key,delivery,replace:replace.value});notice($('#adventureRewardNotice'),item.name+(delivery==='sell'?' sold for shared Runes.':' added to your pouch.'));await refresh();}catch(e){notice($('#adventureRewardNotice'),e.message);}finally{button.disabled=false;}};
-    });});
+  let rewardBusy=false,rewardSignature='';
+  window.renderRewardChoices=room=>{
+    if(!room)return;
+    const box=$('#adventureRewardChoices'),pending=room.adventure?.pendingRewards||[];
+    const sig=JSON.stringify([session?.room,session?.player,pending,rewardBusy]);if(sig===rewardSignature)return;rewardSignature=sig;
+    $('#adventureJournalButton').textContent='Journal';box.replaceChildren();
+    if(!pending.length)return;
+    add(box,'p','Earned supplies are delivered automatically after a successful save. A full pouch converts the new reward into shared Runes.','subtle');
+    const retry=add(box,'button','Retry reward delivery','secondary small');retry.disabled=rewardBusy;
+    retry.onclick=async()=>{if(rewardBusy)return;const owner=session;rewardBusy=true;retry.disabled=true;
+      try{await sendAction('collectRewards');if(owner===session){notice($('#adventureRewardNotice'),'Rewards delivered.','success');await refresh();}}
+      catch(e){if(owner===session)notice($('#adventureRewardNotice'),e.message,'error');}
+      finally{if(owner===session){rewardBusy=false;rewardSignature='';window.renderRewardChoices(latestRoom);}}
+    };
   };
-  $('#adventureJournal').before($('#adventureRewardChoices'),$('#adventureRewardNotice'));
+  window.resetRewardInbox=()=>{rewardBusy=false;rewardSignature='';$('#adventureRewardChoices').replaceChildren();};
+  $('#adventureJournal').before($('#adventureRewardChoices'));
   if(location.hash.startsWith('#recover=')){try{const ref=JSON.parse(atob(decodeURIComponent(location.hash.slice(9))));if(typeof ref.room==='string'&&typeof ref.player==='string'&&typeof ref.recovery==='string')saveSession(ref);}catch{notice($('#entryNotice'),'Invalid character recovery link.');}history.replaceState(null,'',location.pathname);}
 })();

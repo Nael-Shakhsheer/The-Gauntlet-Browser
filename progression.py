@@ -26,14 +26,15 @@ PAGES = {
 }
 PAGES['adventure_caretaker']=('Mara · Cottage recovery',['I can restore your health and mana for 5 shared ordinary Runes. If both are already full, there is no charge. This is treatment, not an inn checkpoint.'])
 PAGES['adventure_runner']=('Village Runner',['We have work for willing hunters. Review the available assignment, report your findings, or ask about the region. You may postpone without losing evidence.'])
+PAGES['adventure_contact']=('Village contact',['What have you found?'])
 REPLIES = {
-    'adventure_caretaker':['Could you treat my injuries?'],'adventure_runner':['What needs doing?'],
+    'adventure_caretaker':['Could you treat my injuries?'],'adventure_runner':['What needs doing?'],'adventure_contact':['What can we do?'],
     "wounded": ["What happened to you?", "We will find the dragon.", "We accept your quest."],
     "welcome": ["Yes, we are hunters.", "We will speak to the innkeeper."],
     "training": ["What do hunters earn here?", "Show me the training branches.", "Our training follows our class?", "I understand. Let us begin."],
 }
 PRESENTATIONS = {key:dict(type='npc',portrait=portrait) for key,portrait in {
-    'adventure_runner':'Villager02','adventure_caretaker':'Innkeeper','wounded':'Villager04','welcome':'Villager02','training':'Innkeeper',
+    'adventure_contact':'Villager03','adventure_runner':'Villager02','adventure_caretaker':'Innkeeper','wounded':'Villager04','welcome':'Villager02','training':'Innkeeper',
     'adventure_hunter':'Villager04','adventure_recovered':'Villager04','adventure_welcome':'Villager02',
     'adventure_training':'Innkeeper','adventure_complete':'Villager02','caravan_aftermath':'Villager02'}.items()}
 
@@ -44,6 +45,7 @@ def inspect(player,title,text,kind='inspection'):
 
 
 def defaults(room, legacy=False):
+    room.setdefault('challengeMode','classic');room.setdefault('challengeSeed',0)
     room.setdefault("story", {"afterStage": random.choice((1, 2)), "encountered": legacy,
                               "quest": "active" if legacy else "not_started"})
     room.setdefault("townInstance", "legacy-"+str(room.get("townSeed", 0)))
@@ -152,7 +154,7 @@ def train(world, room, player, branch, classes):
 
 
 def locked(room, player):
-    return bool(player.get("dialogue") or (room.get("townWelcome") and not room["townWelcome"].get("done")))
+    return bool(room.get('_campaignCinematic') or player.get("dialogue") or (room.get("townWelcome") and not room["townWelcome"].get("done")))
 
 
 def enter_peace(world, room):
@@ -226,6 +228,7 @@ def checkpoint(world, room, player, bed_id):
     for key,default in (('objectiveStages',{}),('townPressureStages',[]),('lengthChosen',False)):
         room.setdefault(key,copy.deepcopy(default))
     keys+=('objectiveStages','townPressureStages','lengthChosen')
+    room.setdefault('challengeMode','classic');room.setdefault('challengeSeed',0);keys+=('challengeMode','challengeSeed')
     room["checkpoint"] = {"stage": room["stage"], "wave": room["wave"], "town": room["town"],
         "region": room["region"], "bed": bed["id"],
         "shopStock": {pid: copy.deepcopy(p["shopStock"]) for pid,p in room["players"].items()},

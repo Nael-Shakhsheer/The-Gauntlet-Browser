@@ -11,7 +11,7 @@
   const base={local:Boolean(local),x:e.x,y:e.y,owner:e.ownerId||'',gain:.16,priority:2,group:e.kind,interval:180,bus:'effects'};
   if(interactions[e.kind])return {...base,name:interactions[e.kind],local:e.kind==='shrine_activate'?owner:true,bus:e.kind==='shrine_activate'?'effects':'ui',gain:['rune_gain','quest_report','shrine_activate'].includes(e.kind)?.32:.16,priority:['quest_report','shrine_activate'].includes(e.kind)?4:2,group:'interaction',interval:160};
   switch(e.kind){
-   case 'magic_acquired':return {...base,name:'rune-gain',local:true,bus:'ui',gain:.32,priority:4,group:'magic-acquired',interval:500};
+   case 'magic_acquired':return owner?{...base,name:'rune-gain',local:true,bus:'ui',gain:.32,priority:4,group:'magic-acquired',interval:500,duck:'rune'}:false;
    case 'portal_arrive':return {...base,name:'portal-travel',local:true,gain:.25,priority:3,interval:1000};
    case 'portal_charge':return {...base,name:'portal-charge',local:true,bus:'ui',gain:.17,priority:2,interval:1000};
    case 'ability':
@@ -21,7 +21,7 @@
    case 'projectile_launch':return {...base,name:e.ascended?'ascended-'+hero+'-light':(e.side==='enemy'?'enemy-':'')+(families.includes(e.family)?e.family:'arcane')+'-launch',gain:e.summon?.055:owner?.20:.12,priority:e.summon?0:e.side==='enemy'?3:2,group:e.summon?'summon':'projectile',owner:e.summon?'':e.ownerId,interval:e.summon?450:180};
    case 'projectile_impact':
     if(e.side==='enemy'&&e.targetId)return false; // local hurt already conveys the hit
-    return {...base,local:false,name:e.material&&(['arrow','blade','stone'].includes(e.family)||!e.targetId)?'hit-'+(e.material==='crate'?'wood':materials.includes(e.material)?e.material:'stone'):(families.includes(e.family)?e.family:'arcane')+'-impact',gain:e.significant?.18:.11,priority:e.significant?3:1,group:'impact',interval:190};
+    return {...base,local:false,name:e.material&&(['arrow','blade','stone'].includes(e.family)||!e.targetId)?'hit-'+(e.material==='crate'?'wood':materials.includes(e.material)?e.material:'stone'):(families.includes(e.family)?e.family:'arcane')+'-impact',gain:e.summon?.05:e.significant?.18:.11,priority:e.summon?0:e.significant?3:1,group:e.summon?'summon-impact':'impact',owner:e.summon?'':e.ownerId,interval:e.summon?450:190};
    case 'hit':{
     if(e.silentImpact)return false;
     const material=e.element? e.element==='Ice'?'frost':e.element==='Fire'?'fire':e.element==='Storm'?'lightning':e.element==='Nature'?'nature':'arcane':null;

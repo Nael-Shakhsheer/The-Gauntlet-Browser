@@ -1,9 +1,21 @@
 # The Gauntlet · Bxfr audio workflow
 
-Current: October 16, 2026. The user calls Bfxr “Bxfr.” Effects retain the actual
+Current controller/inventory review: October 29, 2026. The user calls Bfxr “Bxfr.” Effects retain the actual
 Bfxr DSP, seeded parameters and vendor notices. The small original musical score
 uses a separate editable note/instrument renderer; it does not replace Bfxr effects.
 The runtime remains the Python server and browser client.
+
+October 29 finalization leaves all 198 effect WAVs, ten score WAVs, recipes,
+vendor code and licensing unchanged. The event manifest now covers all 106
+current active definitions (including 24 campaign skills and eight Ascensions).
+Music engagement survives actual polling, each later boss can trigger victory,
+interrupted victory resumes its offset, and Cinder outdoors uses the existing
+dry texture. Actual summon collisions share the quiet summon bucket; Frost
+Lance's cast/launch no longer duplicate its sample. Rune ducking restores on
+travel as well as its scheduled release, hide and mute. Exact final tests,
+owned-file hashes and limitations are in
+`reports/finalization-2026-10-28/AUDIO_HANDOFF.md`. This is source readiness for
+Main's integrated checks, not publication or perceptual-listening approval.
 
 ## Rebuild and review
 
@@ -112,7 +124,9 @@ node tests/test_audio_build.cjs
 node tests/test_audio_routing.cjs
 node tests/test_audio_stress.cjs
 node tests/test_music.cjs
+node tests/test_music_transitions.cjs
 node tests/test_feedback_visual.cjs
+python tools/run_tests.py --pattern "test_audio*.py"
 python tools/run_tests.py --report reports/audio-python-local.json
 python tools/audio_preview.py --scene cave --players 4 --port 8013 --touch-controls
 python tools/audio_preview.py --scene boss --players 4 --port 8014

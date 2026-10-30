@@ -11,8 +11,8 @@
                          ],
     "hero":  "Cleric",
     "sourceScales":  {
-                         "actions":  0.34782608695652173,
-                         "body":  0.33103448275862069
+                         "actions":  0.30573248407643311,
+                         "body":  0.27586206896551724
                      },
     "version":  1,
     "directions":  [

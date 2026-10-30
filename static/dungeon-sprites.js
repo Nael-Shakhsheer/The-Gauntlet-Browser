@@ -2,9 +2,9 @@
 (() => {
   const root=document.currentScript?.dataset.spriteRoot || '/sprites/';
   const props=new Image(),materials=new Image(),effects=new Image();
-  props.src=root+'dungeon-props-v1.png';materials.src=root+'dungeon-materials-v1.png';effects.src=root+'portal-effects-v1.png';
+  const pendingSheets=new Map([[props,root+'dungeon-props-v1.png'],[materials,root+'dungeon-materials-v1.png'],[effects,root+'portal-effects-v1.png']]);
   const ids=['cave_mouth','tower_door','stairs_up','stairs_down','watch_bell','cave_seal','survey_marker','supplies_closed','supplies_open','survey_cache_closed','survey_cache_open','portal_shrine'];
-  const ready=img=>img.complete&&img.naturalWidth>0;
+  const ready=img=>{const url=pendingSheets.get(img);if(url){pendingSheets.delete(img);img.src=url;}return img.complete&&img.naturalWidth>0;};
   const floors={},floorLayers=new Map();
   function floor(ctx,room,w,h){
     const a=room.adventure;if(!a?.dungeon)return false;
@@ -52,6 +52,8 @@
   function scenery(ctx,room){
     const a=room.adventure;if(!a?.dungeon)return false;
     for(const b of room.environment?.barriers||[])if(b.material==='stone'&&!wall(ctx,b,a.dungeon.type==='tower'))return false;
+    if(a.area==='sluice_gallery'){ctx.save();ctx.fillStyle='#aeb29a';for(const y of [65,115,165]){ctx.fillRect(474,y,12,3);ctx.fillRect(470,y+4,5,3);ctx.fillRect(485,y+4,5,3);}ctx.restore();}
+    if(a.area==='sluice_entry'&&!a.features.some(f=>f.id==='sluice_supplies'))stamp(ctx,'supplies_open',650,418,{scale:.8});
     // Spent props remain in their authored positions after the server removes their interaction.
     if(a.area==='cave_entry'&&!a.features.some(f=>f.id==='cave_supplies'))stamp(ctx,'supplies_open',450,408,{scale:.8});
     if(a.area==='cave_cache'&&!a.features.some(f=>f.id==='cave_survey'))stamp(ctx,'survey_cache_open',510,368,{scale:.8});
@@ -77,7 +79,7 @@
     if(drawn&&e.locked)stamp(ctx,'cave_seal',x,y+3,{scale:.36});
     return drawn;
   }
-  const points={cave:{cave_entry:[160,360],cave_gallery:[475,360],cave_cache:[475,140],cave_heart:[795,360]},tower:{tower_1:[230,405],tower_2:[485,265],tower_3:[730,135]}};
+  const points={sluice:{sluice_entry:[160,360],sluice_gallery:[475,360],sluice_alcove:[475,140],pump_chamber:[795,360]},cave:{cave_entry:[160,360],cave_gallery:[475,360],cave_cache:[475,140],cave_heart:[795,360]},tower:{tower_1:[230,405],tower_2:[485,265],tower_3:[730,135]}};
   function map(d,sealed=false){
     const ns='http://www.w3.org/2000/svg',el=(tag,attrs={})=>{const n=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);return n;};
     const svg=el('svg',{viewBox:'0 0 960 540',class:'dungeon-map','aria-label':d.name+' · discovered chambers',role:'img'});

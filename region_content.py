@@ -47,7 +47,7 @@ SHRINES={
 FEATURES={
  'brook':[('brook_outlet','Inspect the cloudy outlet',380,290,'clue')],
  'mill_trail':[('mill_wheel','Inspect the damaged wheel',570,180,'clue')],
- 'yard':[('stranded_workers','Stranded timber workers',480,370,'witness')],
+ 'yard':[],
  'hollow':[('dry_spring','Concealed spring casket',870,95,'discovery')],
  'watch':[('watch_register','Read the burned watch register',390,265,'clue')],
  'network':[('network_seal','Inspect the network seal',480,300,'clue')],
@@ -56,7 +56,7 @@ FEATURES={
  'fields':[('dry_ditch','Inspect the dry ditch',275,180,'clue'),('rooted_crop','Inspect the rooted crop',570,355,'clue'),
            ('empty_granary','Inspect the empty granary',760,180,'clue'),('field_restored','Inspect the restored field',470,420,'clue')],
  'mill':[('channel_west','Clear the west channel',290,360,'mechanism'),('channel_east','Clear the east channel',690,360,'mechanism'),('sluice_open','Operate the sluice',480,225,'mechanism')],
- 'eastern_threshold':[('east_landmark','Read the abandoned farm marker',790,345,'discovery'),('ridge_barrier','Ashen Ridge · future route',915,420,'clue')],
+ 'eastern_threshold':[('east_landmark','Read the abandoned farm marker',790,345,'discovery'),('ridge_barrier','Ashen Ridge · distant volcanic road',915,420,'clue')],
  'cellar':[('cellar_begin','Open the sealed pump chamber',570,290,'mechanism'),('additive_ledger','Recover the additive ledger',665,250,'clue')],
 }
 TEXT={
@@ -69,7 +69,7 @@ TEXT={
  'rooted_crop':'Harvest additive coats the failed crop. Small roots spread where the mixture settled.',
  'empty_granary':'The grain bins are empty. A delivery note mentions a concentrated additive from the mill cellar.',
  'field_restored':'Water reaches one repaired strip. Green shoots survive along the ditch; the rest of Dunmere still needs help. Bring the ledger to the runner.',
- 'additive_ledger':'The steward concealed the risks of material raised from the pumping tunnels. The additive first improved yields, then fed the roots. This resolves the local mill crisis; the pumping works and Ashen Ridge remain later leads.',
+ 'additive_ledger':'The steward concealed the risks of material raised from the pumping tunnels. The additive first improved yields, then fed the roots. Report the local mill crisis, then ask Tovin about tracing it upstream. Ashen Ridge remains beyond these repairs.',
 }
 
 
@@ -114,7 +114,10 @@ def features(room):
 
 
 def description(key):
-    return {'brook':'Cloudy spring water and a guarded Brook waystone. An old wheel lies north along the mill trail.',
+    return {'irrigation_channels':'Upper irrigation south of the threshold. Trace the pale deposit; east leads to the farm. The lower east service drain opens after the Warden falls.',
+      'farmstead':'Abandoned crop stores and a refusal of the steward’s additive. North: pumping station. After the works recover, Tovin offers a finite harder sump challenge here.',
+      'pump_exterior':'The steward’s account stands outside the east sluice entrance. Ordinary tunnels allow retreat; the pumping heart seals only when deliberately awakened.',
+      'brook':'Cloudy spring water and a guarded Brook waystone. An old wheel lies north along the mill trail.',
       'mill_trail':'A loop between the Southern road and cloudy brook. Inspect the stopped wheel beside the trail.',
       'yard':'A stranded timber camp south of the abandoned camp. Workers describe creatures fleeing the deep woods.',
       'hollow':'A wide eastern hollow with a guarded waystone and a readable side trail toward a dry spring.',
@@ -122,7 +125,7 @@ def description(key):
       'network':'An inscription links the spring mechanism to the Minotaur ruins. The flooded approach requires a repaired bridge.',
       'border':'The grain road south of the old ruins. Accept the border assignment in Oakvale before traveling.',
       'dunmere':'A working village with shops, Guild, central portal and upstairs inn recovery beds.',
-      'eastern_threshold':'Beyond Dunmere’s irrigation, dry farms meet the eastern ridge. Explore the threshold; Ashen Ridge itself remains beyond this prototype.',
+      'eastern_threshold':'Beyond Dunmere’s irrigation, dry farms lead to the pumping station. After restoring the works, Ilyan reveals the Aurelian trade road. Ashen Ridge belongs to the later Cinder Crown pursuit.',
       'fields':'Failed crop strips, a dry ditch and empty granary. Investigate all three before reporting to Dunmere.',
       'mill':'Two channel blockages feed the stalled mill. Its east door leads below; ordinary trails allow retreat.',
       'cellar':'The mill’s underground pump chamber. Its Overseer seals the doors during combat; victory opens a field hatch.'}.get(key)
@@ -132,6 +135,7 @@ def environment(room):
     import adventure
     here=room['adventure']['current']
     if here=='cellar':return [dict(id='pump-wall-'+str(i),x=x,y=y,width=w,height=h,material='stone',blocksShots=True) for i,(x,y,w,h) in enumerate([(260,100,65,120),(260,330,65,130),(680,100,60,100),(680,350,60,100)])]
+    if here in __import__('pumping_works').OUTDOORS:return __import__('pumping_works').barriers(room)
     boxes={'brook':[(295,205,120,65,'water')],'mill_trail':[(540,120,60,50,'wood')],
       'eastern_threshold':[(600,140,120,65,'wood')],'watch':[(500,150,48,55,'stone')],'network':[(430,210,30,60,'stone')]}.get(here,[])
     for spec in SHRINES.values():
@@ -146,7 +150,7 @@ def enter_hub(room,hub):
     old=room.get('_currentHub')
     if old in HUBS:states[old]=dict(innRooms=copy.deepcopy(room['innRooms']))
     if old==hub:return
-    seed=(a['seed']+(104729 if hub=='dunmere' else 0))%(2**31)
+    seed=(a['seed']+(104729 if hub=='dunmere' else sum((i+1)*ord(c) for i,c in enumerate(hub))*7919 if hub!='home' else 0))%(2**31)
     if hub!='home' or old is not None:room.update(town_layout.generate(seed))
     room['townInstance']='adventure-'+hub+'-'+str(seed)
     if hub not in states:
@@ -155,7 +159,7 @@ def enter_hub(room,hub):
     room['innRooms']=copy.deepcopy(states[hub]['innRooms']);room['_currentHub']=hub
     room['town']=HUBS[hub]
     if hub=='dunmere':room['townPaths']=[p for p in room['townPaths'] if p!=[[480,540],[480,500]]]
-    room['hubExitPoints']=hub_exits(room,seed) if hub=='dunmere' else {}
+    room['hubExitPoints']=hub_exits(room,seed) if hub!='home' else {}
 
 
 def hub_exits(room,seed):
@@ -167,16 +171,19 @@ def hub_exits(room,seed):
     """
     import town_layout
     houses=room['townLayout'];result={};rng=random.Random(seed+8191)
-    for edge in ('north','east'):
-        values=sorted(range(60,481 if edge=='east' else 901,10),key=lambda v:(abs(v-(270 if edge=='east' else 480)),v))
+    import adventure
+    edges=sorted({edge for _,edge,_ in adventure.AREAS[room.get('adventure',{}).get('current','dunmere')]['exits']})
+    for edge in edges:
+        vertical=edge in ('east','west')
+        values=sorted(range(60,481 if vertical else 901,10),key=lambda v:(abs(v-(270 if vertical else 480)),v))
         for value in values:
-            marker=(912,value) if edge=='east' else (value,48)
-            arrival=(852,value) if edge=='east' else (value,108)
-            goal=(930,value) if edge=='east' else (value,30)
+            marker={'east':(912,value),'west':(48,value),'north':(value,48),'south':(value,492)}[edge]
+            arrival={'east':(852,value),'west':(108,value),'north':(value,108),'south':(value,432)}[edge]
+            goal={'east':(930,value),'west':(30,value),'north':(value,30),'south':(value,510)}[edge]
             if not all(town_layout.clear(houses,*p,town_layout.ROAD_MARGIN) for p in (marker,arrival,goal)):continue
             try:path,_=town_layout._route(houses,(480,500),goal,rng)
             except ValueError:continue # This candidate has no full-width route.
-            path.append([960,value] if edge=='east' else [value,0])
+            path.append({'east':[960,value],'west':[0,value],'north':[value,0],'south':[value,540]}[edge])
             room['townPaths'].append(path);result[edge]=value;break
         else:raise ValueError('Dunmere has no accessible '+edge+' approach; layout preserved for investigation.')
     return result
@@ -207,10 +214,10 @@ def interact(world,room,p,point):
         progression.inspect(p,'Hidden spring casket','A surveyor hid a single Magic Rune above the dry spring. '+('Your personal rune is added to progression; it does not use pouch space.' if earned else 'You already claimed your rune. Other characters may still claim theirs.'))
         adventure.save(world,room);return True
     if key=='ridge_barrier':
-        progression.inspect(p,'Beyond the eastern threshold','The old farm road continues toward the pumping works and Ashen Ridge. That region is not implemented yet. Explore the dry farms here, then return west to Dunmere.');return True
+        progression.inspect(p,'Beyond the eastern threshold','South: upper irrigation, farmstead and pumping station. Restore the intake and speak to Ilyan in Dunmere to follow the city trade road east from the station. Ashen Ridge is the Cinder Crown’s foothills, reached after the city and Verdant Veil.');return True
     if key=='east_landmark':
         adventure.reward(world,room,'discovery:east_landmark',0)
-        progression.inspect(p,'The last irrigated farm','Green grass clings to the mill water. Farther east, straw fields end in cracked channels and thorn hedges. A marker reads: Pumping works — Ashen Ridge. This threshold is explorable; the ridge beyond is not implemented.')
+        progression.inspect(p,'The last irrigated farm','Green grass clings to the mill water. Farther east, straw fields end in cracked channels and thorn hedges. A marker names the pumping works, Aurelian trade road and distant Ashen Ridge. The repaired intake will let a messenger reopen the city route.')
         adventure.save(world,room);return True
     if key=='stranded_workers':
         progression.inspect(p,'Stranded timber workers','The grain road failed before the dragon came. We sheltered here when creatures fled the deep woods. There is a hollow to the east, and a burned watch farther south.','npc')
@@ -251,6 +258,8 @@ def on_kill(room,enemy):
 
 
 def recover(room):
+    __import__('campaign_progress').recover(room)
+    __import__('pumping_works').recover(room)
     s=ensure(room)
     if s['cellarAttempt'] and not s['cellarComplete']:
         a=room['adventure'];state=a['areas'].get('cellar')

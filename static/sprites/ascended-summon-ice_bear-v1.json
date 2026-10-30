@@ -1,0 +1,51 @@
+﻿{
+    "appearanceKey":  "druid.ice_bear.ascended",
+    "version":  5,
+    "directions":  [
+                       "south",
+                       "south-east",
+                       "east",
+                       "north-east",
+                       "north",
+                       "north-west",
+                       "west",
+                       "south-west"
+                   ],
+    "columns":  12,
+    "drawOffset":  [
+                       -48,
+                       -72
+                   ],
+    "anchor":  [
+                   48,
+                   84
+               ],
+    "states":  {
+                   "defeat":  [
+                                  11
+                              ],
+                   "attack":  [
+                                  4,
+                                  5,
+                                  6
+                              ],
+                   "idle":  [
+                                0,
+                                1
+                            ],
+                   "channel":  [
+                                   7,
+                                   8,
+                                   9
+                               ],
+                   "hurt":  [
+                                10
+                            ],
+                   "move":  [
+                                2,
+                                3
+                            ]
+               },
+    "cell":  96,
+    "file":  "ascended-summon-ice_bear-v1.png"
+}

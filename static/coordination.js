@@ -9,29 +9,46 @@ gameMenu.innerHTML = '<summary class="secondary small">Menu</summary><div class=
 gameMenu.querySelector(".game-menu-items").append($("#mainMenuGame"));
 $(".game-top-actions").append(gameMenu);
 gameMenu.addEventListener('toggle',releaseControls);
-const technical=document.createElement('button');technical.className='secondary';technical.textContent='Technical details';technical.onclick=()=>openInfo('runtimeDialog');gameMenu.querySelector('.game-menu-items').append(technical);
 $('#runtimeServer').onclick=async()=>{try{$('#runtimeServerReadings').textContent=JSON.stringify(await api('/api/diagnostics?room='+encodeURIComponent(session.room)+'&player='+encodeURIComponent(session.player)),null,2);}catch(e){$('#runtimeServerReadings').textContent=e.message;}};
 const pingFeed = document.createElement("div");
 pingFeed.id = "pingFeed"; pingFeed.setAttribute("aria-live", "polite");
 $(".coordination-tools").append(pingFeed);
 
 function openInfo(id) {
-  endHeldAttack();
-  keys.clear(); moveState = { x: 0, y: 0, attack: false }; sendMovement(true);
+  releaseControls();
   gameMenu.open = false;
   document.querySelectorAll('dialog[open]').forEach(d=>{if(d.id!==id)d.close();});
   $("#" + id).showModal();
 }
+// Stable message regions and a compact dock; existing controls keep their IDs.
+const hudUtilities=document.querySelector('.coordination-tools');hudUtilities.id='hudUtilities';hudUtilities.setAttribute('role','group');hudUtilities.setAttribute('aria-label','Items and party coordination');$('#gameHud').append(hudUtilities);
+$('#hudResources').append($('#runeCount'));
+const partyTools=document.createElement('details');partyTools.id='partyTools';partyTools.className='party-tools';
+const partySummary=document.createElement('summary');partySummary.textContent='Party pings';partySummary.dataset.uiAction='navigation';partyTools.append(partySummary,$('#pingButtons'));hudUtilities.prepend(partyTools);
+partyTools.addEventListener('toggle',releaseControls);
+const equipShortcut=document.createElement('button');equipShortcut.id='equipmentShortcut';equipShortcut.className='secondary small';equipShortcut.textContent='Equip items';equipShortcut.onclick=()=>{$('#togglePouch').click();releaseControls();};hudUtilities.append(equipShortcut);
+const messages=document.createElement('section');messages.id='hudMessages';messages.setAttribute('aria-label','Exploration messages');
+const tracked=document.createElement('p');tracked.id='trackedObjective';tracked.className='tracked-objective hidden';tracked.dataset.messageKind='objective';
+const eventRegion=document.createElement('div');eventRegion.id='hudEvents';eventRegion.dataset.messageKind='acquisition';
+eventRegion.append($('#adventureFeedback'));const acquisition=$('#acquisitionNotice');if(acquisition)eventRegion.append(acquisition);
+const critical=document.createElement('div');critical.id='hudCritical';critical.dataset.messageKind='critical';
+const connectionNotice=document.createElement('p');connectionNotice.id='connectionNotice';connectionNotice.className='notice';connectionNotice.dataset.tone='error';connectionNotice.setAttribute('role','alert');critical.append(connectionNotice);
+critical.append($('#bossTactic'));
+const noticeColumn=document.createElement('div');noticeColumn.id='hudNoticeColumn';noticeColumn.append(critical,eventRegion);
+$('#combatNotice').dataset.messageKind='interaction';messages.append(tracked,$('#interactButton'),$('#combatNotice'),noticeColumn);$('#arenaPanel')?.append(messages);
+if(!messages.parentElement)$('#world').parentElement.append(messages);
+window.flowEvents=window.GauntletUI.eventQueue($('#adventureFeedback'));
+window.resetFlowMessages=()=>{window.flowEvents.reset();tracked.textContent='';connectionNotice.textContent='';};
 document.addEventListener("click", (event) => {
   const close = event.target.closest("[data-close]");
   if (close) $("#" + close.dataset.close).close();
   if (event.target.closest("[data-guide]")) { guidePage = 0; renderGuide(); openInfo("guideDialog"); }
 });
 function renderGuide() {
-  const key = (name) => String(keyBindings[name]).toUpperCase();
+  const key = (name) => keyLabel(name);
   const adventure = Boolean(latestRoom?.adventure);
   const pages = [
-    ["Move and explore", `Move with ${key("up")}, ${key("left")}, ${key("down")}, ${key("right")} or the arrow keys. On a phone, hold the direction buttons. Space or Dash gives a short burst during combat. You can keep moving while using abilities or quick pings.`],
+    ["Move and explore", `Move with ${key("up")}, ${key("left")}, ${key("down")}, ${key("right")} or the arrow keys. On a phone, hold the direction buttons. ${key("dash")} or Dash gives a short burst with a five-second recharge. Adventure also allows it outdoors in villages. You can keep moving while using abilities or quick pings.`],
     ["Use your three abilities", `Choose one Light, Special and Ultimate. Hold left click on the arena or hold Attack to repeat your equipped Light; ${key("special")} for Special; ${key("ultimate")} for Ultimate. Touch players can tap the ability buttons. Ultimates recharge in 15 seconds, including at the start of every combat stage. Druid summons stay through waves, disappear at the next stage, and recharge after death.`],
     ["Read the battlefield", "Crates and rocks block movement and shots; Light attacks can break them. Traps flash before firing, poison pools hurt once per second, and ice keeps you sliding after releasing movement. Chargers rush, ambushers flank, ranged foes keep distance, supports heal and bruisers swing nearby. Bosses mark attacks before releasing them, then pause to recover. Move out of warnings and use that pause to counterattack. Some stages ask you to destroy a summoning rift, protect a ward or bait charges into rocks. Tap an enemy to prefer it; Tab cycles targets. Escape or Clear target returns to automatic targeting. Blocked or distant targets fall back to a nearby foe."],
     ["Rescue your party", `Downed heroes stay revivable while an ally is standing; there is no countdown. Move close and hold ${key("revive")} or Revive to rescue them. Most rescues take 1.8 seconds; Healers take 0.8. If everyone goes down, the party wipes. The party strip shows health and who needs help. Help marks your position, Gather requests a meeting, and Enemy lets you tap a specific foe.`],
@@ -42,7 +59,7 @@ function renderGuide() {
     pages[0][1] += ` Gather at a trail marker and each connected human presses ${key('revive')} or taps Travel. Offline players and companions do not block travel. Ordinary trails stay open during combat. Map shows discovered locations; Journal shows objectives.`;
     pages[1][1] = `Start with a basic attack and an active skill. Skills shows your hero’s three branches. Finite exploration milestones earn points once; learn, equip or freely respec in Oakvale. Hold left click or Attack for repeated basics. Active slots use ${key('special')}, ${key('active2')} and ${key('active3')}; Ultimate uses ${key('ultimate')}. The road opens slot two; a completed woodland quest opens slot three. Recharge survives travel and swapping. Druid summons disappear at area changes, then require their normal 8s or 15s recharge.`;
     pages[4][1] = 'The shrine totem describes your answer in solo play, or a connected human teammate’s answer in co-op. Use Share clue or chat, then stand on the matching runes together. Companions do not need to solve the puzzle. Trails remain open until the guardian awakens.';
-    pages[5][1] = `Use ${key('revive')} or Interact at doors and NPCs. Shops, the Guild and inn work as usual. World objectives, cleared groups, personal equipment and shared Runes save automatically on the local server. Rest upstairs in an unlocked inn bed to choose the party’s return point. A restart or wipe returns to that bed; a wipe loses 40% of Runes once and keeps completed objectives. Without a bed, return to Oakvale’s gate. Free online storage is temporary. Keep browser site data to reconnect.`;
+    pages[5][1] = `Use ${key('revive')} or Interact at doors and NPCs. Shops, the Guild and inn work as usual. World objectives, cleared groups, personal equipment and shared Runes save automatically on the local server. Rest upstairs in an unlocked inn bed to choose the party’s return point. A restart or wipe returns to that bed; a wipe loses15% of shared Runes once and keeps completed objectives. Without a bed, return to Oakvale’s gate. Free online storage is temporary. Keep browser site data to reconnect.`;
   }
   $("#guideStep").textContent = `${guidePage + 1} / ${pages.length}`;
   $("#guideHeading").textContent = pages[guidePage][0];

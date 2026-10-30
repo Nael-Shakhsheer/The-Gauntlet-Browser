@@ -4,6 +4,7 @@ Old woodland results are never revoked. Evidence may arrive early, but only an
 accepted assignment becomes ready, and only a deliberate report completes it.
 """
 import copy
+import campaign_quests
 
 # key, title, hub, practical assignment, evidence required
 DEFINITIONS=(
@@ -19,13 +20,18 @@ DEFINITIONS=(
  ('mill_cellar','Under the Mill','dunmere','Enter the mill cellar, defeat the Blighted Overseer and recover its additive ledger.',('overseer_defeated','additive_ledger')),
  ('chapter_outcome','A Harvest Worth Saving','dunmere','Inspect the restored field and deliver the ledger to the village runner. Resolve the local supply crisis.',('field_restored',)),
 )
+ORIGINAL_ORDER=[d[0] for d in DEFINITIONS]
+MAIN_ORDER=ORIGINAL_ORDER+[d[0] for d in campaign_quests.MAIN]
+DEFINITIONS=(*DEFINITIONS,*campaign_quests.MAIN,*campaign_quests.SIDE)
 ORDER=[d[0] for d in DEFINITIONS]
 SPECS={d[0]:dict(id=d[0],title=d[1],hub=d[2],objective=d[3],requires=list(d[4])) for d in DEFINITIONS}
+for key,*_ in campaign_quests.SIDE:SPECS[key]['optional']=True
 STATUSES={'unavailable','offered','accepted','ready-to-turn-in','complete'}
 EVIDENCE={e for spec in SPECS.values() for e in spec['requires']}
 MAGIC_SOURCES={'hunter':('report:hunter',1),'bridge':('report:bridge',1),'shrine':('report:shrine',1),
  'ruins':('report:woodland_boss',2),'failed_harvest':('report:failed_harvest',1),
  'irrigation':('report:irrigation',2),'mill_cellar':('report:mill_cellar',2),'chapter_outcome':('report:chapter_outcome',2)}
+MAGIC_SOURCES.update(campaign_quests.MAGIC)
 REPORTS={
  'hunter':'The hunter is recovering in Oakvale. He saw cloudy water before the watch burned. The supply bridge must reopen before another grain wagon can pass.',
  'bridge':'The repaired crossing shortens the supply road. Workers can reach the camp again, but no grain is arriving. Inspect the brook and the stopped mill wheel.',
@@ -37,7 +43,8 @@ REPORTS={
  'failed_harvest':'The three sites show roots and an unusual additive, rather than drought alone. Clear the mill’s two channels and reopen the sluice.',
  'irrigation':'One irrigation strip runs again and green shoots survive. The mill cellar holds the missing delivery records; open its pump chamber after clearing the approach.',
  'mill_cellar':'The Overseer is defeated and the field hatch is open. The ledger shows the steward concealed the additive’s risks. Inspect the restored field before the final report.',
- 'chapter_outcome':'Dunmere’s immediate mill crisis is resolved. Water reaches a living strip and the harmful additive is withdrawn. The pumping works and Ashen Ridge remain later leads. Shops, optional exploration and export backups stay available.'}
+ 'chapter_outcome':'Dunmere’s immediate mill crisis is resolved. Water reaches a living strip and the harmful additive is withdrawn. Speak to Tovin about tracing the material to the pumping works. Ashen Ridge remains beyond the repaired area.'}
+REPORTS.update(campaign_quests.REPORTS)
 
 
 def ensure(room,legacy=None):
@@ -59,6 +66,8 @@ def ensure(room,legacy=None):
                         if fact not in s['evidence']:s['evidence'].append(fact)
         reconcile(room)
     if s.get('version')!=1:raise ValueError('Unsupported chapter progress; original preserved.')
+    for key in ORDER:s['stages'].setdefault(key,'unavailable')
+    s.setdefault('choices',{})
     return s
 
 
@@ -71,8 +80,9 @@ def reconcile(room):
     for key in ORDER:
         if s['stages'][key]=='accepted' and all(f in s['evidence'] for f in SPECS[key]['requires']):s['stages'][key]='ready-to-turn-in'
     if not __import__('opening').active(room):
-        next_key=next((k for k in ORDER if s['stages'][k]!='complete'),None)
+        next_key=next((k for k in MAIN_ORDER if s['stages'][k]!='complete'),None)
         if next_key and s['stages'][next_key]=='unavailable':s['stages'][next_key]='offered'
+        campaign_quests.reconcile(room)
 
 
 def evidence(room,key):
@@ -86,7 +96,7 @@ def require(room,key):
     s=ensure(room);reconcile(room)
     if s['legacy'] and key in ('hunter','bridge','shrine','ruins'):return
     if s['stages'][key] not in ('accepted','ready-to-turn-in','complete'):
-        spec=SPECS[key];raise ValueError('Accept “'+spec['title']+'” from the '+('Oakvale' if spec['hub']=='home' else 'Dunmere')+' runner first. Journal shows the preceding assignment.')
+        spec=SPECS[key];raise ValueError('Accept “'+spec['title']+'” from its village contact first. Journal shows the assignment and collected evidence.')
 
 
 def available_rewards(room):
@@ -96,8 +106,18 @@ def available_rewards(room):
 
 def menu(room,player):
     s=ensure(room);reconcile(room);hub=room['adventure']['current']
-    return [dict(**SPECS[k],status=s['stages'][k],outcome=REPORTS[k] if s['stages'][k]=='complete' else None,found=[f for f in SPECS[k]['requires'] if f in s['evidence']],
-        actionable=hub==action_hub(k,s['stages'][k]) and not player.get('townInterior')) for k in ORDER if s['stages'][k]!='unavailable']
+    rows=[];points=None
+    for k in ORDER:
+        status=s['stages'][k]
+        if status=='unavailable':continue
+        actionable=False
+        if status in ('offered','ready-to-turn-in') and hub in campaign_quests.action_hubs(k,action_hub(k,status)):
+            if points is None:points=__import__('adventure').features(room)
+            actionable=bool(campaign_quests.contact(room,player,k,points))
+        rows.append(dict(**SPECS[k],status=status,outcome=REPORTS[k] if status=='complete' else None,
+            found=[f for f in SPECS[k]['requires'] if f in s['evidence']],
+            contact=campaign_quests.NAMES.get(campaign_quests.CONTACTS.get(k,['runner'])[0],'Village Runner'),actionable=actionable))
+    return rows
 
 
 def action_hub(key,status):
@@ -106,20 +126,25 @@ def action_hub(key,status):
 
 def action(world,room,player,payload):
     import adventure,progression
+    if isinstance(payload.get('quest'),str) and payload['quest'] in __import__('campaign_content').QUESTS:
+        return __import__('campaign_progress').quest_action(world,room,player,payload)
     if player.get('bot') or not player.get('connected',True) or player['status']!='alive' or player.get('townInterior') or progression.locked(room,player):raise ValueError('Finish the conversation and report outside to the village runner.')
-    point=next((f for f in adventure.features(room) if f['id']=='runner'),None)
-    if not point or __import__('math').dist((player['x'],player['y']),(point['x'],point['y']))>78:raise ValueError('Speak to the village runner to accept or report an assignment.')
     key=payload.get('quest');s=ensure(room);reconcile(room)
-    if key not in SPECS or room['adventure']['current']!=action_hub(key,s['stages'][key]):raise ValueError('That assignment belongs to a different village.')
+    if key not in SPECS or room['adventure']['current'] not in campaign_quests.action_hubs(key,action_hub(key,s['stages'][key])):raise ValueError('That assignment belongs to a different village.')
+    if not campaign_quests.contact(room,player,key):raise ValueError('Speak to the assignment’s contact or village runner to accept or report it.')
     status=s['stages'][key]
-    before=copy.deepcopy(s)
-    personal={pid:copy.deepcopy(p.get('magicRunes')) for pid,p in room['players'].items()}
+    before=copy.deepcopy(room['adventure']);old_runes=room['runes']
+    personal={pid:copy.deepcopy(p) for pid,p in room['players'].items()}
+    transient={key:copy.deepcopy(room.get(key)) for key in ('_feedback','chat','privateNotices')}
     if payload['action']=='chapterAccept':
         if status in ('accepted','ready-to-turn-in','complete'):return
         if status!='offered':raise ValueError('Finish and report the previous assignment first.')
+        if key not in ('hunter','bridge','shrine','ruins'):s['legacy']=False
         s['stages'][key]='accepted';reconcile(room)
         chart={'bridge':['camp','bridge'],'water':['brook','mill_trail'],'watch':['yard','hollow','watch','network'],
-               'border':['border','dunmere'],'failed_harvest':['fields'],'irrigation':['mill'],'mill_cellar':['cellar']}.get(key,[])
+               'border':['border','dunmere'],'failed_harvest':['fields'],'irrigation':['mill'],'mill_cellar':['cellar'],
+               'upstream':['eastern_threshold','irrigation_channels','farmstead'],'steward':['pump_exterior'],
+               'sluice_route':['sluice_entry'],'pumping_finale':['pump_chamber'],'root_sump':['farmstead']}.get(key,[])
         adventure.reveal(room,*chart)
     elif payload['action']=='chapterReport':
         if status=='complete':return
@@ -128,12 +153,15 @@ def action(world,room,player,payload):
         if key not in s['turnedIn']:s['turnedIn'].append(key)
         reconcile(room)
         __import__('magic_runes').reconcile_reports(room)
+        campaign_quests.reported(world,room,key)
     else:raise ValueError('Unknown assignment action.')
     if not adventure.save(world,room) and world.storage:
-        room['adventure']['chapter']=before
+        room['adventure'].clear();room['adventure'].update(before);room['runes']=old_runes
         for pid,p in room['players'].items():
-            if personal[pid] is None:p.pop('magicRunes',None)
-            else:p['magicRunes']=personal[pid]
+            p.clear();p.update(personal[pid])
+        for key,value in transient.items():
+            if value is None:room.pop(key,None)
+            else:room[key]=value
         raise ValueError('Assignment update was not committed because storage failed. Progress and personal reward receipts are unchanged; retry after checking storage.')
     message=('Assignment accepted: '+SPECS[key]['title']+'. '+SPECS[key]['objective']) if payload['action']=='chapterAccept' else REPORTS[key]
     if payload['action']=='chapterReport' and key in MAGIC_SOURCES:
@@ -143,8 +171,13 @@ def action(world,room,player,payload):
 
 def validate(s):
     if s is None:return
-    if not isinstance(s,dict) or set(s)!={'version','legacy','stages','evidence','turnedIn'} or s.get('version')!=1 or type(s['legacy']) is not bool:raise ValueError('Unsupported chapter record.')
-    if not isinstance(s['stages'],dict) or set(s['stages'])!=set(ORDER) or any(v not in STATUSES for v in s['stages'].values()):raise ValueError('Invalid assignment stages.')
+    required={'version','legacy','stages','evidence','turnedIn'}
+    if not isinstance(s,dict) or not required<=set(s) or set(s)-required-{'choices'} or s.get('version')!=1 or type(s['legacy']) is not bool:raise ValueError('Unsupported chapter record.')
+    if not isinstance(s['stages'],dict) or not set(ORIGINAL_ORDER)<=set(s['stages'])<=set(ORDER) or any(v not in STATUSES for v in s['stages'].values()):raise ValueError('Invalid assignment stages.')
     for key,allowed in [('evidence',EVIDENCE),('turnedIn',set(ORDER))]:
         if not isinstance(s[key],list) or any(not isinstance(k,str) or k not in allowed for k in s[key]) or len(set(s[key]))!=len(s[key]):raise ValueError('Invalid chapter receipts.')
-    if any(s['stages'][k]!='complete' for k in s['turnedIn']):raise ValueError('Turn-in receipt without completion.')
+    if any(s['stages'].get(k)!='complete' for k in s['turnedIn']):raise ValueError('Turn-in receipt without completion.')
+    choices=s.get('choices',{})
+    if not isinstance(choices,dict) or set(choices)-{'seeds','relief'} or any(v not in ({'oakvale','dunmere'} if k=='seeds' else {'workers','farmers'}) for k,v in choices.items()):raise ValueError('Invalid settlement choices.')
+    for key,fact in [('seeds','seeds_committed'),('relief','relief_committed')]:
+        if (key in choices)!=(fact in s['evidence']):raise ValueError('Settlement choice and evidence disagree.')

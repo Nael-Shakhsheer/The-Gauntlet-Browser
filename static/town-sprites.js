@@ -85,6 +85,7 @@
     const last=points.at(-1);g.lineTo(last[0]/2,last[1]/2);
   }
   function paintPaths(g,room){
+    if(window.GauntletCampaignScenery?.paintTownPaths(g,room))return;
     const colors=palettes[regionOf(room)],paths=room.townPaths || [],random=rng(hash(String(room.townSeed || room.code)));
     g.save();g.lineCap=g.lineJoin='round';
     // Low contrast edge bands blend into the same ground material as the world.
@@ -151,6 +152,7 @@
     if(dressing.size>20)dressing.clear();dressing.set(key,items);return items;
   }
   function environment(room){
+    const campaign=window.GauntletCampaignScenery?.townEnvironment(room);if(campaign)return campaign;
     return layout(room).map(o=>({depth:o.depth,occluder:true,bounds:o.kind==='detail'?{x:o.x-48*o.scale,y:o.y-82*o.scale,width:96*o.scale,height:96*o.scale}:window.GauntletWorldScenery?.bounds(o),draw:ctx=>{
       if(o.kind==='detail')detail(ctx,room,o.variant,o.x,o.y,o.scale);
       else window.GauntletWorldScenery?.drawObject(ctx,o);

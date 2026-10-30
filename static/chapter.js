@@ -17,8 +17,9 @@
     const visible=rows.filter(q=>group(q)===tab).sort((a,b)=>(b.status==='ready-to-turn-in')-(a.status==='ready-to-turn-in'));
     if(!visible.length){const empty=document.createElement('p');empty.textContent='No assignments in this section.';box.append(empty);}
     for(const q of visible){const card=document.createElement('section');card.className='adventure-quest';const h=document.createElement('h3'),state=document.createElement('p'),text=document.createElement('p');
-      h.textContent=q.title;state.textContent=q.status.replaceAll('-',' ');text.textContent=q.outcome||q.objective;card.append(h,state,text);
+      h.textContent=(q.optional?'Optional · ':'')+q.title;state.textContent=q.status.replaceAll('-',' ')+' · '+(q.contact||'Village Runner');text.textContent=q.outcome||q.objective;card.append(h,state,text);
       if(q.requires.length){const found=document.createElement('p');found.className='subtle';found.textContent='Evidence: '+q.found.length+' / '+q.requires.length;card.append(found);}
+      for(const id of q.requires){const art=window.GauntletCampaignArtData?.icons?.[id];if(art?.category!=='artifact')continue;const row=document.createElement('p');row.className='campaign-evidence';const icon=document.createElement('img');icon.src='/sprites/'+art.file;icon.alt='';icon.width=icon.height=32;const text=document.createElement('span');text.textContent=(q.found.includes(id)?'✓ ':'')+art.name;row.append(icon,text);card.append(row);}
       if(q.status==='offered'||q.status==='ready-to-turn-in'){
         const button=document.createElement('button');button.className='primary';button.dataset.quest=q.id;button.textContent=q.status==='offered'?'Accept assignment':'Report findings';button.disabled=busy||!q.actionable;
         button.onclick=async()=>{busy=true;signature='';render(latestRoom);try{await sendAction(q.status==='offered'?'chapterAccept':'chapterReport',{quest:q.id});notice($('#chapterNotice'),'Updated. Personal and world receipts are saved together.');}catch(e){notice($('#chapterNotice'),e.message);}finally{busy=false;signature='';refresh();}};card.append(button);

@@ -240,7 +240,7 @@
       }
     }
     for (const e of room.enemies || []) {
-      if(e.rooted){ctx.strokeStyle='#92d26d';ctx.lineWidth=3;circle(ctx,e.x,e.y+15,23);ctx.stroke();}
+      if(e.rooted&&!window.GauntletReleaseVisuals?.handlesControl(e)){ctx.strokeStyle='#92d26d';ctx.lineWidth=3;circle(ctx,e.x,e.y+15,23);ctx.stroke();}
       if(e.bleeding){ctx.fillStyle='#da6b80';for(let i=0;i<3;i++)ctx.fillRect(e.x-10+i*10,e.y+24,3,5);}
       const a = e.bossAttack || e.roleAttack;
       ctx.textAlign = "center"; ctx.font = "bold 10px monospace";
@@ -278,8 +278,8 @@
     ctx.restore();
   }
   function target(ctx,x,y,r=28) {
-    ctx.save();ctx.strokeStyle='#ffd36b';ctx.lineWidth=3;circle(ctx,x,y+12,r);ctx.stroke();
-    ctx.fillStyle='#ffd36b';ctx.beginPath();ctx.moveTo(x-6,y-62);ctx.lineTo(x+6,y-62);ctx.lineTo(x,y-54);ctx.closePath();ctx.fill();ctx.restore();
+    ctx.save();ctx.strokeStyle='#e6b783';ctx.lineWidth=2;ctx.beginPath();
+    for(const sign of [-1,1]){ctx.moveTo(x+sign*(r-8),y-25);ctx.lineTo(x+sign*r,y-25);ctx.lineTo(x+sign*r,y-13);ctx.moveTo(x+sign*r,y+9);ctx.lineTo(x+sign*r,y+18);ctx.lineTo(x+sign*(r-8),y+18);}ctx.stroke();ctx.restore();
   }
   function structure(ctx,e,selected=false,friendly=false,region='woodland') {
     ctx.save();if(selected) target(ctx,e.x,e.y,34);

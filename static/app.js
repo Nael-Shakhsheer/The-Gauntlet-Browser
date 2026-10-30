@@ -1,9 +1,43 @@
 const $ = (selector) => document.querySelector(selector);
 const CLASS_ORDER = ["Knight", "Wizard", "Archer", "Cleric", "Rogue", "Druid", "Bard", "Healer"];
+/* Functional UI primitives. No theme ownership or gameplay decisions. */
+window.GauntletUI=(()=>{
+  const signatures=new WeakMap(),focusMemory=new WeakMap(),groupMemory=new WeakMap();
+  function preserve(box,build){
+    const active=document.activeElement,key=box.contains(active)?active.dataset.focusKey:null;
+    if(key)focusMemory.set(box,key);
+    const group=box.contains(active)?active.closest('[data-focus-group]')?.dataset.focusGroup:null;if(group)groupMemory.set(box,group);
+    const scroll=box.scrollTop,dialog=box.closest('dialog'),outer=dialog?.scrollTop;
+    const opened=[...box.querySelectorAll('details[open][data-focus-key]')].map(e=>e.dataset.focusKey);
+    const values=new Map([...box.querySelectorAll('select[data-retain-value]')].map(e=>[e.dataset.focusKey,e.value]));
+    build();
+    for(const e of box.querySelectorAll('select[data-retain-value]'))if(values.has(e.dataset.focusKey)&&[...e.options].some(o=>o.value===values.get(e.dataset.focusKey))){e.value=values.get(e.dataset.focusKey);e.onchange?.();}
+    for(const e of box.querySelectorAll('details[data-focus-key]'))if(opened.includes(e.dataset.focusKey))e.open=true;
+    box.scrollTop=scroll;if(dialog)dialog.scrollTop=outer;
+    const target=[...box.querySelectorAll('[data-focus-key]')].find(e=>e.dataset.focusKey===(key||focusMemory.get(box))&&!e.disabled);
+    const fallback=[...box.querySelectorAll('[data-focus-group]')].find(e=>e.dataset.focusGroup===groupMemory.get(box));
+    if((target||fallback)&&(key||active===document.body))(target||fallback).focus({preventScroll:true});
+  }
+  function patch(box,signature,build){if(signatures.get(box)===signature)return false;signatures.set(box,signature);preserve(box,build);return true;}
+  function control(el,key,role='secondary'){el.dataset.focusKey=key;el.dataset.uiAction=role;return el;}
+  function eventQueue(el){
+    let queue=[],seen=new Set(),timer=null;
+    function paint(){clearTimeout(timer);const row=queue[0];el.classList.toggle('hidden',!row);el.textContent=row?.text||'';el.dataset.tone=row?.tone||'info';
+      if(row)timer=setTimeout(()=>{queue.shift();paint();},row.ttl);}
+    return {push(text,{id=text,tone='info',ttl=4200}={}){if(!text||seen.has(id))return;seen.add(id);if(seen.size>64)seen.delete(seen.values().next().value);queue.push({text,tone,ttl});if(queue.length>4)queue.splice(1,1);if(queue.length===1)paint();},reset(){queue=[];seen.clear();paint();}};
+  }
+  return {preserve,patch,control,eventQueue};
+})();
 const ABILITY_SPRITE_KEYS = new Set(["shield_bash","cleaving_arc","iron_wall","challenge","guardian_cry","earthshaker","arc_burst","frost_lance","spell_surge","blink","team_aegis","arcane_cataclysm","piercing_volley","snare_shot","eagle_eye","quickstep","rain_of_arrows","deadeye","radiant_flask","sanctified_throw","splash_mend","blessed_vial","sanctuary_rain","cleansing_splash","backstab","fan_of_blades","vanish","shadowstep","death_bloom","execution","briar_burst","thornshot","lightning_bird","fire_wolf","ice_bear","nature_golem","discord_note","quickstring","battle_anthem","fleet_rhythm","grand_crescendo","rallying_chord","life_spark","healing_ray","major_mend","quick_revival","miracle","mass_revival"]);
+for(const key of ['mercy_lance','repelling_pulse'])ABILITY_SPRITE_KEYS.add(key);
+const ASCENSION_SPRITE_KEYS=new Set(['citadel_oath','astral_convergence','horizon_arrow','dawn_mixture','shadow_circuit','elder_accord','harmonic_march','second_dawn']);
+for(const key of ASCENSION_SPRITE_KEYS)ABILITY_SPRITE_KEYS.add(key);
+const DISTINCT_SKILL_ICON_KEYS=new Set(['shield_rush','rally_banner','riposte','glacial_prison','mana_rift','phase_step','barbed_trap','sidestep_shot','marked_quarry','sunburst_flask','pilgrim_draft','hallowed_circle','smoke_snare','venom_edge','crosscut','root_grasp','verdant_spring','call_wild','dissonant_refrain','echo_verse','restful_cadence','life_barrier','triage','rescue_beacon']);
+for(const key of DISTINCT_SKILL_ICON_KEYS)ABILITY_SPRITE_KEYS.add(key);
 function createAbilityIcon(ability) {
-  const spriteKey=ability.iconKey || ability.id;
-  if (!ABILITY_SPRITE_KEYS.has(spriteKey)) return null;
+  const campaign=window.GauntletCampaignArtData?.icons?.[ability.id];
+  const spriteKey=campaign||ASCENSION_SPRITE_KEYS.has(ability.id)||DISTINCT_SKILL_ICON_KEYS.has(ability.id)||['mercy_lance','repelling_pulse'].includes(ability.id)?ability.id:ability.iconKey || ability.id;
+  if (!campaign&&!ABILITY_SPRITE_KEYS.has(spriteKey)) return null;
   const image=document.createElement("img");
   image.className="ability-sprite"; image.src="/sprites/ability-"+spriteKey+"-v1.png";
   image.alt=""; image.setAttribute("aria-hidden","true"); image.width=image.height=64; image.draggable=false;
@@ -16,9 +50,10 @@ function decorateAbilityChoice(label,ability) {
   label.classList.add("ability-choice-heading");label.replaceChildren(image,text);
 }
 const ITEM_SPRITE_KEYS = new Set(["healing_draught","warding_tonic","mana_draught","quickstep_elixir","route_lens","ember_oil","piercing_arrows","phoenix_flask","stormguard_charm","iron_sword","oakguard_vest","moonsteel_sword","dragonbone_armor","starfall_blade","aegis_of_dawn","sage_wand","wind_bow","sun_censer","shadow_blades","thorn_staff","travel_lute","mercy_rod","arcane_conductor","rescuers_cuirass","summoners_staff","pursuit_blade"]);
+for(const key of ['pilgrim_standard','forked_lens','pack_whistle'])ITEM_SPRITE_KEYS.add(key);
 function createItemSprite(item) {
-  const key = item?.key;
-  if (!item || !ITEM_SPRITE_KEYS.has(key)) return null;
+  const key = ['pilgrim_standard','forked_lens','pack_whistle'].includes(item?.key)?item.key:({pilgrim_standard:'rescuers_cuirass',forked_lens:'arcane_conductor',pack_whistle:'summoners_staff'})[item?.key] || item?.key;
+  if (!item || !ITEM_SPRITE_KEYS.has(key)&&!window.GauntletCampaignArtData?.icons?.[key]) return null;
   const image = document.createElement("img");
   image.className = "item-sprite";
   image.src = "/sprites/item-" + key + "-v1.png";
@@ -39,14 +74,16 @@ function decorateItemLabel(label, item) {
   label.replaceChildren(image, text);
 }
 const SYMBOLS = { Knight: "♜", Wizard: "✦", Archer: "➶", Cleric: "✚", Rogue: "⚔", Druid: "❧", Bard: "♫", Healer: "✧" };
-function appendEquipmentComparison(parent, item, room) {
+function appendEquipmentComparison(parent, item, room, selectedIndex=null) {
   const slots = item.slot === 'tool' ? room.toolSlots : room.utilitySlots;
   if (!slots || !window.GauntletEquipment) return;
   const panel = document.createElement('div'); panel.className = 'gear-comparison';
   slots.forEach((old, index) => {
+    if(selectedIndex!==null && index!==selectedIndex)return;
     const comparison = window.GauntletEquipment.compare(item, slots, index);
     const line = document.createElement('small');
-    line.textContent = (item.slot === 'tool' ? 'Tool ' : 'Utility ') + (index+1) + ': ' + comparison.stats;
+    line.textContent = item.slot==='utility' ? comparison.detail+' · '+(old?'Instead of '+old.name+(old.description?': '+old.description:''):'Empty utility slot '+(index+1)) : (old ? 'Replace '+old.name : 'Use empty tool slot '+(index+1)) + ': ' + comparison.stats;
+    line.dataset.replacementSlot=String(index);line.dataset.resourceScope='personal';
     line.title = comparison.detail;
     if (comparison.gains?.length || comparison.losses?.length) line.textContent += ' · ' + [...comparison.gains, ...comparison.losses].join('; ');
     panel.append(line);
@@ -64,11 +101,13 @@ function decorateHeroIcon(container, role) {
   image.addEventListener("error", () => { container.textContent = SYMBOLS[role]; }, { once: true });
   container.replaceChildren(image); container.classList.add("portrait-frame");
 }
-const DEFAULT_BINDINGS = { up: "w", down: "s", left: "a", right: "d", special: "q", active2:"r",active3:"f", ultimate: "x", revive: "e" };
-const BINDING_LABELS = { up: "Move up", down: "Move down", left: "Move left", right: "Move right", special: "Special / Active 1", active2:"Adventure Active 2",active3:"Adventure Active 3", ultimate: "Ultimate attack", revive: "Revive / interact" };
+const DEFAULT_BINDINGS = { up: "w", down: "s", left: "a", right: "d", dash:" ", special: "q", active2:"r",active3:"f", ultimate: "x", revive: "e" };
+const BINDING_LABELS = { up: "Move up", down: "Move down", left: "Move left", right: "Move right", dash:"Dash", special: "Special / Active 1", active2:"Adventure Active 2",active3:"Adventure Active 3", ultimate: "Ultimate attack", revive: "Revive / interact" };
+function keyLabel(action){const key=keyBindings[action]??DEFAULT_BINDINGS[action];return key===' '?'Space':String(key).toUpperCase();}
 let keyBindings;
 try { keyBindings = Object.assign({}, DEFAULT_BINDINGS, JSON.parse(localStorage.getItem("gauntlet-keybindings") || "{}")); }
 catch { keyBindings = Object.assign({}, DEFAULT_BINDINGS); }
+for(const action of Object.keys(DEFAULT_BINDINGS))if(typeof keyBindings[action]!=='string'||!keyBindings[action].length||keyBindings[action].length>20)keyBindings[action]=DEFAULT_BINDINGS[action];
 for(const action of ['active2','active3']){
   if(Object.entries(keyBindings).some(([k,v])=>k!==action&&v===keyBindings[action]))keyBindings[action]=['r','f','g','z','c','t'].find(k=>!Object.values(keyBindings).includes(k))||DEFAULT_BINDINGS[action];
 }
@@ -109,18 +148,21 @@ let landscapeBlocked=false;
 const coarseScreen=window.matchMedia('(pointer: coarse)');
 function updateLandscape() {
   const touch=coarseScreen.matches || (navigator.maxTouchPoints>0 && window.matchMedia('(hover: none)').matches) || document.documentElement.dataset.touchPreview==='true';
+  if(!document.body.dataset.inputProfile)document.body.dataset.inputProfile=touch?'touch':'pointer';
   const blocked=window.GauntletCamera.landscapeRequired(document.body.classList.contains('is-playing'),touch,window.innerWidth,window.innerHeight);
   document.body.classList.toggle('needs-landscape',blocked);
   $('main').inert=blocked;
   $('#landscapeNotice').classList.toggle('hidden',!blocked);
   const changed=blocked!==landscapeBlocked;landscapeBlocked=blocked;
   if(blocked && changed) {
-    keys.clear();moveState={x:0,y:0,attack:false};areaCamera.clear();endHeldAttack();
-    sendAction('stopRevive').catch(()=>{});sendMovement(true);
+    releaseControls();
   }
 }
 window.addEventListener('resize',updateLandscape);
 coarseScreen.addEventListener('change',updateLandscape);
+document.addEventListener('pointerdown',e=>{document.body.dataset.inputProfile=e.pointerType==='touch'||e.pointerType==='pen'?'touch':'pointer';},{passive:true,capture:true});
+document.addEventListener('keydown',e=>{if(!e.target.closest('input,textarea,select'))document.body.dataset.inputProfile='pointer';},{capture:true});
+window.addEventListener('orientationchange',()=>{releaseControls();updateLandscape();});
 function enemyAtPointer(event, radius=40) {
   const rect=event.currentTarget.getBoundingClientRect();
   const point=areaCamera.worldPoint(event.clientX,event.clientY,rect);
@@ -135,12 +177,13 @@ function enemyAtPointer(event, radius=40) {
 const areaViewButton=$('#areaViewButton');
 areaViewButton.addEventListener('pointerdown',event=>{
   if(event.button!==0)return;
-  event.preventDefault();areaViewButton.setPointerCapture(event.pointerId);
+  event.preventDefault();areaViewButton.setPointerCapture(event.pointerId);(areaViewButton._heldPointers||=new Set()).add(event.pointerId);
   areaCamera.press(performance.now(),event.pointerId);
 });
-areaViewButton.addEventListener('pointerup',event=>{event.preventDefault();areaCamera.release(performance.now(),event.pointerId);});
+areaViewButton.addEventListener('pointerup',event=>{event.preventDefault();areaViewButton._heldPointers?.delete(event.pointerId);areaCamera.release(performance.now(),event.pointerId);});
 areaViewButton.addEventListener('pointercancel',()=>areaCamera.clear());
 areaViewButton.addEventListener('lostpointercapture',event=>{
+  areaViewButton._heldPointers?.delete(event.pointerId);
   // Normal pointerup already releases it; an interrupted hold must end too.
   areaCamera.release(performance.now(),event.pointerId);
 });
@@ -207,6 +250,7 @@ function drawVillageProp(ctx, room, kind, x, y, width, height, variant = 0) {
   return true;
 }
 function drawVillageInteriorArt(ctx, room, house, w, h) {
+  if(window.GauntletCampaignScenery?.interior(ctx,room,house,w,h))return true;
   const upstairs = house?.service === "innkeeper" && room.innFloor === 2;
   const image = villageImage(room, upstairs ? "upstairs" : "interiors");
   if (!image) return false;
@@ -238,9 +282,14 @@ function importedSprite(role) {
 
 function drawImportedHero(ctx, player, x, y, spriteKey = player.class) {
   if(spriteKey===player.class&&window.GauntletAscendedSprites?.hero(ctx,player,x,y))return true;
+  if(spriteKey===player.class&&window.GauntletHeroReactions?.hero(ctx,player,x,y))return true;
   if (spriteKey === player.class && window.GauntletAbilityAnimations?.hero(ctx, player, x, y)) return true;
   const sprite = heroSprites[spriteKey] || importedSprite(spriteKey);
-  if (!sprite?.sheet || !sprite.image.complete || !sprite.image.naturalWidth) return false;
+  if (!sprite) return false;
+  if (!sprite.sheet || !sprite.image.complete || !sprite.image.naturalWidth) {
+    // A known sprite owns this actor while loading; do not flash a geometric body.
+    ctx.save(); ctx.fillStyle='#b7b5a26b'; ctx.fillRect(x-2,y-12,4,4); ctx.restore(); return true;
+  }
   const sheet = sprite.sheet;
   const directionIndex = (Math.round((Math.PI / 2 - Math.atan2(player.facingY ?? 1, player.facingX ?? 0)) / (Math.PI / 4)) + 8) % 8;
   const row = sheet.rows.find((entry) => entry.type === "animation" && entry.direction === SPRITE_DIRECTIONS[directionIndex]);
@@ -268,7 +317,7 @@ function drawImportedHero(ctx, player, x, y, spriteKey = player.class) {
 }
 
 async function api(path, data, recoveryOverride, options={}) {
-  const metricStart=Date.now();
+  const metricStart=performance.now(),metricGeneration=window.GauntletDiagnostics?.generation();
   if (window.location.protocol === "file:") {
     throw new Error("Open the game at http://127.0.0.1:8000/ with server.py running. This file preview cannot connect to the game server.");
   }
@@ -292,7 +341,7 @@ async function api(path, data, recoveryOverride, options={}) {
   } catch (error) {
     if (error.name === 'AbortError') throw new Error('Connection timed out. Reconnecting…');
     throw error;
-  } finally { clearTimeout(timeout);options.signal?.removeEventListener('abort',abort);window.GauntletDiagnostics?.add(data?.action==='input'?'inputAckMs':path.startsWith('/api/state')?'stateRequestMs':'actionRequestMs',Date.now()-metricStart); }
+  } finally { clearTimeout(timeout);options.signal?.removeEventListener('abort',abort);window.GauntletDiagnostics?.add(data?.action==='input'?'inputAckMs':path.startsWith('/api/state')?'stateRequestMs':'actionRequestMs',performance.now()-metricStart,metricGeneration); }
 }
 function sendAction(action, extra) {
   if (!session) return Promise.resolve();
@@ -310,7 +359,15 @@ function saveSession(value) {
   refresh();
 }
 function resetTransientState(){
+  window.GauntletDiagnostics?.reset();
+  window.resetFlowMessages?.();
+  window.resetProgressionUI?.();
   window.GauntletChapter?.reset();
+  window.GauntletCampaign?.reset();
+  window.GauntletCampaignArt?.reset();
+  window.GauntletCampaignEffects?.reset();
+  window.GauntletRecap?.reset();
+  window.resetRewardInbox?.();
   pollGeneration++;clearTimeout(pollTimer);pollAbort?.abort();pollAbort=null;polling=false;
   inputTransport.session(null);pendingInput=null;inputBusy=false;inputSequence=0;
   keys.clear();touchDirections.clear();moveState={x:0,y:0,attack:false};attackPointerId=null;localTarget=null;
@@ -320,7 +377,7 @@ function resetTransientState(){
   $('#chatPanel').classList.remove('hud-open');$('#pouchPanel').classList.remove('hud-open');
   $('#toggleChat').textContent='Chat';$('#togglePouch').textContent='Pouch';
   lastPrivateNotice='';privateNoticeUntil=0;lastPuzzleId=lastPuzzleClue='';lastSentMove='';lastInputSent=0;
-  interactBusy=false;interactionOwner=null;actionFeedback='';actionFeedbackUntil=0;revivePointerHandled=false;reviveHoldToken=null;
+  interactBusy=false;interactionOwner=null;combatNoticeUntil=0;revivePointerHandled=false;reviveHoldToken=null;
   window.GauntletAudio?.reset();window.resetAdventurePanels?.();window.resetHeroSkills?.();
   document.querySelectorAll('dialog[open]').forEach(d=>d.close());latestRoom=null;
 }
@@ -332,9 +389,20 @@ function enterLobby() {
   $("#connection").className = "connection connecting";
 }
 let combatNoticeUntil = 0;
-function notice(element, message) {
+const noticeTimers=new WeakMap();
+function notice(element, message, tone='info') {
+  clearTimeout(noticeTimers.get(element));
+  element.dataset.tone=tone;
   element.textContent = message;
-  if (element.id === "combatNotice") combatNoticeUntil = Date.now() + 3500;
+  if(message&&tone==='success'){const owner=session;noticeTimers.set(element,setTimeout(()=>{if(session===owner&&element.textContent===message&&element.dataset.tone==='success')element.textContent='';},2600));}
+  if (element.id === "combatNotice") combatNoticeUntil = message ? Date.now() + 3500 : 0;
+}
+function combatContext(message) {
+  const element=$('#combatNotice');
+  // Context is polled; a rejection/result belongs to the most recent action.
+  // Do not erase it every50ms or extend contextual text's lifetime forever.
+  if(element.textContent && Date.now()<combatNoticeUntil)return;
+  element.textContent=message;element.dataset.tone='info';
 }
 
 $("#createForm").addEventListener("submit", async (event) => {
@@ -356,22 +424,17 @@ $("#joinForm").addEventListener("submit", async (event) => {
 });
 function renderKeyBindings() {
   const fields = $("#keyBindingFields");
-  fields.replaceChildren();
   Object.entries(BINDING_LABELS).forEach(([action, label]) => {
-    const row = document.createElement("div");
-    row.className = "key-binding-row";
-    const name = document.createElement("span"); name.textContent = label;
-    const button = document.createElement("button"); button.type = "button"; button.className = "secondary key-bind";
-    button.dataset.bind = action;
-    button.textContent = bindingCapture === action ? "Press a key…" : String(keyBindings[action] || DEFAULT_BINDINGS[action]).toUpperCase();
+    let button=fields.querySelector('[data-bind="'+action+'"]');
+    if(!button){const row=document.createElement('div');row.className='key-binding-row';const name=document.createElement('span');name.textContent=label;button=document.createElement('button');button.type='button';button.className='secondary key-bind';button.dataset.bind=action;row.append(name,button);fields.append(row);}
+    button.textContent = bindingCapture === action ? "Press a key…" : keyLabel(action);
     button.setAttribute("aria-label", label + " key, currently " + button.textContent);
-    row.append(name, button); fields.append(row);
   });
-  $("#controlHint").textContent = "Move: WASD · Dash: Space (5s) · Light attack: Left click · Special: " + String(keyBindings.special).toUpperCase() +
-    " · Ultimate: " + String(keyBindings.ultimate).toUpperCase();
+  $("#controlHint").textContent = 'Move: '+['up','left','down','right'].map(keyLabel).join('/')+' · Dash: '+keyLabel('dash')+' (5s) · Hold left click: basic · Actives: '+['special','active2','active3'].map(keyLabel).join('/')+' · Ultimate: '+keyLabel('ultimate');
 }
 $("#openSettings").addEventListener("click", () => { $("#keySettings").classList.remove("hidden"); renderKeyBindings(); });
 $("#closeSettings").addEventListener("click", () => { bindingCapture = null; $("#keySettings").classList.add("hidden"); });
+$('#settingsDialog').addEventListener('close',()=>{bindingCapture=null;});
 $("#resetBindings").addEventListener("click", () => {
   keyBindings = Object.assign({}, DEFAULT_BINDINGS);
   localStorage.setItem("gauntlet-keybindings", JSON.stringify(keyBindings));
@@ -433,13 +496,14 @@ async function updateRunOptions() {
   if (!latestRoom || latestRoom.you !== latestRoom.host || runOptionsBusy) return;
   const difficulty = $("#difficultyChoice").value, companion = $("#npcCompanion").checked, stages=Number($('#lengthChoice').value);
   runOptionsBusy = true; $("#runOptions").disabled = true;
-  try { await sendAction("runOptions", { difficulty, companion, stages, mode: $('#modeChoice').value }); notice($("#roomNotice"), ""); }
+  try { await sendAction("runOptions", { difficulty, companion, stages, mode: $('#modeChoice').value,challenge:$('#challengeChoice').value,challengeSeed:Number($('#challengeSeed').value) }); notice($("#roomNotice"), ""); }
   catch (error) { notice($("#roomNotice"), error.message); }
   finally { runOptionsBusy = false; refresh(); }
 }
 $("#difficultyChoice").addEventListener("change", updateRunOptions);
 $('#modeChoice').addEventListener('change', updateRunOptions);
 $('#lengthChoice').addEventListener('change', updateRunOptions);
+$('#challengeChoice').addEventListener('change',updateRunOptions);$('#challengeSeed').addEventListener('change',updateRunOptions);
 $("#npcCompanion").addEventListener("change", updateRunOptions);
 $("#startRun").addEventListener("click", async () => {
   try { await sendAction("start"); refresh(); }
@@ -465,7 +529,7 @@ $("#abilityButtons").addEventListener("click", async (event) => {
   const button = event.target.closest("[data-ability-slot]");
   if (!button || button.disabled) return;
   try { await sendAction("ability", { slot: Number(button.dataset.abilitySlot) }); notice($("#combatNotice"), ""); refresh(); }
-  catch (error) { notice($("#combatNotice"), error.message); }
+  catch (error) { notice($("#combatNotice"), error.message,'error'); }
 });
 async function triggerAbility(category) {
   if (!latestRoom || latestRoom.phase !== "combat") return;
@@ -474,7 +538,7 @@ async function triggerAbility(category) {
   if (index < 0) return notice($("#combatNotice"), latestRoom.adventure?'Open Skills to unlock and equip this action slot in Oakvale.':'Choose this ability in your class loadout first.');
   if (latestRoom.abilitySlots[index].summonAlive) return notice($("#combatNotice"), latestRoom.abilitySlots[index].name + " is still alive.");
   try { await sendAction("ability", { slot: index + 1 }); notice($("#combatNotice"), ""); refresh(); }
-  catch (error) { notice($("#combatNotice"), error.message); }
+  catch (error) { notice($("#combatNotice"), error.message,'error'); }
 }
 async function triggerDash() {
   if (!latestRoom) return;
@@ -544,6 +608,8 @@ $("#expandPouch").addEventListener("click", () => {
   $("#expandPouch").setAttribute("aria-expanded", String(expanded));
 });
 $("#shopStock").addEventListener("click", async (event) => {
+  const upgrade=event.target.closest('[data-pouch-upgrade]');
+  if(upgrade){if(upgrade.disabled)return;const owner=session;upgrade.disabled=true;try{await sendAction('pouchUpgrade',{expectedLevel:Number(upgrade.dataset.pouchUpgrade)});if(owner===session){notice($('#townNotice'),'Pouch expanded.','success');await refresh();}}catch(e){if(owner===session)notice($('#townNotice'),e.message,'error');}finally{if(owner===session){lastTownSignature='';renderTown(latestRoom);}}return;}
   const button = event.target.closest("[data-buy]");
   if (!button) return;
   try { await sendAction("shopBuy", { item: button.dataset.buy }); refresh(); }
@@ -757,7 +823,7 @@ function renderAbilityChoices(room) {
     decorateAbilityChoice(button.querySelector("b"),ability);
     button.querySelector(":scope > span").textContent = ability.description;
     button.querySelector("small").textContent = ability.attackType === "light" ? "Left click · " + ability.cooldown + "s cooldown" :
-      String(keyBindings[ability.attackType]).toUpperCase() + " · " + ability.cooldown + (ability.kind === "summon" ? "s recharge after death" : "s cooldown") + (ability.manaCost ? " · " + ability.manaCost + " MP" : "");
+      keyLabel(ability.attackType) + " · " + ability.cooldown + (ability.kind === "summon" ? "s recharge after death" : "s cooldown") + (ability.manaCost ? " · " + ability.manaCost + " MP" : "");
     choices.append(button);
   });
   $("#abilityNotice").textContent = (room.selectedAbilities.length || 0) + " of 3 selected. Choose one Light, one Special, and one Ultimate.";
@@ -816,7 +882,10 @@ function animateAbilityRings(now) {
     const progress=alive?0:confirmedReady?1:Math.min(.995,Math.max(0,1-elapsedRemaining/total));
     ring.style.strokeDashoffset=String(100*(1-progress));
     button.dataset.charge=ready?"ready":alive?"active":"charging";
-    const key=ability.attackType==="light"?"Hold":String(keyBindings[ability.barSlot==='active1'?'special':ability.barSlot || ability.attackType]).toUpperCase();
+    if(ready&&record.uiReady===false&&!window.GauntletAudio?.visualSettings?.()?.reduced){button.dataset.justReady='true';setTimeout(()=>{delete button.dataset.justReady;},480);}record.uiReady=ready;
+    button.dataset.state=alive?'summon-active':!available?'unavailable':!enoughMana?'insufficient-mana':confirmedReady?'ready':'cooldown';
+    button.dataset.resourceScope='personal';button.dataset.uiAction='combat';
+    const key=ability.attackType==="light"?"Hold":keyLabel(ability.barSlot==='active1'?'special':ability.barSlot || ability.attackType);
     const state=alive?"Active":!available?"Unavailable":!enoughMana?"Need mana":confirmedReady?"Ready":"Charging";
     status.textContent=key+(alive?" · Active":!enoughMana?" · Need MP":ability.manaCost?" · "+ability.manaCost+" MP":"");
     button.setAttribute("aria-label",ability.name+" · "+state+" · "+key+(ability.manaCost?" · "+ability.manaCost+" mana":""));
@@ -854,10 +923,14 @@ function renderClasses(room) {
     $('#lengthChoice').value=String(room.totalStages || 25);
     $("#npcCompanion").checked = Boolean(room.npcCompanion);
     $('#modeChoice').value = room.mode || 'gauntlet';
+    $('#challengeChoice').value=room.challengeMode||'classic';
+    if(document.activeElement!==$('#challengeSeed'))$('#challengeSeed').value=room.challengeSeed||0;
   }
   $("#runOptions").disabled = room.phase !== "lobby" || room.you !== room.host || runOptionsBusy;
   $('#testerModeHint').classList.toggle('hidden',!room.testerMode);
   $('#lengthOption').classList.toggle('hidden', room.mode === 'adventure');
+  for(const id of ['challengeOption','challengeSeedOption','gauntletChallengeHint'])$('#'+id).classList.toggle('hidden',room.mode==='adventure');
+  $('#gauntletChallengeHint').textContent=room.gauntletChallenge?room.gauntletChallenge.name+' · '+room.gauntletChallenge.rules+' Seed '+room.gauntletChallenge.seed+'.':'Classic rules. Seeded modifiers vary between faster fragile packs and lower combat mana regeneration. The seed reproduces modifier selection; ordinary campaign randomness remains.';
   $('#adventureModeHint').classList.toggle('hidden', room.mode !== 'adventure');
   if (room.mode === 'adventure') $('#testerModeHint').classList.add('hidden');
 }
@@ -905,9 +978,11 @@ function renderChat(room) {
   box.scrollTop = box.scrollHeight;
 }
 function renderRoom(room, roundTrip = 0) {
+  $('#gauntletModifier').classList.toggle('hidden',!room.gauntletChallenge||room.mode==='adventure'||room.phase==='lobby');
+  $('#gauntletModifierName').textContent=room.gauntletChallenge?.name||'';$('#gauntletModifierRules').textContent=room.gauntletChallenge?.rules||'';
   document.body.dataset.visualScene=room.phase;
   window.GauntletStateCache?.merge(room,latestRoom);
-  const renderStarted=performance.now();window.GauntletDiagnostics?.add('stateAgeMs',(room.movement?.age||0)*1000);
+  const renderStarted=performance.now();window.GauntletDiagnostics?.observeState(room);
   if(latestRoom?.movement?.scene && room.movement?.scene!==latestRoom.movement.scene){releaseControls();inputTransport.cancel();localMotion.reset?.();}
   inputTransport.session(session,room.movement?.sequence||0);
   inputTransport.observe?.(room.movement||{});
@@ -918,7 +993,13 @@ function renderRoom(room, roundTrip = 0) {
   window.GauntletFeedback?.observe(room);
   window.GauntletDungeonSprites?.observe(room);
   window.GauntletAscendedSprites?.observe(room);
+  window.GauntletHeroReactions?.observe(room);
+  window.GauntletAscendedSummons?.observe(room);
   window.GauntletCombatVisuals?.observe(room);
+  window.rememberMenuCard?.(room);
+  const connectionWarning=$('#connectionNotice');if(connectionWarning)connectionWarning.textContent='';
+  const equipmentHint=$('#equipmentShortcut');if(equipmentHint)equipmentHint.classList.toggle('hidden',room.toolSlots.every(Boolean)&&room.utilitySlots.every(Boolean));
+  document.body.dataset.mode=room.mode;$('#runeCount').dataset.resourceScope='shared';
   // Repair notices still arriving from a process started before the UTF-8 fix.
   if (room.privateNotice) room.privateNotice=room.privateNotice.replace(/\u00e2\u20ac\u201d/g,'—');
   localMotion.remember(currentMovement(), performance.now());
@@ -974,7 +1055,8 @@ function renderRoom(room, roundTrip = 0) {
   $("#runeCount").textContent = room.runes + " RUNES";
   const own = room.players.find((player) => player.id === room.you);
   $("#hpLabel").textContent = own ? "HP " + own.hp + " / " + own.maxHp : "HP";
-  $('#barrierLabel').textContent=own?.barrier?'Barrier '+own.barrier:'';$('#barrierLabel').classList.toggle('hidden',!own?.barrier);
+  const protection=window.GauntletReleaseVisuals?.protection(own)||{label:own?.barrier?'Barrier '+own.barrier:'',description:''};
+  $('#barrierLabel').textContent=protection.label;$('#barrierLabel').title=protection.description;$('#barrierLabel').classList.toggle('hidden',!protection.label);
   $("#hpFill").style.width = own && own.maxHp ? Math.max(0, Math.min(100, own.hp / own.maxHp * 100)) + "%" : "0%";
   $('.health-meter').classList.toggle('health-critical',Boolean(own && own.hp/own.maxHp<.3));
   $("#manaLabel").textContent = "MANA " + Math.floor(room.mana) + " / " + room.maxMana;
@@ -986,10 +1068,10 @@ function renderRoom(room, roundTrip = 0) {
   $("#attackButton").disabled = room.phase !== "combat" || Boolean(room.waveCountdown) || own?.status !== "alive";
   $("#dashButton").classList.toggle("hidden", !room.adventure && room.phase !== "combat");
   $("#dashButton").disabled = Boolean(room.dashBlockedReason) || Boolean(room.dashCooldown) || own?.status !== 'alive';
-  $("#dashButton").textContent = room.dashBlockedReason ? 'Dash unavailable' : room.dashCooldown ? "Dash · " + room.dashCooldown + "s" : "Space · Dash";
+  $("#dashButton").textContent = room.dashBlockedReason ? 'Dash unavailable' : room.dashCooldown ? "Dash · " + room.dashCooldown + "s" : keyLabel('dash')+' · Dash';
   $("#dashButton").style.setProperty('--dash-ready', (100*(1-Math.min(1,(room.dashCooldownRemaining ?? room.dashCooldown)/(room.dashCooldownDuration || 5))))+'%');
   $("#dashButton").title=room.dashBlockedReason||'Dash in your movement direction';
-  $("#dashButton").setAttribute('aria-label', room.dashBlockedReason ? room.dashBlockedReason : room.dashCooldown ? 'Dash recharging: '+room.dashCooldown+' seconds' : 'Dash ready. Space or tap.');
+  $("#dashButton").setAttribute('aria-label', room.dashBlockedReason ? room.dashBlockedReason : room.dashCooldown ? 'Dash recharging: '+room.dashCooldown+' seconds' : 'Dash ready. '+keyLabel('dash')+' or tap.');
   $("#reviveButton").classList.toggle("hidden", room.phase !== "combat");
   const interactive = ["town", "puzzle", "chest", "peace"].includes(room.phase);
   $("#interactButton").classList.toggle("hidden", !interactive);
@@ -1030,14 +1112,15 @@ function renderRoom(room, roundTrip = 0) {
   }
   $(".arena-controls").classList.toggle("hidden", defeatActive || victoryActive);
   if (puzzleActive) renderPuzzle(room);
-  if (room.phase === "combat" && Date.now() > combatNoticeUntil) notice($("#combatNotice"), "");
-  else if (room.phase === "routes") notice($("#combatNotice"), room.yourRouteVote ? "Waiting at the trail edge. Everyone must reach a left or right exit." : "Follow the fork left or right, then walk all the way to the screen edge to choose.");
-  else if (room.phase === "stage_exit") notice($("#combatNotice"), "↑ " + room.stageExitReady + " / " + (room.activeVoterCount ?? room.activePartySize ?? room.players.length));
-  else if (room.phase === "chest") notice($("#combatNotice"), room.chestStatus === "nearby" ? "Press " + String(keyBindings.revive).toUpperCase() + " to open the chest." : "Walk to the chest in the center and press " + String(keyBindings.revive).toUpperCase() + ".");
-  else if (room.phase === "town") notice($("#combatNotice"), lockedVillageGate ? "Every present hunter must speak to the innkeeper before leaving this village." : room.townInterior ? (room.nearbyHouse ? "Press E at the door to return to the village." : room.nearbyNpc ? "Press E to interact with " + room.nearbyNpc.name + "." : room.innFloor === 2 ? "Rest at a bed in an unlocked room to set the party checkpoint." : "Find the shopkeeper inside, or return through the door.") : room.nearbyHouse ? "Press E to enter " + room.nearbyHouse.name + "." : room.nearbyNpc && room.nearbyNpc.id === "gate" ? "Gather at the exit and press E to vote. Everyone must be ready." : room.firstTownTrainingRequired ? "Speak to the innkeeper to discover hunter training. Rest upstairs to save your run." : "Visit the Inn, Store, Alchemy Lab, or Guild. Gather at the south gate when everyone is ready to leave.");
-  else if (room.phase === "peace") notice($("#combatNotice"), room.questAccepted ? "Quest accepted · gather at the northern exit." : "Speak to the wounded hunter beside the road.");
-  else if (room.phase === "puzzle") notice($("#combatNotice"), room.puzzle?.cooperative ? "Your totem holds a teammate's answer. Share clues, then choose your runes together." : "Find your totem, then stand on the rune it describes.");
+  if (room.phase === "combat" && Date.now() > combatNoticeUntil) combatContext("");
+  else if (room.phase === "routes") combatContext(room.yourRouteVote ? "Waiting at the trail edge. Everyone must reach a left or right exit." : "Follow the fork left or right, then walk all the way to the screen edge to choose.");
+  else if (room.phase === "stage_exit") combatContext("↑ " + room.stageExitReady + " / " + (room.activeVoterCount ?? room.activePartySize ?? room.players.length));
+  else if (room.phase === "chest") combatContext(room.chestStatus === "nearby" ? "Press " + keyLabel('revive') + " to open the chest." : "Walk to the chest in the center and press " + keyLabel('revive') + ".");
+  else if (room.phase === "town") combatContext(lockedVillageGate ? "Every present hunter must speak to the innkeeper before leaving this village." : room.townInterior ? (room.nearbyHouse ? "Press E at the door to return to the village." : room.nearbyNpc ? "Press E to interact with " + room.nearbyNpc.name + "." : room.innFloor === 2 ? "Rest at a bed in an unlocked room to set the party checkpoint." : "Find the shopkeeper inside, or return through the door.") : room.nearbyHouse ? "Press E to enter " + room.nearbyHouse.name + "." : room.nearbyNpc && room.nearbyNpc.id === "gate" ? "Gather at the exit and press E to vote. Everyone must be ready." : room.firstTownTrainingRequired ? "Speak to the innkeeper to discover hunter training. Rest upstairs to save your run." : "Visit the Inn, Store, Alchemy Lab, or Guild. Gather at the south gate when everyone is ready to leave.");
+  else if (room.phase === "peace") combatContext(room.questAccepted ? "Quest accepted · gather at the northern exit." : "Speak to the wounded hunter beside the road.");
+  else if (room.phase === "puzzle") combatContext(room.puzzle?.cooperative ? "Your totem holds a teammate's answer. Share clues, then choose your runes together." : "Find your totem, then stand on the rune it describes.");
   if (typeof renderAdventure === 'function') renderAdventure(room);
+  window.GauntletCampaign?.render(room);
   window.renderHeroSkills?.(room);
   renderInteraction(room);
   window.GauntletDiagnostics?.add('stateRenderMs',performance.now()-renderStarted);
@@ -1046,6 +1129,7 @@ function updateMotionTracks(room) {
   window.GauntletCombatEnvironment?.observe(room);
   window.GauntletProjectiles?.observe(room);
   window.GauntletAbilityAnimations?.observe(room);
+  window.GauntletCampaignArt?.observe(room);
   const scene = [room.code, room.adventure?.area, room.stage, room.phase, room.townInterior, room.innFloor, room.puzzle?.id].join(":");
   const now = performance.now();
   if (room.code !== damageRoom) { damageTracks.clear(); damageRoom = room.code; }
@@ -1274,6 +1358,7 @@ function renderUtilityHotbar(room) {
   room.utilitySlots.forEach((item, index) => {
     const button = document.createElement("button");
     button.className = "utility-slot";
+    button.dataset.empty=String(!item);button.dataset.resourceScope='personal';
     button.setAttribute("aria-label", "Utility " + (index + 1) + ": " + (item ? item.name : "empty"));
     button.disabled = !item || !canUseUtility(room, item, own);
     if (item) {
@@ -1304,8 +1389,10 @@ function renderToolHotbar(room) {
   [$("#toolLeft"), $("#toolRight")].forEach((side, index) => {
     side.replaceChildren();
     const item = room.toolSlots[index];
+    side.dataset.empty=String(!item);
     const button = document.createElement("button");
     button.className = "tool-slot";
+    button.dataset.empty=String(!item);button.dataset.resourceScope='personal';
     button.type = "button";
     button.setAttribute("aria-label", "Tool " + (index + 1) + ": " + (item ? item.name : "empty") + ". Open pouch.");
     button.title = (item ? item.name + " · " + item.description : "Empty tool slot") + " · Open pouch to change tools";
@@ -1360,7 +1447,7 @@ function renderRoutes(room) {
 function renderTown(room) {
   const ownPlayer = room.players.find(player => player.id === room.you);
   refreshUtilityButtons($("#pouchItems"), room, ownPlayer);
-  const signature = JSON.stringify([room.town, room.runes, room.inventory, room.utilitySlots, room.toolSlots, room.shopStock, room.you === room.host]);
+  const signature = JSON.stringify([room.town, room.runes, room.inventory, room.utilitySlots, room.toolSlots, room.shopStock, room.pouchUpgrade, room.you === room.host]);
   if (signature === lastTownSignature) return;
   lastTownSignature = signature;
   $("#townName").textContent = room.town + " · Inn & Market";
@@ -1385,6 +1472,7 @@ function renderTown(room) {
     stock.append(card);
   });
   if (!room.shopStock.length) stock.textContent = "The merchant is sold out.";
+  if(room.pouchUpgrade){const u=room.pouchUpgrade,card=document.createElement('div');card.className='town-item pouch-upgrade';const text=document.createElement('p');text.textContent=u.nextCapacity?'Pouch expansion · '+u.capacity+' → '+u.nextCapacity+' spaces · '+u.cost+' shared Runes':'Pouch fully expanded · '+u.capacity+' spaces';const buy=document.createElement('button');buy.className='secondary';buy.textContent='Expand pouch';buy.dataset.pouchUpgrade=u.level;buy.disabled=!u.nextCapacity||room.runes<u.cost;buy.title='Personal storage; paid from the shared Rune pool.';card.append(text,buy);stock.prepend(card);}
   const pouch = $("#pouchItems");
   const own = room.players.find((player) => player.id === room.you);
   pouch.replaceChildren();
@@ -1450,21 +1538,27 @@ function showPuzzleDialogue() {
     $("#puzzlePanel").classList.add("hidden");
   }, 3000);
 }
-let interactBusy=false,interactionOwner=null,revivePointerHandled=false,actionFeedback='',actionFeedbackUntil=0;
-function interactionFeedback(text){actionFeedback=text;actionFeedbackUntil=Date.now()+3000;notice($('#combatNotice'),text);}
+let interactBusy=false,interactionOwner=null,revivePointerHandled=false;
+function interactionFeedback(text){notice($('#combatNotice'),text);}
 function renderInteraction(room){
   if(room.interaction===undefined)return;
   const target=room.interaction,button=$('#interactButton');
   document.body.classList.toggle('has-interaction',Boolean(target));
   button.classList.toggle('hidden',!target);button.disabled=Boolean(interactBusy || target&&!target.available);
-  if(target){button.textContent=interactBusy?'Interacting…':(target.hold?'Hold ':'')+String(keyBindings.revive).toUpperCase()+' · '+target.label;button.title=target.reason||'Within '+target.range+'px · '+target.distance+'px away';}
+  if(target){button.textContent=interactBusy?'Interacting…':(target.hold?'Hold ':'')+keyLabel('revive')+' · '+target.label;button.title=target.reason||'Within '+target.range+'px · '+target.distance+'px away';}
+  button.dataset.state=interactBusy?'pending':target?.available?'ready':'locked';button.dataset.targetKind=target?.kind||'';
   $('#reviveButton').classList.add('hidden');
-  if(Date.now()<actionFeedbackUntil)notice($('#combatNotice'),actionFeedback);
-  else if(target?.reason)notice($('#combatNotice'),target.reason);
+  if(target?.reason)combatContext(target.reason);
 }
 function releaseControls(){
+  const held=attackPointerId;
   keys.clear();moveState={x:0,y:0,attack:false};touchDirections.clear();attackPointerId=null;
+  for(const el of document.querySelectorAll('#world,#attackButton,[data-move],#interactButton,#areaViewButton')){
+    for(const id of [held,...(el._heldPointers||[])])if(id!==null&&id!==undefined&&el.hasPointerCapture?.(id))el.releasePointerCapture(id);
+    el._heldPointers?.clear();
+  }
   sendMovement(true);stopHeldRevive();
+  areaCamera.clear();
 }
 let reviveHoldToken=null;
 function stopHeldRevive(){const token=reviveHoldToken;reviveHoldToken=null;sendAction('stopRevive',{holdToken:token}).catch(()=>{});}
@@ -1540,7 +1634,7 @@ function refresh() {
       $("#connection").textContent = "DISCONNECTED";
       $("#connection").className = "connection offline";
       notice($("#roomNotice"), "Connection lost. Reconnecting automatically; saved runs resume at the latest inn after a server restart.");
-      notice($("#combatNotice"), "Connection lost · reconnecting…");
+      notice($('#connectionNotice')||$("#combatNotice"), "Connection lost · reconnecting…",'error');
     })
     .finally(() => { if(generation===pollGeneration && session===requestedSession){polling = false;pollTimer=setTimeout(refresh, Math.max(0, 50 - (performance.now() - requestedAt)));} });
 }
@@ -1572,24 +1666,25 @@ function flushMovement() {
 window.addEventListener("keydown", (event) => {
   if (!event.key) return;
   if(landscapeBlocked)return;
-  if (document.querySelector("dialog[open],.game-menu[open]")) return;
   const key = event.key.toLowerCase();
   if (bindingCapture) {
     event.preventDefault();
-    if (/^[1-3]$/.test(key) || event.code === "Space" || key==='v') {
-      notice($("#entryNotice"), "Space is reserved for dash; 1–3 for utilities; V for area view.");
+    if(key==='escape'){bindingCapture=null;renderKeyBindings();return;}
+    if (/^[1-3]$/.test(key) || key==='v' || key==='tab') {
+      notice($("#bindingNotice"), "1–3 are reserved for utilities, V for area view and Tab for targeting.");
       return;
     }
     if ([...Object.entries(keyBindings)].some(([action, bound]) => action !== bindingCapture && String(bound).toLowerCase() === key)) {
-      notice($("#entryNotice"), "Each action needs its own key. Choose another key.");
+      notice($("#bindingNotice"), "Each action needs its own key. Choose another key.");
       return;
     }
     keyBindings[bindingCapture] = key;
     localStorage.setItem("gauntlet-keybindings", JSON.stringify(keyBindings));
-    notice($("#entryNotice"), "Keybinding saved.");
+    notice($("#bindingNotice"), "Keybinding saved.",'success');
     bindingCapture = null; renderKeyBindings();
     return;
   }
+  if (document.querySelector("dialog[open],.game-menu[open]")) return;
   if (event.target.closest("input,textarea,select")) return;
   if(key==='v' && latestRoom && window.GauntletCamera.scrolls(latestRoom)) {
     event.preventDefault();if(!event.repeat)areaCamera.press(performance.now());return;
@@ -1607,7 +1702,7 @@ window.addEventListener("keydown", (event) => {
     if (!event.repeat) triggerUtility(Number(/^(Digit|Numpad)[1-3]$/.test(event.code) ? event.code.slice(-1) : key) - 1);
     return;
   }
-  if (event.code === "Space") {
+  if (key === (keyBindings.dash ?? ' ')) {
     event.preventDefault();
     if (!event.repeat) triggerDash();
     return;
@@ -1638,8 +1733,8 @@ const touchDirections=new Map();
 function updateTouchDirections(){moveState.x=Math.max(-1,Math.min(1,[...touchDirections.values()].reduce((s,v)=>s+v[0],0)));moveState.y=Math.max(-1,Math.min(1,[...touchDirections.values()].reduce((s,v)=>s+v[1],0)));sendMovement(true);}
 document.querySelectorAll("[data-move]").forEach((button) => {
   const vector = button.dataset.move.split(",").map(Number);
-  const start = (event) => { event.preventDefault();button.setPointerCapture?.(event.pointerId);touchDirections.set(event.pointerId,vector);updateTouchDirections(); };
-  const stop = (event) => { event.preventDefault();touchDirections.delete(event.pointerId);updateTouchDirections(); };
+  const start = (event) => { if(document.querySelector('dialog[open]')||landscapeBlocked)return;event.preventDefault();button.setPointerCapture?.(event.pointerId);(button._heldPointers||=new Set()).add(event.pointerId);touchDirections.set(event.pointerId,vector);updateTouchDirections(); };
+  const stop = (event) => { event.preventDefault();button._heldPointers?.delete(event.pointerId);touchDirections.delete(event.pointerId);updateTouchDirections(); };
   button.addEventListener("pointerdown", start);
   button.addEventListener("pointerup", stop);
   button.addEventListener("pointerleave", event=>{if(!button.hasPointerCapture?.(event.pointerId))stop(event);});
@@ -1648,14 +1743,16 @@ document.querySelectorAll("[data-move]").forEach((button) => {
 });
 $('#interactButton').addEventListener('pointerdown',event=>{
   if(latestRoom?.interaction?.kind!=='revive')return;
-  event.preventDefault();revivePointerHandled=true;event.currentTarget.setPointerCapture?.(event.pointerId);
+  event.preventDefault();revivePointerHandled=true;event.currentTarget.setPointerCapture?.(event.pointerId);(event.currentTarget._heldPointers||=new Set()).add(event.pointerId);
   interactWithWorld().catch(error=>interactionFeedback(error.message));
 });
-for(const type of ['pointerup','pointercancel','lostpointercapture'])$('#interactButton').addEventListener(type,()=>{if(revivePointerHandled)stopHeldRevive();});
-document.querySelectorAll('dialog').forEach(dialog=>{
-  new MutationObserver(()=>releaseControls()).observe(dialog,{attributes:true,attributeFilter:['open']});
-  dialog.addEventListener('close',releaseControls);
-});
+for(const type of ['pointerup','pointercancel','lostpointercapture'])$('#interactButton').addEventListener(type,event=>{event.currentTarget._heldPointers?.delete(event.pointerId);if(revivePointerHandled)stopHeldRevive();});
+// One observer covers later-created reward/assignment dialogs too.
+new MutationObserver(records=>{if(records.some(r=>r.target.tagName==='DIALOG'))releaseControls();})
+  .observe(document.body,{subtree:true,attributes:true,attributeFilter:['open']});
+document.addEventListener('focusin',e=>{if(e.target.dataset)e.target.dataset.focused='true';});
+document.addEventListener('focusout',e=>{if(e.target.dataset)delete e.target.dataset.focused;});
+document.querySelectorAll('button,a,summary').forEach(e=>{e.dataset.uiAction=e.classList.contains('primary')?'primary':e.tagName==='SUMMARY'?'navigation':'secondary';});
 function drawRegionScenery(ctx, room, theme, w, h) {
   let seed = 2166136261;
   const seedText = [room.code, room.stage, room.region].join(":");
@@ -1754,13 +1851,13 @@ function drawTownObjects(ctx, room, w, h) {
   const houses = room.townHouses || [];
   const paths = room.townPaths || [];
   const region = Object.hasOwn(villageArt, room.region) ? room.region : "woodland";
-  const key = [room.code, room.townInstance, room.townSeed, region, villageArtRevision, forkArtRevision, window.GauntletWorldScenery?.revision(), w, h, JSON.stringify(paths)].join(":");
+  const key = [room.code, room.townInstance, room.townSeed, region, villageArtRevision, forkArtRevision, window.GauntletWorldScenery?.revision(),window.GauntletCampaignScenery?.revision(), w, h, JSON.stringify(paths)].join(":");
   if (key !== villageTerrainKey) {
     villageTerrainKey = key; villageLayer.width = w / 2; villageLayer.height = h / 2;
     const g = villageLayer.getContext("2d"); g.imageSmoothingEnabled = false;
-    const ground = villageImage(room, "ground");
+    const ground = window.GauntletCampaignScenery?.regionOf(room)?null:villageImage(room, "ground");
     g.save();g.scale(.5,.5);
-    const smoothGround=window.GauntletWorldScenery?.floor(g,{...room,phase:'village-ground',adventure:null},w,h);
+    const smoothGround=window.GauntletCampaignScenery?.floor(g,room,w,h)||window.GauntletWorldScenery?.floor(g,{...room,phase:'village-ground',adventure:null},w,h);
     g.restore();
     if (smoothGround) { /* Village paths, shops and decorations are drawn above the regional material. */ }
     else if (ground) g.drawImage(ground, 0, 0, w / 2, h / 2);
@@ -1773,6 +1870,7 @@ function drawTownObjects(ctx, room, w, h) {
   houses.forEach((house, index) => {
     const draw=()=>{
     const x = house.x, y = house.y, nearby = room.nearbyHouse && room.nearbyHouse.id === house.id;
+    if(window.GauntletCampaignScenery?.house(ctx,room,house))return;
     const roofs = ["#a94f3d", "#426f78", "#c56643", "#906451", "#b6773f"];
     const buildingArt = villageImage(room, "buildings");
     const row = VILLAGE_BUILDINGS.indexOf(house.id);
@@ -1797,7 +1895,7 @@ function drawTownObjects(ctx, room, w, h) {
     ctx.fillStyle = "#f3e7c6"; ctx.font = "bold 9px monospace"; ctx.textAlign = "center"; ctx.fillText(house.name.toUpperCase(), x, y - 83);
     if (nearby) { ctx.strokeStyle = "#ffe389"; ctx.lineWidth = 2; ctx.strokeRect(x - 73, y - 85, 146, 142); ctx.fillStyle = "#fff0c8"; ctx.fillText("E · ENTER", x, y + 54); }
     };
-    depthEntries.push({key:room.townInstance+':'+house.id,depth:house.y+35,occluder:true,bounds:{x:house.x-80,y:house.y-101,width:160,height:165},visibleBounds:()=>{const img=villageImage(room,'buildings'),row=VILLAGE_BUILDINGS.indexOf(house.id),roof=Math.max(0,VILLAGE_ROOFS.indexOf(house.roof?.toLowerCase()));return row>=0?window.GauntletWorldScenery?.spriteBounds(img,roof*80,row*80,80,80,house.x-80,house.y-101,160,160):null;},draw,after:label});
+    depthEntries.push({key:room.townInstance+':'+house.id,depth:house.y+35,occluder:true,bounds:{x:house.x-80,y:house.y-101,width:160,height:165},visibleBounds:()=>{const regional=window.GauntletCampaignScenery?.houseBounds(room,house);if(regional)return regional;const img=villageImage(room,'buildings'),row=VILLAGE_BUILDINGS.indexOf(house.id),roof=Math.max(0,VILLAGE_ROOFS.indexOf(house.roof?.toLowerCase()));return row>=0?window.GauntletWorldScenery?.spriteBounds(img,roof*80,row*80,80,80,house.x-80,house.y-101,160,160):null;},draw,after:label});
   });
   if (room.players.some((player) => player.townExitReady)) {
     depthEntries.push({depth:Infinity,draw:()=>{
@@ -1815,6 +1913,7 @@ function drawVillagers(ctx, room,depthEntries=null) {
     const draw=()=>{
     const { x, y, shirt, skin, hair, hat } = villager;
     drawCharacterShadow(ctx, x, y + 14, 12, "#17221b55");
+    if(window.GauntletCampaignArt?.resident(ctx,room,x,y,index))return;
     if (window.GauntletTownSprites?.character(ctx, "Villager" + String(index % 8 + 1).padStart(2, "0"), x, y, { direction: SPRITE_DIRECTIONS[index % 8], phase: index * 137, scale: .85 })) return;
     ctx.fillStyle = "#393438"; ctx.fillRect(x - 7, y + 5, 5, 10); ctx.fillRect(x + 2, y + 5, 5, 10);
     ctx.fillStyle = shirt; ctx.fillRect(x - 9, y - 9, 18, 18);
@@ -1844,7 +1943,7 @@ function drawTownNpcs(ctx, room,depthEntries=null) {
       return;
     }
     drawCharacterShadow(ctx, x, y + 18, 20, "#0e1720aa");
-    const importedNpc = window.GauntletTownSprites?.character(ctx, ({ caretaker:"Innkeeper", merchant: "Merchant", alchemist: "Alchemist", innkeeper: "Innkeeper", guildmaster: "Guildmaster" })[id], x, y, { mode: nearby ? "gesture" : "idle", scale: 1.15 });
+    const importedNpc = window.GauntletCampaignArt?.service(ctx,room,id,x,y,nearby)||window.GauntletTownSprites?.character(ctx, ({ caretaker:"Innkeeper", merchant: "Merchant", alchemist: "Alchemist", innkeeper: "Innkeeper", guildmaster: "Guildmaster" })[id], x, y, { mode: nearby ? "gesture" : "idle", scale: 1.15 });
     if (!importedNpc) {
     ctx.fillStyle = "#24202a"; ctx.fillRect(x - 12, y - 15, 24, 33);
     ctx.fillStyle = color; ctx.fillRect(x - 10, y - 14, 20, 25);
@@ -1977,6 +2076,15 @@ function drawBossWarnings(ctx, room) {
     ctx.fillText(hazard.kind.toUpperCase(), hazard.x, hazard.y); ctx.restore();
   }
   for (const enemy of room.enemies || []) {
+    if(enemy.combatRole==='defender'&&!enemy.recovering&&enemy.guardFacing){
+      const angle=Math.atan2(enemy.guardFacing[1],enemy.guardFacing[0]);ctx.save();ctx.strokeStyle='#b6d88b';ctx.lineWidth=4;ctx.beginPath();ctx.arc(enemy.x,enemy.y,30,angle-1.1,angle+1.1);ctx.stroke();ctx.restore();
+    }
+    const role=enemy.roleAttack;
+    if(role&&['defender','channeler','flanker'].includes(role.kind)){
+      ctx.save();ctx.strokeStyle=role.interruptible?'#ffe18c':'#ed9679';ctx.fillStyle=ctx.strokeStyle;ctx.globalAlpha=.12;
+      ctx.beginPath();ctx.arc(role.x,role.y,role.radius||45,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.9;ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.stroke();
+      ctx.setLineDash([]);ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText(role.interruptible?'BREAK CHANNEL':role.kind==='channeler'?'COMMITTED PULSE':role.kind==='flanker'?'POUNCE':'GUARD STRIKE',role.x,role.y-(role.radius||45)-8);ctx.restore();
+    }
     const attack = enemy.bossAttack;
     if (!attack) continue;
     ctx.save();
@@ -2027,6 +2135,7 @@ function drawCombatEffects(ctx, room) {
   });
   (room.effects || []).forEach((effect) => {
     if (effect.type === 'ability_cast') return; // Draw once, attached to the actor, in the choreography layer.
+    if (window.GauntletAscendedSummons?.ownsEndImpact(effect)) return;
     const remain = Math.max(0, Math.min(1, (effect.until * 1000 - now) / 800));
     if (!remain) return;
     if (window.GauntletCombatEnvironment?.effect(ctx, effect)) {
@@ -2121,7 +2230,7 @@ function drawDamageTint(ctx, group, entity, x, y, draw) {
   ctx.restore();
 }
 function drawCharacterShadow(ctx, x, y, radius, color = "#15211a99") {
-  ctx.save(); ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  ctx.save(); ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(x, y, radius, radius*.38, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
 }
 function drawSummon(ctx, summon) {
   const x = summon.x, y = summon.y;
@@ -2130,13 +2239,13 @@ function drawSummon(ctx, summon) {
   ctx.save();
   window.GauntletAbilityAnimations?.summonGround(ctx, summon);
   drawCharacterShadow(ctx, x, y + 12, summon.kind === "bird" ? 16 : ["bear", "golem"].includes(summon.kind) ? 32 : 23, "#10231bb0");
-  ctx.strokeStyle = summon.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x, y + 12, 28, 12, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = summon.color; ctx.lineWidth = 1; ctx.beginPath();for(const sign of [-1,1]){ctx.moveTo(x+sign*19,y+12);ctx.lineTo(x+sign*25,y+12);}ctx.stroke();
   drawDamageTint(ctx, "summon", summon, x, y, (ctx) => {
     const summonSpriteKey = ({ lightning_bird: "LightningBird", fire_wolf: "FireWolf", ice_bear: "IceBear", nature_golem: "NatureGolem" })[summon.abilityId];
     if (summonSpriteKey) {
       const scale = (summon.kind === "golem" ? 2.5 : summon.kind === "bear" ? 2.15 : summon.kind === "wolf" ? 1.15 : 1) * (window.GauntletAbilityAnimations?.summonScale(summon) ?? 1);
       ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale); ctx.translate(-x, -y);
-      const imported = drawImportedHero(ctx, { ...summon, status: "alive" }, x, y, summonSpriteKey);
+      const imported = window.GauntletAscendedSummons?.draw(ctx,summon,x,y)||drawImportedHero(ctx, { ...summon, status: "alive" }, x, y, summonSpriteKey);
       ctx.restore();
       if (imported) return;
     }
@@ -2210,6 +2319,7 @@ function drawWorld(room) {
   };
   const theme = themes[room.region] || themes.woodland;
   if (room.phase !== "town" && room.phase !== "routes") drawArenaBackdrop(ctx, room, theme, w, h);
+  window.GauntletRoomDesigns?.ground(ctx,room,w,h);
   const ownTownInterior = room.phase === "town" && Boolean(room.townInterior);
   if (room.phase === "puzzle" && room.puzzle) drawPuzzleRoom(ctx, room.puzzle, w, h, room);
   const townDepthEntries=[];
@@ -2230,11 +2340,17 @@ function drawWorld(room) {
   if (room.phase === "chest" && room.chest) drawTreasureChest(ctx, room.chest);
   const actorLabels=[];
   const drawEnemy=(enemy,labels=true) => {
+    if(window.GauntletCampaignScenery?.enemyStructure(ctx,enemy,localTarget===enemy.id))return;
+    if(enemy.structure&&enemy.id.startsWith('harvest-warden-root')||enemy.structure&&enemy.id.startsWith('root-sump-boss-root')){
+      window.GauntletRegionSprites?.feature(ctx,{id:'rooted_crop',x:enemy.x,y:enemy.y},room.adventure);
+      if(localTarget===enemy.id)window.GauntletCombatEnvironment.target(ctx,enemy.x,enemy.y,24);
+      ctx.fillStyle='#1a2d24';ctx.fillRect(enemy.x-25,enemy.y-58,50,5);ctx.fillStyle='#aed383';ctx.fillRect(enemy.x-24,enemy.y-57,48*enemy.hp/enemy.maxHp,3);return;
+    }
     if (enemy.kind==='rift') {window.GauntletCombatEnvironment.structure(ctx,enemy,localTarget===enemy.id,false,room.region);return;}
     const x = enemy.x, y = enemy.y, color = enemy.baseColor || "#85977a";
-    const spriteScale = enemy.boss ? (enemy.bossPhase === 2 ? 3.2 : 2.3) : enemy.miniBoss ? 1.9 : enemy.kind === "draco" ? 1.25 : 1.5;
+    const spriteScale = enemy.boss ? (enemy.bossPhase >= 2 ? 3.2 : 2.3) : enemy.miniBoss ? 1.9 : enemy.kind === "draco" ? 1.25 : 1.5;
     if (localTarget===enemy.id) window.GauntletCombatEnvironment.target(ctx,x,y,enemy.boss?45:28);
-    ctx.save(); ctx.imageSmoothingEnabled = true; ctx.globalAlpha=.5;
+    ctx.save(); ctx.imageSmoothingEnabled = true; ctx.globalAlpha=window.GauntletCampaignArt?.supports(enemy)?0:.22;
     const glowSize = (enemy.kind === "dragon" ? 128 : 68) * spriteScale;
     ctx.drawImage(enemyGlow(enemy.color), x - glowSize / 2, y - 12 - glowSize / 2, glowSize, glowSize);
     ctx.restore();
@@ -2244,7 +2360,7 @@ function drawWorld(room) {
     let imported;
     drawDamageTint(ctx, "enemy", enemy, x, y, (ctx) => {
     const spriteKey = enemy.id==='shrine-guardian' ? 'ShrineGuardian' : {serpent:"Serpent",minotaur:"Minotaur",troll:"Troll",spider:"Spider",wolf:"Wolf",draco:"Draco",dragon:"Dragon",monster:"Chimera"}[enemy.kind];
-    imported = window.GauntletCombatEnvironment?.enemy(ctx, enemy, x, y) || spriteKey && drawImportedHero(ctx, { ...enemy, status: "alive" }, x, y, spriteKey);
+    imported = window.GauntletCampaignArt?.enemy(ctx, enemy, x, y) || window.GauntletCombatEnvironment?.enemy(ctx, enemy, x, y) || spriteKey && drawImportedHero(ctx, { ...enemy, status: "alive" }, x, y, spriteKey);
     if (!imported) {
     ctx.fillStyle = color;
     if (enemy.kind === "wolf") {
@@ -2312,14 +2428,16 @@ function drawWorld(room) {
     const characterScale = room.phase === "town" ? 0.78 : 1.65;
     const nameOffset = player.ascended?(room.phase==='town'?42:84):room.phase === "town" ? 28 : heroSprites[role]?.sheet ? 61 : 37;
     if (player.id===room.you && player.status==='alive') {
-      ctx.save();ctx.strokeStyle='#fff1af';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y+12,23,0,Math.PI*2);ctx.stroke();ctx.restore();
+      ctx.save();ctx.strokeStyle='#eee2bc';ctx.lineWidth=2;ctx.beginPath();for(const sign of [-1,1]){ctx.moveTo(x+sign*19,y+10);ctx.lineTo(x+sign*25,y+15);ctx.lineTo(x+sign*19,y+20);}ctx.stroke();ctx.restore();
     }
     drawCharacterShadow(ctx, x, y + 12 * characterScale, 11 * characterScale);
-    if(player.barrier>0){ctx.save();ctx.strokeStyle='#a9f1ed';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y+12*characterScale,18*characterScale,8*characterScale,0,0,Math.PI*2);ctx.stroke();ctx.restore();}
+    if(player.barrier>0){ctx.save();ctx.strokeStyle='#a6d4dc';ctx.lineWidth=2;ctx.beginPath();for(const sign of [-1,1]){ctx.moveTo(x+sign*14,y-20);ctx.lineTo(x+sign*22,y-15);ctx.lineTo(x+sign*22,y-4);ctx.lineTo(x+sign*16,y+3);}ctx.stroke();ctx.restore();}
+    window.GauntletReleaseVisuals?.protectionMark(ctx,player);
     if (abilityMotion) window.GauntletAbilityAnimations?.ground(ctx, player);
     ctx.save(); ctx.translate(x, y + bob); ctx.scale(characterScale, characterScale); ctx.translate(-x, -y);
     drawDamageTint(ctx, "player", player, x, y, (ctx) => {
-    if (!drawImportedHero(ctx, player, x, y)) {
+    const importedCharacter = drawImportedHero(ctx, player, x, y);
+    if (!importedCharacter) {
     ctx.fillStyle = "#171722"; ctx.fillRect(x - 9, y - 12, 18, 25);
     ctx.fillStyle = role === "Rogue" ? "#46364f" : color; ctx.fillRect(x - 7, y - 10, 14, 17);
     ctx.fillStyle = "#fff0c9"; ctx.fillRect(x - 6, y - 9, 4, 11);
@@ -2358,8 +2476,9 @@ function drawWorld(room) {
       ctx.fillRect(x + 10, y - 22, 3, 37); ctx.fillRect(x + 7, y - 24, 9, 4); ctx.fillRect(x + 10, y - 31, 3, 18);
     }
     }
-    if (!player.ascended && !abilityMotion && player.armorColor) { ctx.fillStyle = player.armorColor; ctx.fillRect(x - 8, y - 9, 16, 13); ctx.fillRect(x - 11, y - 7, 4, 10); ctx.fillStyle = "#ffffff55"; ctx.fillRect(x - 6, y - 8, 3, 8); }
-    if (!player.ascended && !abilityMotion && player.weaponColor) { ctx.fillStyle = "#171722"; ctx.fillRect(x + 10, y - 11, 5, 29); ctx.fillStyle = player.weaponColor; ctx.fillRect(x + 11, y - 12, 3, 28); ctx.fillRect(x + 8, y - 4, 9, 4); }
+    // Finished character sheets include their own gear; legacy equipment blocks
+    // must not cover the artwork or add a floating cross beside an equipped hero.
+    if (!importedCharacter && !player.ascended && !abilityMotion && player.armorColor) { ctx.fillStyle = player.armorColor; ctx.fillRect(x - 8, y - 9, 16, 13); ctx.fillRect(x - 11, y - 7, 4, 10); ctx.fillStyle = "#ffffff55"; ctx.fillRect(x - 6, y - 8, 3, 8); }
     });
     ctx.restore();
     if(labels)actorLabels.push(()=>{
@@ -2374,9 +2493,10 @@ function drawWorld(room) {
     });
     ctx.globalAlpha = 1;
   };
-  const depthEntries=[...(window.GauntletWorldScenery?.objects(room,w,h) || []),...(window.GauntletOpening?.objects(ctx,room)||[]),...townDepthEntries];
+  const depthEntries=[...(window.GauntletWorldScenery?.objects(room,w,h) || []),...(window.GauntletOpening?.objects(ctx,room)||[]),...(window.GauntletCampaignArt?.corpseEntries(room)||[]),...townDepthEntries];
+  depthEntries.push(...(window.GauntletAscendedSummons?.corpseEntries()||[]));
   for(const enemy of room.phase==='combat'?room.enemies:[]){
-    const s=enemy.boss?(enemy.bossPhase===2?3.2:2.3):enemy.miniBoss?1.9:enemy.kind==='draco'?1.25:1.5;
+    const s=enemy.boss?(enemy.bossPhase>=2?3.2:2.3):enemy.miniBoss?1.9:enemy.kind==='draco'?1.25:1.5;
     const large=enemy.kind==='dragon';depthEntries.push({actor:true,depth:enemy.y+(enemy.boss?30:18),occluder:true,bounds:{x:enemy.x-(large?64:32)*s,y:enemy.y-(large?102:42)*s,width:(large?128:64)*s,height:(large?128:64)*s},draw:()=>drawEnemy(enemy)});
   }
   if(room.phase==='combat')for(const summon of room.summons || [])depthEntries.push({actor:true,depth:summon.y+18,occluder:true,bounds:{x:summon.x-82,y:summon.y-108,width:164,height:170},draw:()=>drawSummon(ctx,summon)});
@@ -2394,6 +2514,7 @@ function drawWorld(room) {
   if (room.phase === 'combat') (room.summons || []).forEach(s => window.GauntletAbilityAnimations?.summonFront(ctx, s));
   window.GauntletFeedback?.draw(ctx,room);
   window.GauntletDungeonSprites?.portals(ctx,room);
+  window.GauntletCampaign?.draw(ctx,room);
   // Useful labels and exact danger boundaries remain above optional feedback.
   for(const label of actorLabels){ctx.save();label();ctx.restore();}
   for(const e of room.enemies||[]){if(e.awarenessCue){ctx.save();ctx.font='bold 20px Georgia';ctx.textAlign='center';ctx.fillStyle=e.awarenessCue==='!'?'#ff7469':'#f4d580';ctx.strokeStyle='#142322';ctx.lineWidth=3;ctx.strokeText(e.awarenessCue,e.x,e.y-55);ctx.fillText(e.awarenessCue,e.x,e.y-55);ctx.restore();}}

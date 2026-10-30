@@ -15,6 +15,10 @@ RECOVERY.update({kind: 1.6 for kind in SIGNATURES})
 def view(room):
     boss = next((e for e in room.get('enemies', []) if e.get('boss')), None)
     if not boss or room.get('phase') != 'combat': return None
+    campaign=__import__('campaign_bosses').tactic(boss)
+    if campaign:return dict(tactic=campaign,phaseLabel='PHASE '+str(boss.get('bossPhase',1)),phaseTwoHint='Armour breaks before true form; final fury at40% of true-form health.' if boss.get('archetype')=='cinder_dragon' else '')
+    if boss['id'] in ('harvest-warden','root-sump-boss'):
+        return dict(tactic='Break root hearts to remove protection and create a 3s opening. Dodge marked strikes, then attack during recovery.',phaseLabel='ROOT WARDEN · PHASE '+str(boss.get('bossPhase',1)),phaseTwoHint='Root hearts emerge at 65% and 30% health.')
     tips = {'minotaur': 'Bait a charge into cover: it creates a 3s opening with +35% damage.',
             'troll': 'It raises rocks, then shatters cover. Move when it marks your shelter.',
             'serpent': 'Bait the poison weave away from your path, or stun her during its wind-up.'}
@@ -57,6 +61,10 @@ def prepare(room, enemy):
 
 
 def pattern(enemy):
+    campaign=__import__('campaign_bosses').pattern(enemy)
+    if campaign:return campaign
+    if enemy['id'] in ('harvest-warden','root-sump-boss'):
+        return ('slam','rocks','slam') if enemy.get('bossPhase',1)==1 else ('venom_weave','slam','rocks','slam') if enemy.get('bossPhase')==2 else ('rocks','venom_weave','slam')
     if enemy.get('boss'):
         if enemy['kind']=='minotaur': return ('charge','rocks','charge','slam')
         if enemy['kind']=='troll': return ('raise_cover','rocks','shatter','slam')
@@ -71,12 +79,13 @@ def pattern(enemy):
 
 def prepare_signature(world, room, enemy, pending, now):
     kind, x, y = pending['kind'], pending['x'], pending['y']
+    width,height=terrain.dimensions(room)
     delay, phase = WINDUPS[kind], enemy.get('bossPhase', 1)
     token = pending['signatureToken'] = secrets.token_hex(4)
     def mark(px, py, radius=45, duration=.3, power=1, extra=0, label=None):
-        if (room.get('adventure') or {}).get('current','').startswith(('cave_','tower_')) and not terrain.line_clear(room,enemy,{'x':px,'y':py}):
+        if bool(room.get('adventure')) and not terrain.line_clear(room,enemy,{'x':px,'y':py}):
             return
-        h = area(room, enemy, max(40,min(920,px)), max(45,min(495,py)), now,
+        h = area(room, enemy, max(40,min(width-40,px)), max(45,min(height-45,py)), now,
                  radius=radius, delay=delay+extra, duration=duration, power=power, kind=kind)
         h.update(signatureToken=token, label=label or kind.replace('_',' ').upper())
     if kind in ('raise_cover','ice_wall'):
@@ -131,6 +140,7 @@ def release_signature(world, room, enemy, pending):
 
 
 def interrupt(world, room, enemy, now):
+    if __import__('campaign_bosses').interrupt(world,room,enemy,now):return
     pending=enemy.get('pendingAttack')
     if not pending or pending['kind']!='venom_weave' or enemy.get('stunUntil',0)<=now: return
     enemy.pop('pendingAttack')
@@ -162,14 +172,14 @@ def tick_areas(world, room, now):
                 owner=room['players'].get(hazard['ownerId'])
                 if owner:
                     for enemy in list(room['enemies']):
-                        if math.hypot(enemy['x']-hazard['x'],enemy['y']-hazard['y']) <= hazard['radius'] and (not (room.get('adventure') or {}).get('current','').startswith(('cave_','tower_')) or terrain.line_clear(room,hazard,enemy)):
+                        if math.hypot(enemy['x']-hazard['x'],enemy['y']-hazard['y']) <= hazard['radius'] and (not bool(room.get('adventure')) or terrain.line_clear(room,hazard,enemy)):
                             world._damage_enemy(room,owner,enemy,hazard['damage'],boost_source=hazard.get('boostSource'),boost_factor=hazard.get('boostFactor',1))
                     for cover in terrain.obstacles(room):
                         if math.hypot(cover['x']-hazard['x'],cover['y']-hazard['y']) <= hazard['radius']:
                             terrain.damage_cover(world,room,cover,hazard['damage'])
                 continue
             for target in world._combat_targets(room):
-                if target["status"] == "alive" and math.hypot(target["x"]-hazard["x"], target["y"]-hazard["y"]) <= hazard["radius"]+10 and (not (room.get('adventure') or {}).get('current','').startswith(('cave_','tower_')) or terrain.line_clear(room,hazard,target)):
+                if target["status"] == "alive" and math.hypot(target["x"]-hazard["x"], target["y"]-hazard["y"]) <= hazard["radius"]+10 and (not bool(room.get('adventure')) or terrain.line_clear(room,hazard,target)):
                     world._damage_player(room, hazard, target, hazard["damage"])
             if world._check_party_wipe(room):
                 break
@@ -255,7 +265,7 @@ def tick(world, room, enemy, target, now, dt):
         enemy["nextBossAttack"] = enemy["recoverUntil"]+2.3/enemy.get("attackRate", 1)
         return
     if not enemy.get("allowAcquire",True):return
-    if now >= enemy.get("nextBossAttack", 0) and (not (room.get('adventure') or {}).get('current','').startswith(('cave_','tower_')) or terrain.line_clear(room,enemy,target)):
+    if now >= enemy.get("nextBossAttack", 0) and (not bool(room.get('adventure')) or terrain.line_clear(room,enemy,target)):
         attacks = pattern(enemy)
         index = enemy.get("attackIndex", 0)
         kind = attacks[index % len(attacks)]
@@ -266,8 +276,9 @@ def tick(world, room, enemy, target, now, dt):
         if kind == "charge":
             distance = max(.001, math.hypot(x-enemy["x"],y-enemy["y"]))
             reach = min(420,max(240,enemy["speed"]*3.2))*.7
-            enemy["pendingAttack"].update(endX=max(28,min(932,enemy["x"]+(x-enemy["x"])/distance*reach)),
-                                          endY=max(30,min(510,enemy["y"]+(y-enemy["y"])/distance*reach)))
+            width,height=terrain.dimensions(room)
+            enemy["pendingAttack"].update(endX=max(28,min(width-28,enemy["x"]+(x-enemy["x"])/distance*reach)),
+                                          endY=max(30,min(height-30,enemy["y"]+(y-enemy["y"])/distance*reach)))
         enemy["facingX"], enemy["facingY"] = x-enemy["x"], y-enemy["y"]
         if kind in SIGNATURES:
             prepare_signature(world,room,enemy,enemy['pendingAttack'],now)

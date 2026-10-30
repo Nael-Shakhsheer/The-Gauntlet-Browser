@@ -80,7 +80,9 @@ def tick(world,room,now):
             continue
         a=c['ability'];hero=p['class'];center=dict(x=c['x'],y=c['y'])
         origin=dict(x=c['origin'][0],y=c['origin'][1])
-        if not terrain.line_clear(room,p,center):
+        # Committed casts retain their origin/footprint. Walking behind cover
+        # during the windup must not silently tether or cancel the marked area.
+        if not terrain.line_clear(room,origin,center):
             __import__('ability_animations').resolve(room,p,c.get('presentationId'),now,cancelled=True)
             continue
         targets=s.foes(room,center,c['radius'])
@@ -90,7 +92,7 @@ def tick(world,room,now):
                 ex,ey=e['x']-origin['x'],e['y']-origin['y'];along=ex*dx+ey*dy
                 if 0<=along<=a['range'] and abs(ex*dy-ey*dx)<=38 and terrain.line_clear(room,origin,e):targets.append(e)
         for e in list(targets):
-            if not terrain.line_clear(room,p,e):continue
+            if not terrain.line_clear(room,origin,e):continue
             if hero in ('Wizard','Druid'):s.root(e,now,1.6)
             if hero in ('Knight','Bard'):world._stun(e,now);boss_ai.interrupt(world,room,e,now)
             if a['power']:world._damage_enemy(room,p,e,round(s.base(p)*a['power']))

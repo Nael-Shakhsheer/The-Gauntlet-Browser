@@ -1,0 +1,34 @@
+﻿{
+    "sourceColumns":  4,
+    "version":  1,
+    "neutralHeight":  48,
+    "id":  "city_marshal",
+    "states":  {
+                   "channel":  [
+                                   3
+                               ],
+                   "work":  [
+                                2
+                            ],
+                   "idle":  [
+                                0,
+                                1
+                            ]
+               },
+    "sourceRow":  1,
+    "source":  "source/human-contacts-v1.png",
+    "drawOffset":  [
+                       -48,
+                       -72
+                   ],
+    "columns":  4,
+    "anchor":  [
+                   48,
+                   84
+               ],
+    "directions":  [
+                       "south"
+                   ],
+    "scale":  0.1889763779527559,
+    "cell":  96
+}

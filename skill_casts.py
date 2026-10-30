@@ -10,14 +10,20 @@ import ability_animations
 import boss_ai
 import tactical_rules as tactical
 KINDS={'ascend_'+h.lower() for h in ('Knight','Wizard','Archer','Cleric','Rogue','Druid','Bard','Healer')}|{'rush','banner','parry','barrier','triage','beacon','root_burst','rift','phase','trap','sidestep','mark',
-       'sunburst','draft','hallowed','smoke','venom','crosscut','spring','call','refrain','echo','cadence'}
+       'sunburst','draft','hallowed','smoke','venom','crosscut','spring','call','refrain','echo','cadence','mercy_lance','repulse'}
+KINDS.add('campaign_skill')
 
 
 def distance(a,b):return math.hypot(a['x']-b['x'],a['y']-b['y'])
 def shield(room,p,amount,seconds=6):
-    if p['status']!='alive':return
-    p['skillBarrier']=max(amount,p.get('skillBarrier',0) if p.get('barrierUntil',0)>time.monotonic() else 0)
-    p['barrierUntil']=time.monotonic()+seconds;feedback.restored(room,p,'ward')
+    if p['status']!='alive' or amount<=0 or seconds<=0:return
+    now=time.monotonic()
+    existing=p.get('skillBarrier',0) if p.get('barrierUntil',0)>now else 0
+    # Barriers do not add. A weaker application cannot extend or truncate a
+    # stronger barrier; equal/stronger applications refresh their own duration.
+    if amount<existing:return
+    p['skillBarrier']=amount
+    p['barrierUntil']=now+seconds;feedback.restored(room,p,'ward')
 def heal(room,owner,p,amount):
     if p['status']!='alive':return
     actual=min(amount,p['maxHp']-p['hp']);p['hp']+=actual
@@ -33,16 +39,18 @@ def foes(room,p,reach):return [e for e in room['enemies'] if distance(e,p)<=reac
 def allies(world,room,p,reach):return [m for m in world._active_players(room) if m['status']=='alive' and distance(m,p)<=reach and terrain.line_clear(room,p,m)]
 def zone(room,p,kind,radius,seconds,**fields):
     now=time.monotonic()
+    if kind in ('banner','beacon','hallowed','spring') and 'pilgrim' in tactical.effects(p):seconds*=.6;fields['followsOwner']=True
     room.setdefault('skillZones',[]).append(dict(id=__import__('secrets').token_hex(5),ownerId=p['id'],kind=kind,x=p['x'],y=p['y'],radius=radius,startedAt=now,duration=seconds,expiresAt=now+seconds,nextHitAt=now,**fields))
 
 
 def cast(world,room,p,a):
+    if a['kind']=='campaign_skill':return __import__('campaign_skills').cast(world,room,p,a)
     if a['kind'].startswith('ascend_'):return __import__('ascension').cast(world,room,p,a)
     now=time.monotonic();kind=a['kind'];targets=foes(room,p,a['range']);team=allies(world,room,p,a['range'] or 320)
     target=min(team,key=lambda m:m['hp']/m['maxHp'],default=p)
     enemy=min(targets,key=lambda e:(e['id']!=p.get('preferredTarget'),distance(e,p)),default=None)
-    if kind in ('root_burst','rift','sidestep','mark','sunburst','crosscut','echo') and not enemy:raise ValueError('No visible enemy is in range.')
-    if kind in ('smoke','refrain') and not targets:raise ValueError('No visible enemy is close enough.')
+    if kind in ('root_burst','rift','sidestep','mark','sunburst','crosscut','echo','mercy_lance') and not enemy:raise ValueError('No visible enemy is in range.')
+    if kind in ('smoke','refrain','repulse') and not targets:raise ValueError('No visible enemy is close enough.')
     summons=[s for s in room.get('summons',[]) if s['ownerId']==p['id']]
     if kind=='call' and not summons:raise ValueError('Summon a companion before calling it back.')
     if kind=='triage' and target['hp']>=target['maxHp']:raise ValueError('No injured ally is within 320px.')
@@ -62,6 +70,14 @@ def cast(world,room,p,a):
     elif kind=='triage':
         heal(room,p,target,18);room.setdefault('skillHeals',[]).append(dict(ownerId=p['id'],targetId=target['id'],ticks=6,nextHitAt=now+1))
     elif kind=='beacon':zone(room,p,'beacon',160,6)
+    elif kind=='mercy_lance':
+        world._launch_projectile(room,side='hero',owner_id=p['id'],target_id=enemy['id'],x=p['x'],y=p['y'],damage=round(base(p)*a['power']),color='#e8e7b3',attack_class='Healer',ability_id=a['id'],speed=390)
+    elif kind=='repulse':
+        for e in list(targets):
+            world._damage_enemy(room,p,e,round(base(p)*a['power']))
+            if e not in room['enemies'] or any(e.get(k) for k in ('boss','miniBoss','elite','structure')) or e.get('pushResistUntil',0)>now:continue
+            dx,dy=e['x']-p['x'],e['y']-p['y'];length=max(.001,math.hypot(dx,dy))
+            terrain.move(room,e,e['x']+dx/length*80,e['y']+dy/length*80);e['pushResistUntil']=now+3.5
     elif kind in ('root_burst','sunburst','smoke','refrain'):
         center=enemy if kind in ('root_burst','sunburst') else p
         for e in list(foes(room,center,95 if kind=='root_burst' else 100 if kind=='sunburst' else a['range'])):
@@ -97,7 +113,7 @@ def cast(world,room,p,a):
             x,y=p['x']+(-28 if i%2 else 28),p['y']+28
             s['x'],s['y']=(x,y) if terrain.walkable(room,x,y) and terrain.line_clear(room,p,dict(x=x,y=y)) else (p['x'],p['y'])
             s['hp']=min(s['maxHp'],s['hp']+round(s['maxHp']*.2))
-    elif kind=='echo':room.setdefault('skillEchoes',[]).append(dict(ownerId=p['id'],targetId=enemy['id'],releaseAt=now+.6,damage=round(base(p)*.9)))
+    elif kind=='echo':room.setdefault('skillEchoes',[]).append(dict(ownerId=p['id'],targetId=enemy['id'],abilityId=a['id'],releaseAt=now+.6,damage=round(base(p)*.9)))
     elif kind=='cadence':
         for m in team:m['cadenceUntil']=now+8
     else:raise ValueError('Unsupported active skill.')
@@ -107,10 +123,14 @@ def cast(world,room,p,a):
 
 
 def tick(world,room,now):
+    __import__('campaign_skills').tick(world,room,now)
     __import__('ascension').tick(world,room,now)
     for z in list(room.get('skillZones',[])):
         owner=room['players'].get(z['ownerId'])
         if z['expiresAt']<=now or not owner or not owner.get('connected',True):room['skillZones'].remove(z);continue
+        if z.get('followsOwner'):
+            if owner['status']!='alive':room['skillZones'].remove(z);continue
+            z.update(x=owner['x'],y=owner['y'])
         center=dict(x=z.get('xTarget',z['x']),y=z.get('yTarget',z['y']))
         if z['kind'] in ('trap','rift') and z['nextHitAt']<=now:
             targets=foes(room,center,z['radius'])
@@ -131,17 +151,17 @@ def tick(world,room,now):
         if z['kind']=='spring' and z['nextHitAt']<=now:z['nextHitAt']=now+1
     for h in list(room.get('skillHeals',[])):
         p=room['players'].get(h['targetId']);owner=room['players'].get(h['ownerId'])
-        if not p or not owner or p['status']!='alive' or not h['ticks']:room['skillHeals'].remove(h);continue
+        if not p or not owner or not owner.get('connected',True) or not p.get('connected',True) or p['status']!='alive' or not h['ticks']:room['skillHeals'].remove(h);continue
         if now>=h['nextHitAt']:heal(room,owner,p,4);h['ticks']-=1;h['nextHitAt']=now+1
     for echo in list(room.get('skillEchoes',[])):
         if now<echo['releaseAt']:continue
         room['skillEchoes'].remove(echo);p=room['players'].get(echo['ownerId']);e=next((e for e in room['enemies'] if e['id']==echo['targetId']),None)
         if p and e and p.get('connected',True) and p['status']=='alive' and distance(p,e)<=350 and terrain.line_clear(room,p,e):
-            world._launch_projectile(room,side='hero',owner_id=p['id'],target_id=e['id'],x=p['x'],y=p['y'],damage=echo['damage'],color='#f095bf',attack_class='Bard',speed=300)
+            world._launch_projectile(room,side='hero',owner_id=p['id'],target_id=e['id'],x=p['x'],y=p['y'],damage=echo['damage'],color='#f095bf',attack_class='Bard',ability_id=echo.get('abilityId',''),speed=300)
 
 
 def incoming(world,room,p,enemy,amount,now):
-    original=amount
+    amount=__import__('campaign_skills').incoming(room,p,amount)
     amount=__import__('ascension').incoming(p,amount,now)
     if enemy.get('ascWeakenUntil',0)>now:amount=round(amount*.8)
     if enemy.get('weakenUntil',0)>now:amount=round(amount*.7)
@@ -152,11 +172,13 @@ def incoming(world,room,p,enemy,amount,now):
         if enemy in room['enemies'] and distance(p,enemy)<=160 and terrain.line_clear(room,p,enemy):world._damage_enemy(room,p,enemy,base(p))
     if p.get('barrierUntil',0)>now:
         absorbed=min(amount,p.get('skillBarrier',0));p['skillBarrier']-=absorbed;amount-=absorbed
-    telemetry.add(room,p['id'],'protectionGiven',original-amount)
+    # GameWorld._damage_player owns protection accounting, including HP caps
+    # and rescue equipment. Recording here too double-counted every barrier.
     return amount
 
 
 def dashed(room,p,now):
+    if skills.rank(p,'rogue_fresh_wound'):p['campaignDashUntil']=now+3
     if __import__('ascension').active(p):
         if p['class']=='Archer':shield(room,p,12,4)
         if p['class']=='Rogue':p['invisibleUntil']=max(p.get('invisibleUntil',0),now+.6)
@@ -164,6 +186,7 @@ def dashed(room,p,now):
     if skills.rank(p,'wizard_phase'):shield(room,p,10,4)
     if skills.rank(p,'rogue_escape'):p['invisibleUntil']=max(p.get('invisibleUntil',0),now+1)
 def outgoing(room,p,e,damage,summon,now):
+    damage=__import__('campaign_skills').outgoing(room,p,e,damage,summon,now)
     if not summon and p.get('steelUntil',0)>now:p['steelUntil']=0;damage+=10
     controlled=max(e.get('rootUntil',0),e.get('stunUntil',0))>now
     if not summon:
@@ -192,6 +215,8 @@ def projectile(p,shot):
     for key in ('splashRadius','chainTargets','chainDecay','rootDuration'):
         if key in a:shot[{'splashRadius':'splash'}.get(key,key)]=a[key]
 def revived(room,p,target):
+    __import__('campaign_skills').revived(room,p,target)
+    if target.pop('pendingRescueBarrier',0):shield(room,target,24)
     if __import__('ascension').active(p) and p['class']=='Healer':
         for m in (p,target):shield(room,m,25)
     if skills.rank(p,'knight_captain') or skills.rank(p,'bard_rescue'):
@@ -208,6 +233,7 @@ def root(e,now,seconds):
     duration=min(.35,seconds) if e.get('boss') else seconds
     e.update(rootUntil=now+duration,rootResistUntil=now+max(1.8,duration))
 def after_cast(room,p,a,now):
+    __import__('campaign_skills').after_cast(p,a,now)
     __import__('ascension').after_cast(room,p,a,now)
     if a['attackType']=='light':return
     if a['kind'] in ('rush','root_burst','rift','sidestep','sunburst','smoke','crosscut','refrain','echo'):tactical.direct_factor(p,now,consume=True)

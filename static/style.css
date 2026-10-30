@@ -92,6 +92,7 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 #world { display: block; width: 100%; height: auto; margin-top: 15px; background: #1b2c2b; border: 3px solid #514455; image-rendering: pixelated; }
 .arena-hint { color: var(--muted); font-size: 11px; margin-top: 9px; }
 .hidden { display: none !important; }
+.hidden::before,.hidden::after,.hidden *::before,.hidden *::after,[hidden]::before,[hidden]::after,[hidden] *::before,[hidden] *::after,dialog:not([open])::before,dialog:not([open])::after,dialog:not([open]) *::before,dialog:not([open]) *::after { content:none !important; }
 .guild-dialog { width: min(760px, calc(100vw - 28px)); max-height: calc(100dvh - 32px); padding: 22px; overflow-y: auto; color: var(--ink); background: #1c2d3b; border: 2px solid #d1aa62; border-radius: 5px; }
 .guild-dialog::backdrop { background: #081018ba; }
 .guild-dialog h2 { margin: 0; font-size: 20px; }
@@ -1087,6 +1088,7 @@ input::placeholder { color:#91a4ad; }
 .class-card:hover:not(:disabled),.class-card.selected { background:color-mix(in srgb,var(--class-color) 12%,#172937); border-color:var(--class-color); }
 .class-card.selected { box-shadow:inset 0 0 0 2px #203a42,3px 3px #080f17; }
 .class-card.selected::after { content:'EQUIPPED'; color:#ffe0a0; font:10px 'Gauntlet Pixel',Consolas,monospace; }
+.hidden .class-card.selected::after { content:none; }
 .class-icon { background:#10212d; border:2px solid #6c8288; box-shadow:inset 0 0 0 2px #1d3443; }
 .class-name { color:#f6e4b5; font-size:16px; }
 .class-role { font-family:'Segoe UI',Tahoma,sans-serif; font-size:11px; line-height:1.4; color:#b9c9c9; }
@@ -1581,7 +1583,7 @@ input[type=checkbox],input[type=radio] { accent-color:#b1be82; min-height:auto; 
 #storyDialog[data-presentation=object],#storyDialog[data-presentation=sign] { background-image:linear-gradient(#d9cba6ed,#cdbc94ed),var(--surface-paper); color:#302f22; }
 #storyDialog:not([data-presentation=npc]) #storyText,#storyDialog:not([data-presentation=npc]) .speaker-heading { color:#353a28; }
 #storyDialog:not([data-presentation=npc]) .speaker-heading h2 { color:#353a28; }
-#storyDialog[data-presentation=object] #storyTitle,#storyDialog[data-presentation=sign] #storyTitle { color:#eee2bc; }
+#storyDialog:not([data-presentation=npc]) #storyTitle { color:#eee2bc; }
 .signpost-directions,.adventure-feedback,.adventure-save-badge,.objective-hud,.boss-tactic,.world-toast { background:#212c1ded; color:#f1e5c3; border-color:#aba679; }
 .adventure-quest h3,.dungeon-card h3 { color:#efe0b7; }
 .map-details,.dungeon-map-viewport { background:#20291e; border-color:#7d8662; }
@@ -1671,6 +1673,201 @@ body.adventure-playing #adventureStatus,body.adventure-playing #combatNotice { b
 }
 @media(prefers-reduced-motion:reduce) { button { transition:none; } }
 
+/* Spatial shrine chart; real controls and public state sit above generated paper. */
+.crystal-icon[data-soul-crystal-sprite] { display:block; width:48px; height:48px; flex:0 0 48px; background:center/contain no-repeat; image-rendering:pixelated; }
+body #villagePortalDialog { width:min(1160px,calc(100vw - 24px)); max-width:1160px; }
+#villagePortalDialog .transport-layout { display:grid; grid-template-columns:minmax(0,1.8fr) minmax(230px,1fr); gap:20px; }
+#villagePortalDialog .transport-map-viewport { height:min(470px,58dvh); min-height:240px; background:#d2c39a; border:2px solid #8d9167; box-shadow:inset 0 0 0 3px #b3aa7f; scrollbar-color:#7b8b5d #bdb28b; }
+#villagePortalDialog .map-controls { justify-content:flex-start; margin:0 0 8px; }
+#villagePortalDialog .map-controls button { min-width:44px; min-height:40px; }
+#villagePortalDialog .travel-label { fill:#333d29; font:bold 35px 'Segoe UI',sans-serif; }
+#villagePortalDialog .travel-state { fill:#4f5b3c; font:bold 25px Consolas,monospace; letter-spacing:1px; }
+#villagePortalDialog .travel-point { outline:none; }
+#villagePortalDialog .travel-point .travel-caption { stroke-width:2px !important; stroke:#7b8058 !important; }
+#villagePortalDialog .travel-point[aria-pressed=true] .travel-halo,#villagePortalDialog .travel-point:focus-visible .travel-halo { stroke:#754321; stroke-width:9; fill:#f1d38aac; }
+#villagePortalDialog .travel-point[aria-pressed=true] .travel-caption { fill:#f3dda5; stroke:#754321 !important; stroke-width:4px !important; }
+#villagePortalDialog .travel-point.is-inactive image { filter:grayscale(.7); }
+#villagePortalDialog .travel-point.is-inactive .travel-caption { stroke-dasharray:7 5; }
+#villagePortalDialog .transport-legend { color:#cbd3b6; margin:8px 0 0; font:12px/1.4 'Segoe UI',sans-serif; }
+#villagePortalDialog #transportDetails { max-height:calc(58dvh + 60px); overflow:auto; background:linear-gradient(#313b29eb,#242f20ee),var(--surface-stone); border:1px solid #808e63; padding:14px; border-radius:2px 10px 2px 2px; }
+#villagePortalDialog #transportDetails h3 { color:#eedaa3; margin:0 0 12px; }
+#villagePortalDialog #transportDetails p { font:14px/1.5 'Segoe UI',sans-serif; color:#e1e4cc; }
+#villagePortalDialog #transportDetails button { min-height:44px; }
+#villagePortalDialog #transportDetails button[aria-pressed=true] { background:#566242; border-color:#c5bb80; color:#fff0c8; }
+#villagePortalDialog #transportDetails .notice { color:#f0c09b; }
+@media(orientation:landscape) and (max-height:500px) {
+  body #villagePortalDialog { padding:10px 12px; max-height:calc(100dvh - 18px); }
+  #villagePortalDialog .transport-layout { grid-template-columns:minmax(0,1.8fr) minmax(220px,1fr); gap:12px; }
+  #villagePortalDialog .transport-map-viewport { height:calc(100dvh - 190px); min-height:150px; }
+  #villagePortalDialog #transportDetails { max-height:calc(100dvh - 138px); padding:10px; }
+  #villagePortalDialog #transportDetails p { font-size:13px; }
+  #villagePortalDialog .transport-legend { font-size:11px; margin-top:4px; }
+  #villagePortalDialog .section-heading { margin-bottom:8px; }
+}
+
+/* BEGIN PRESENTATION REFINEMENT V4 */
+/* Authoring fragment installed into theme.css by build.ps1. Preserve functional layout rules. */
+:root {
+ --ui-action:#d8bd7b;--ui-action-ink:#27251c;--ui-focus:#fff0bf;
+ --ui-surface:#252822;--ui-card:#30322b;--ui-seam:#697064;
+ --ui-text:#eee6d2;--ui-muted:#c0c3b4;--ui-selected:#d8bd7b;
+ --ui-danger:#ef9c87;--ui-heal:#a9cfa5;--ui-mana:#9bc8dc;
+ --ui-magic:#cbb4ed;--ui-souls:#a6dbe2;--ui-ready:#a8c793;
+ --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;
+}
+body { font-family:'Segoe UI',system-ui,sans-serif;line-height:1.5; }
+body p,body .subtle,body .route-copy,body .notice { letter-spacing:0; }
+body button { border-radius:2px;transition:background-color .12s,border-color .12s; }
+body .primary,body [data-ui-action=primary]:not([data-ui-action=combat]) {
+ background:linear-gradient(#e0c68d,#c8ac6d);color:var(--ui-action-ink);border:1px solid #eddbab;
+ border-bottom-color:#826b41;box-shadow:0 2px 0 #182019,inset 0 1px #f5e4b8;text-shadow:none;
+}
+body .primary:not(:disabled):hover,body [data-ui-action=primary]:not(:disabled):hover { background:#ead29a;color:#211f18; }
+body .secondary { background:linear-gradient(#353932,#292e27);color:var(--ui-text);border:1px solid #798070;box-shadow:0 1px #111a13; }
+body .secondary:not(:disabled):hover { background:#41473b;border-color:#c2b585;color:#fff1cb; }
+body [data-ui-action=navigation],body .section-heading>[data-close] { background:transparent;color:var(--ui-muted);border:1px solid transparent;box-shadow:none;text-shadow:none; }
+body [data-ui-action=navigation]:hover { background:#777d6c26;color:var(--ui-text);border-color:#747968; }
+body button:not(:disabled):active { box-shadow:inset 0 1px 2px #10151080;transform:translateY(1px); }
+body button:disabled { opacity:1;background:#363b33;color:#b2b5a7;border-color:#5d6457;box-shadow:none;text-shadow:none;filter:none; }
+body button:focus-visible,body summary:focus-visible,body select:focus-visible,body a:focus-visible,body input:focus-visible { outline:3px solid var(--ui-focus);outline-offset:3px; }
+body .info-dialog,body .guild-dialog { border-width:8px;border-image-width:8px;padding:16px; }
+body .section-heading { padding-bottom:8px;gap:12px;border-bottom:1px solid #85866b66; }
+body .section-heading h2 { font-size:20px;line-height:1.35; }
+body .adventure-quest,body .recovery-card,body .player-card { background:#2c3129;border:1px solid #737a66;box-shadow:none;border-radius:2px; }
+body .notice[data-tone=success] { color:var(--ui-heal); }
+body .notice[data-tone=error],body [data-tone=error] { color:var(--ui-danger); }
+body .notice[data-tone=info] { color:var(--ui-muted); }
+body .entry-art img { background:transparent;border:0;box-shadow:none;padding:0;filter:drop-shadow(1px 2px #0c170d); }
+body .entry-art { border-color:#6f775b;box-shadow:inset 0 0 0 2px #192317;gap:7px; }
+body .entry:has(.saved-world-card:not(.saved-world-legacy)) #continueRun { grid-column:1 / -1;background:linear-gradient(#e0c68d,#c8ac6d);color:#27251c;border-color:#eddbab;box-shadow:0 2px #182019; }
+body .entry:has(.saved-world-card:not(.saved-world-legacy)) #newAdventure { grid-column:auto;background:linear-gradient(#353932,#292e27);color:var(--ui-text);border-color:#798070;box-shadow:0 1px #111a13; }
+body .saved-world-card { box-shadow:0 2px #141c10;border-radius:3px;padding-top:14px;padding-bottom:14px; }
+body .saved-world-card h4 { font:700 17px/1.4 'Segoe UI',sans-serif;margin-bottom:6px; }
+body .saved-world-card p { margin:4px 0; }
+body .saved-world-card .saved-hero { border:1px solid #8c8054;box-shadow:none; }
+
+/* Calm combat dock; functional grouping and empty-slot visibility stay in main files. */
+body.adventure-playing { --adventure-hud:116px; }
+body.adventure-playing[data-visual-scene=town] { --adventure-hud:84px; }
+body.is-playing #gameHud { border-top:1px solid #7d8069;box-shadow:0 -1px #121a13;background:linear-gradient(#2a2e26f5,#1e261ef9),var(--surface-wood); }
+body.is-playing .resource-track { height:10px;border:1px solid #7d846e;box-shadow:none; }
+body.is-playing .resource-stack { gap:4px; }
+body.is-playing .hud-hero-portrait { border-width:1px;box-shadow:none; }
+body.is-playing .health-meter,body.is-playing .mana-meter { font:11px/1.3 Consolas,monospace; }
+body .ability-ring-fill { filter:none;stroke-width:3; }
+body .ability-ring-track { stroke-width:2;stroke:#743f39; }
+body .ability-icon-button[data-charge=ready] .ability-orb { outline:1px solid var(--ui-ready);outline-offset:0;box-shadow:none;background:#253027; }
+body .ability-icon-button[data-charge=ready] .ability-ring-fill { stroke:#9ebc91; }
+body .ability-icon-button[data-charge=charging] .ability-ring-fill { stroke:#dc917e; }
+body .ability-icon-button[data-state=insufficient-mana] .ability-orb { outline:1px dashed var(--ui-mana);box-shadow:none; }
+body .ability-icon-button[data-state=insufficient-mana] .ability-key-hint { color:var(--ui-mana); }
+body .ability-icon-button[data-just-ready=true] .ability-orb { animation:woodland-ready .45s ease-out 1; }
+@keyframes woodland-ready { from{box-shadow:0 0 9px #b1d29c80}to{box-shadow:none} }
+body .ability-icon-button .ability-name { font:600 11px/1.2 'Segoe UI',sans-serif; }
+body .ability-key-hint { font:11px/1.2 Consolas,monospace;color:#c5cbb7; }
+body.is-playing #targetButton { font:600 12px/1.2 'Segoe UI',system-ui,sans-serif;letter-spacing:0; }
+body .tool-slot,body .utility-slot { border-width:1px;box-shadow:none;background:#252c24; }
+body .barrier-badge { color:var(--ui-souls); }
+body.is-playing[data-input-profile=touch] .adventure-tools button,body.is-playing[data-input-profile=touch] .game-top-actions button,body.is-playing[data-input-profile=touch] .game-top-actions summary { min-height:44px;min-width:44px; }
+body[data-input-profile=touch] .hero-skills-dialog select,body[data-input-profile=touch] .reward-inbox select { min-height:44px; }
+body #hudEvents .adventure-feedback,body #hudEvents .adventure-save-badge,body .tracked-objective { border:0;border-left:2px solid #9b9b79;background:#20281ef0;box-shadow:none;color:#d2d5c5; }
+body .acquisition-notice { border-width:1px;border-left-width:3px;box-shadow:0 2px 6px #10151060;background:#242b22f5; }
+body .acquisition-notice[data-kind=magic] { border-color:var(--ui-magic); }
+body #runeCount { color:#dfc58b; }
+body #soulCrystalMeter { accent-color:var(--ui-souls); }
+
+/* Reading panels and deliberate node identities, using main chat's state hooks. */
+body #heroSkillsDialog { padding:12px 16px; }
+body #heroSkillSections { display:flex;gap:8px;border-bottom:1px solid #a39872;padding:4px 0 8px; }
+body #heroSkillSections button { min-height:44px;padding:8px 16px;background:transparent;color:#434330;border:0;border-bottom:3px solid transparent;box-shadow:none; }
+body #heroSkillSections [aria-selected=true] { background:#ecdfb8;border-bottom-color:#756238;color:#2d3323; }
+body #heroSkillsPoints { color:#3b432d;font-weight:700;margin:6px 0; }
+body #heroSkillsSafety { margin:4px 0;color:#51583f;font-size:13px; }
+body #heroSkillActions { margin:4px 0;gap:8px;font-size:13px; }
+body #heroSkillActions>strong { flex-basis:auto;margin-right:4px; }
+body #heroSkillActions button,body #heroBuildAdvice button { color:#45432d;min-height:36px;border-color:#a99b70; }
+body #heroSkillActions button:hover,body #heroBuildAdvice button:hover { color:#45432d;background:#e8dab2; }
+body #heroBranches { gap:6px;padding-bottom:8px;margin:8px 0;border:0; }
+body .hero-branches button { color:#41472f;background:#cfc6a2;box-shadow:none;border:1px solid #a39c77; }
+body .hero-branches button[aria-pressed=true] { color:#302e20;background:#edddb0;border-color:#8e7946;box-shadow:inset 0 -2px #927844; }
+body .hero-node { padding:12px;border:1px solid #aaa07a;border-radius:2px;background:#eee2c3;box-shadow:none; }
+body .hero-node[data-node-type=ability] { border-top:3px solid #637c65; }
+body .hero-node[data-node-type=passive] { border-top:3px dashed #8c7c5c; }
+body .hero-node[data-node-type=modifier] { border-top:3px double #82728d; }
+body .hero-node[data-state=locked] { background:#dbd2b7; }
+body .hero-node[data-state=equipped] { border-left:3px solid #637c65; }
+body .hero-node[data-state=equipped] small::before { content:'\2713 ';font-weight:700; }
+body .hero-node[data-state=locked] small::before { content:'\25c7 '; }
+body .hero-node h3 { font:700 16px/1.3 'Segoe UI',sans-serif;margin:0 0 6px; }
+body .hero-node p { margin:6px 0;font:14px/1.5 'Segoe UI',sans-serif; }
+body .hero-node small { color:#53523c; }
+body #heroSkillsDialog .section-heading [data-close] { color:#4b4936;border-color:#a69b77; }
+body #heroSkillsDialog .section-heading [data-close]:hover { background:#e8dcba;color:#302f24; }
+body .hero-loadout { border:0;padding:8px 0;background:transparent;box-shadow:none; }
+body .skill-slot { padding:8px;background:#dfd4b2;border:1px solid #afa27b; }
+body .skill-slot[data-state=locked] { border-style:dashed; }
+body .skill-slot kbd { color:#6a5b34;font:11px Consolas,monospace; }
+body #magicProgression { border:1px solid #b0a1be;background:#302d36;padding:12px;margin:12px 0; }
+body #magicProgression summary { color:#e2c6f2; }
+body .reward-inbox .adventure-quest { border:0;background:transparent;padding:0; }
+body .reward-inbox .reward-option { background:#30342c;border:1px solid #747963;border-left:3px solid #a79e79;padding:12px;margin:12px 0; }
+body .reward-option h4 { display:flex;gap:12px;align-items:center;margin:0 0 8px;font:700 18px/1.4 'Segoe UI',sans-serif;color:#f2e7c9; }
+body .reward-option h4 img { width:48px;height:48px;image-rendering:pixelated; }
+body .reward-option h4[data-rarity=rare] { color:#acd1e0; }
+body .reward-option h4[data-rarity=epic] { color:#d1b8e9; }
+body .reward-option h4[data-rarity=legendary] { color:#e5c27c; }
+body .reward-option p { margin:6px 0;font:14px/1.5 'Segoe UI',sans-serif; }
+body .reward-option label { display:flex;align-items:center;gap:8px;font-size:13px;color:#ccd0bd; }
+body .reward-option label select { flex:1; }
+body .reward-comparison { border-left:2px solid #89977b;padding:4px 8px;margin:8px 0;background:#242c23; }
+body .comparison-line { color:#cedac4;font:13px/1.5 'Segoe UI',sans-serif; }
+body .gear-comparison small { display:block;color:#d7ddcd;font:13px/1.5 'Segoe UI',sans-serif; }
+body [data-tone=gain],body [data-comparison=gain] { color:var(--ui-heal); }
+body [data-tone=loss],body [data-comparison=loss] { color:var(--ui-danger); }
+body #storyDialog[data-presentation=inspection],body #storyDialog[data-presentation=signpost] { width:min(620px,calc(100vw - 24px));padding:12px; }
+body #storyDialog:not([data-presentation=npc]) .speech-box { padding:12px;box-shadow:none;border:0;background:#ded1ad; }
+body #storyDialog:not([data-presentation=npc]) .story-layout { gap:8px; }
+body #storyDialog:not([data-presentation=npc]) #storyTitle { color:#eee0bc;font:700 18px/1.4 'Segoe UI',sans-serif; }
+body #storyDialog #storyText { font:14px/1.55 'Segoe UI',sans-serif; }
+body #storyDialog:not([data-presentation=npc]) #storyContinue { width:auto;min-width:100px;background:transparent;border:1px solid #747b64;color:#d9ddc8;box-shadow:none; }
+body #storyDialog:not([data-presentation=npc]) .speech-box #storyNext { color:#4a4936;border:1px solid #978c6a;background:transparent;box-shadow:none; }
+body .chapter-tabs [aria-pressed=true],body .adventure-quest[data-state=selected] { background:#3e4031;border-color:#c4ad70;box-shadow:inset 3px 0 #c4ad70;color:#f1e3bd; }
+
+/* One visual edge per map; functional scroll/selection remains main-owned. */
+body #villagePortalDialog .transport-map-viewport,body .dungeon-map-viewport { border:1px solid #7d816e;box-shadow:none; }
+body #villagePortalDialog #transportDetails { background:#2b3128;border:0;border-left:1px solid #717963;border-radius:0; }
+body .dungeon-card { box-shadow:none;border:0;background:transparent; }
+body #villagePortalDialog .travel-point[aria-pressed=true] .travel-halo { stroke:#795d32;stroke-width:6;fill:#ead39b70; }
+body #villagePortalDialog .travel-point:focus-visible .travel-halo { stroke:#433a26;stroke-width:8;stroke-dasharray:9 4; }
+body #villagePortalDialog .travel-point.is-current .travel-caption { stroke:#3f655d !important;stroke-width:4px !important; }
+body .map-heading { padding-bottom:8px;margin-bottom:8px; }
+@media(orientation:landscape) and (max-height:500px) {
+ body.adventure-playing { --adventure-hud:96px; }
+ body.adventure-playing[data-visual-scene=town] { --adventure-hud:84px; }
+ body .info-dialog,body .guild-dialog { padding:10px;border-width:6px;border-image-width:6px; }
+ body .section-heading h2 { font-size:16px; }
+ body #heroSkillsDialog { padding:8px 12px; }
+ body #heroSkillSections { padding:0 0 4px;gap:4px; }
+ body #heroSkillSections button { padding:5px 12px; }
+ body #heroSkillsPoints,body #heroSkillsSafety { margin:2px 0;font-size:12px; }
+ body #heroSkillActions>strong { font-size:12px; }
+ body .hero-node { padding:10px; }
+ body .hero-node p,body .reward-option p { font-size:13px; }
+ body .hero-node button,body .reward-option button,body #transportDetails button { min-height:44px; }
+ body .reward-option h4 { font-size:16px; }
+ body .reward-option h4 img { width:40px;height:40px; }
+ body .ability-key-hint { font-size:10px; }
+ body .ability-icon-button .ability-name { font-size:11px; }
+ body.is-playing #hudResources .resource-meter { gap:2px;font:10px/12px Consolas,monospace; }
+ body.is-playing #hudResources .resource-track { height:8px; }
+ body.is-playing #hudResources #runeCount { font:10px/12px Consolas,monospace;letter-spacing:0;line-height:12px;margin:0;padding:0;border:0;background:transparent; }
+}
+body.is-playing #hudResources .resource-meter { gap:2px; }
+body.is-playing #hudResources #runeCount { font-family:Consolas,monospace;font-size:11px;line-height:12px;letter-spacing:0;margin:0;padding:0;border:0;background:transparent; }
+@media(prefers-reduced-motion:reduce) { body button { transition:none; }body .ability-icon-button[data-just-ready=true] .ability-orb { animation:none; } }
+
+/* END PRESENTATION REFINEMENT V4 */
+
 /* END WOODLAND UI V3 */
 
 /* Keep the interior chart visible beside its notes on short landscape screens. */
@@ -1697,3 +1894,226 @@ body.adventure-playing #adventureStatus,body.adventure-playing #combatNotice { b
 #villagePortalDialog{max-width:900px}.transport-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(210px,1fr);gap:16px}.transport-map-viewport{height:34vh;min-height:180px;overflow:auto;overscroll-behavior:contain;background:#1a3028;border:1px solid #748773}.transport-map-viewport svg{display:block;margin:auto;max-width:none}.transport-map-viewport [role=button]{cursor:pointer}.transport-map-viewport [aria-pressed=true] rect,.transport-map-viewport [role=button]:focus rect{stroke:#ffe8aa;stroke-width:5}#transportDetails button{display:block;width:100%;margin:5px 0}#transportDetails p{font-size:13px;margin:6px 0}@media(max-width:600px) and (orientation:portrait){.transport-layout{grid-template-columns:1fr}}@media(max-height:500px) and (orientation:landscape){.transport-map-viewport{height:180px}#villagePortalDialog>p{font-size:12px;margin:5px 0}}
 
 .acquisition-notice{position:fixed;right:14px;top:82px;z-index:24;display:flex;align-items:center;gap:10px;max-width:min(330px,44vw);padding:10px 14px;background:#1a302aee;border:2px solid #b6a16a;box-shadow:0 3px 0 #101d18;pointer-events:none}.acquisition-notice img{width:36px;height:36px;object-fit:contain;image-rendering:pixelated}.acquisition-notice strong,.acquisition-notice small{display:block}.acquisition-notice small{color:#c3d2ba;font-size:12px}.acquisition-notice[data-kind=magic]{border-color:#b6a7ee}.acquisition-sigil{font-size:28px;color:#d6c6ff}@media(max-height:500px){.acquisition-notice{top:60px;padding:7px 10px;max-width:300px}.acquisition-notice strong{font-size:13px}}
+
+.permanent-tool { display:flex; align-items:center; gap:12px; padding:9px 12px; margin:8px 0; border:1px solid #7f885d; background:#263124; }
+#transportDetails { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; gap:6px; }
+#transportDetails>h3,#transportDetails>p,#transportDetails>.primary,#transportDetails>button:last-child { grid-column:1 / -1; }
+#transportDetails>button { margin:0; }
+#transportDetails>h3,#transportDetails>p { margin:4px 0; }
+.permanent-tool>div { flex:1; min-width:0; }
+.permanent-tool strong,.permanent-tool small { display:block; }
+.permanent-tool small,.crystal-actions small { color:#bbc9b0; font-size:12px; }
+.crystal-icon { color:#b0d9eb; font-size:30px; line-height:1; text-shadow:2px 2px #345367; }
+#soulCrystalDialog { width:min(580px,calc(100vw - 24px)); }
+.crystal-status { display:flex; align-items:center; gap:15px; margin:12px 0; }
+.crystal-status p { margin:3px 0; }
+#soulCrystalMeter { width:100%; height:12px; accent-color:#96bfd5; }
+.crystal-actions { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px; }
+@media(orientation:landscape) and (max-height:500px) { .permanent-tool { padding:6px 9px; margin:5px 0; gap:8px; }.permanent-tool strong { font-size:13px; }.crystal-status { margin:6px 0; }.crystal-actions { margin-top:10px; } }
+/* Audit pass: decisions first; bounded personal inbox uses the existing theme. */
+.skill-actions { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:8px 0; }
+.skill-actions > strong { flex-basis:100%; }
+.hero-loadout label { font-size:.85rem; }
+.reward-inbox { width:min(760px,94vw); max-height:90dvh; overflow:auto; }
+.reward-pages { display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; }
+.reward-inbox .reward-option { border-top:1px solid #a39566; padding:10px 0; }
+#adventureRewardChoices:empty { display:none; }
+@media (max-height:450px) {
+  .reward-inbox { max-height:94dvh; padding:12px; }
+  .skill-actions { gap:4px; }
+}
+
+/* BEGIN FUNCTIONAL UI FLOW - layout/overflow/visibility; theme belongs to V3. */
+[hidden] { display:none !important; }
+body.is-playing { --flow-dock:86px; --adventure-hud:var(--flow-dock); }
+body.is-playing #world { bottom:var(--flow-dock); height:calc(100dvh - var(--flow-dock)); }
+body.is-playing #gameHud { height:var(--flow-dock); min-height:0; padding:6px 10px; display:grid; grid-template-columns:minmax(145px,185px) minmax(0,1fr) auto; grid-template-rows:minmax(0,1fr); gap:10px; align-items:center; }
+body.is-playing #hudResources { grid-column:1; min-width:0; min-height:0; gap:2px; }
+body.is-playing #hudResources .resource-meter { gap:1px; }
+body.is-playing #hudResources .resource-track { height:8px; }
+body.is-playing #hudResources #runeCount { line-height:12px; height:12px; margin:0; }
+body.is-playing #hudCombat { grid-column:2; display:flex; flex-direction:row; align-items:center; justify-content:center; gap:8px; min-width:0; }
+body.is-playing #toolHotbar { display:flex; width:auto; justify-content:center; gap:6px; min-width:0; }
+body.is-playing #toolHotbar .tool-side[data-empty=true],#utilityHotbar .utility-slot[data-empty=true] { display:none; }
+body.is-playing .ability-center { min-width:0; }
+body.is-playing #abilityButtons { display:flex; flex-wrap:nowrap; gap:4px; }
+body.is-playing .ability-center .ability-icon-button { min-width:46px; min-height:0; height:72px; grid-template-rows:42px 14px 12px; gap:1px; flex:0 1 76px; padding:0 2px; }
+body.is-playing .ability-icon-button .ability-name { min-height:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; }
+body.is-playing .ability-icon-button .ability-key-hint { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; }
+body.is-playing .ability-orb { width:42px; height:42px; }
+body.is-playing .ability-orb .ability-sprite { width:34px; height:34px; }
+body.is-playing #hudCombat .hud-actions { position:static; width:auto; min-width:0; margin:0; display:flex; align-self:center; }
+body.is-playing #hudCombat #dashButton { width:auto; min-width:44px; min-height:44px; padding:6px; }
+body.is-playing #hudUtilities { position:static; transform:none; grid-column:3; display:grid; grid-template-columns:auto auto; grid-template-rows:auto auto; align-items:center; justify-items:end; gap:2px 4px; max-width:190px; min-width:0; min-height:0; }
+body.is-playing #partyTools { grid-column:2; grid-row:1; }
+body.is-playing #partyTools>summary { min-height:30px; white-space:nowrap; }
+body.is-playing #targetButton { grid-column:1; grid-row:1; min-height:30px; min-width:0; padding:4px; max-width:84px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+body.is-playing #utilityHotbar,body.is-playing #equipmentShortcut { grid-column:1 / -1; grid-row:2; }
+body.is-playing #utilityHotbar { display:flex; gap:3px; }
+body.is-playing .utility-slot { min-width:42px; width:48px; height:44px; min-height:44px; }
+body.is-playing .utility-slot .utility-name { display:none; }
+body.is-playing .utility-slot .utility-key { position:absolute; }
+body.is-playing[data-input-profile=pointer] .utility-slot { height:40px; min-height:40px; padding:2px; }
+body.is-playing[data-input-profile=pointer] #partyTools>summary { min-height:24px; padding:2px 8px; }
+body.is-playing[data-input-profile=pointer] #targetButton { min-height:24px; padding:2px 4px; }
+#equipmentShortcut { min-height:32px; margin:0; padding:4px 8px; }
+#partyTools { position:relative; margin:0; }
+#partyTools>summary { cursor:pointer; padding:4px 8px; }
+#partyTools[open] #pingButtons { position:absolute; right:0; bottom:100%; display:flex; width:max-content; padding:4px; }
+#partyTools #pingButtons button { min-width:48px; min-height:44px; }
+body.is-playing[data-input-profile=pointer] .arena-controls { display:none !important; }
+body.is-playing[data-input-profile=touch] { --flow-dock:106px; }
+body.is-playing[data-input-profile=touch] .arena-controls { display:block !important; bottom:calc(var(--flow-dock) + 8px); left:8px; }
+body[data-input-profile=touch] #equipmentShortcut,body[data-input-profile=touch] #partyTools>summary { min-height:44px; }
+body.is-playing[data-input-profile=touch] #targetButton { min-height:44px; }
+body[data-input-profile=touch] .touch-pad button { min-height:44px; min-width:44px; }
+#hudMessages { position:fixed; inset:0; z-index:18; pointer-events:none; }
+body:not(.is-playing) #hudMessages { display:none; }
+#hudMessages #trackedObjective { position:absolute; top:100px; left:12px; max-width:min(390px,45vw); margin:0; overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+#hudMessages #trackedObjective.hidden { display:none; }
+#hudMessages #interactButton { position:absolute; bottom:calc(var(--flow-dock) + 6px); left:50%; transform:translateX(-50%); pointer-events:auto; min-height:44px; max-width:min(470px,55vw); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.is-playing #hudMessages #combatNotice { position:absolute; top:auto; right:auto; bottom:calc(var(--flow-dock) + 52px); left:50%; transform:translateX(-50%); width:max-content; max-width:min(490px,55vw); margin:0; }
+#hudMessages #combatNotice:empty { display:none; }
+#hudNoticeColumn { position:absolute; right:12px; top:114px; max-width:min(300px,36vw); display:flex; flex-direction:column; gap:5px; }
+#hudCritical,#hudEvents { display:flex; flex-direction:column; gap:4px; }
+#hudCritical>* { pointer-events:auto; }
+#hudCritical #bossTactic { position:static; transform:none; max-width:100%; margin:0; }
+#connectionNotice:empty { display:none; }
+body.is-playing #hudEvents .adventure-feedback,body.is-playing #hudEvents .acquisition-notice,body.is-playing #hudEvents .adventure-save-badge,body.is-playing #hudCritical .adventure-save-badge { position:static; transform:none; width:auto; max-width:100%; margin:0; }
+body.is-playing #teamHud { top:48px; left:auto; right:12px; width:min(330px,40vw); display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
+body.is-playing #teamHud .teammate { min-width:0; width:auto; grid-template-columns:minmax(0,1fr) auto; }
+body.is-playing .area-view-button { top:144px; left:12px; right:auto; }
+body.is-playing .adventure-tools { top:48px; left:10px; }
+#heroSkillsDialog[open] { display:flex; flex-direction:column; overflow:hidden; height:min(760px,calc(100dvh - 24px)); }
+#heroSkillsDialog>.section-heading { flex-shrink:0; margin-bottom:6px; }
+#heroSkillsDialog[data-safe=true] #heroSkillsSafety { display:none; }
+#heroSkillsDialog>p { margin:3px 0; }
+#heroSkillsNotice:empty { display:none; }
+.skill-sections { display:flex; flex-wrap:nowrap; gap:6px; flex-shrink:0; }
+.skill-sections button { min-height:44px; }
+.skill-content { min-height:0; flex:1; overflow:auto; overscroll-behavior:contain; padding-top:6px; }
+.skill-content .hero-nodes { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+.skill-slot { display:grid; grid-template-columns:1fr auto; gap:4px; }
+.skill-slot select { grid-column:1 / -1; width:100%; }
+#heroSkillActions { margin-top:0; }
+#heroSkillActions>strong { flex-basis:auto; }
+#heroBranches { margin:6px 0; }
+#heroAscensionPurchases details { margin-top:0; }
+.reward-option h4 { display:flex; align-items:center; gap:10px; margin:8px 0; }
+.reward-option h4 img { width:48px; height:48px; }
+.reward-option label { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.reward-option .gear-comparison small { display:block; }
+.reward-option>button { margin:4px 6px 0 0; }
+.saved-world-card details { grid-column:1 / -1; }
+#storyStep:empty { display:none; }
+#storyDialog:not([data-presentation=npc]) { width:min(560px,calc(100vw - 24px)); }
+#storyDialog:not([data-presentation=npc]) #storyNext { width:auto; min-height:44px; justify-self:end; }
+#storyDialog[data-presentation=npc] .story-choices { margin-top:6px; }
+#adventureMapDialog.interior-view[open] { display:flex; flex-direction:column; height:calc(100dvh - 24px); overflow:hidden; }
+.interior-view .atlas-layout,.interior-view .map-toolbar,.interior-view>.map-legend,.interior-view>.map-footnote { display:none; }
+#adventureMapDialog.interior-view #adventureDungeonMaps { display:block; flex:1; min-height:0; max-height:none; overflow:hidden; }
+#adventureMapDialog.interior-view .dungeon-card { display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto minmax(100px,1fr) auto; gap:6px; height:100%; margin:0; padding:8px; box-sizing:border-box; }
+#adventureMapDialog.interior-view .dungeon-card>h3 { grid-column:1; grid-row:1; margin:0; align-self:center; }
+#adventureMapDialog.interior-view .dungeon-map-controls { grid-column:2; grid-row:1; margin:0; }
+#adventureMapDialog.interior-view .dungeon-map-controls .subtle { display:none; }
+#adventureMapDialog.interior-view .dungeon-map-viewport { grid-column:1 / -1; grid-row:2; min-height:100px; height:100%; }
+#adventureMapDialog.interior-view .dungeon-map-metadata { grid-column:1 / -1; grid-row:3; max-height:26dvh; overflow:auto; margin:0; }
+#adventureMapDialog.interior-view .dungeon-map-metadata summary { cursor:pointer; min-height:32px; }
+#dungeonMapChoice { max-width:220px; min-height:40px; }
+@media (orientation:landscape) and (max-height:500px) {
+  body.is-playing { --flow-dock:76px; }
+  body.is-playing[data-input-profile=touch] { --flow-dock:100px; }
+  body.is-playing #gameHud { grid-template-columns:minmax(112px,145px) minmax(0,1fr) auto; gap:5px; padding:4px 8px; }
+  body.is-playing #hudResources { padding-left:0; }
+  body.is-playing #hudHeroPortrait { display:none; }
+  body.is-playing .ability-center .ability-icon-button { min-width:44px; height:66px; grid-template-rows:36px 14px 12px; }
+  body.is-playing .ability-orb { width:36px; height:36px; }
+  body.is-playing .ability-orb .ability-sprite { width:30px; height:30px; }
+  body.is-playing #hudUtilities { max-width:190px; gap:2px; }
+  body.is-playing .adventure-tools { top:40px; left:8px; }
+  body.is-playing #hudMessages #trackedObjective { top:86px; left:8px; max-width:42vw; }
+  #hudNoticeColumn { top:108px; right:8px; max-width:34vw; }
+  body.is-playing #teamHud { top:42px; right:8px; }
+  body.is-playing .area-view-button { top:140px; left:8px; right:auto; }
+  #heroSkillsDialog[open] { padding:10px 12px; }
+  #heroSkillsDialog .section-heading h2 { margin:0; }
+  #heroSkillsDialog>.section-heading { padding:0 0 4px; margin:0 0 4px; min-height:36px; }
+  body[data-input-profile=pointer] #heroSkillsDialog>.section-heading button,body[data-input-profile=pointer] #heroSkillSections button { min-height:36px; padding:6px 10px; }
+  .skill-content .hero-node { padding:8px; }
+  #adventureMapDialog.interior-view .section-heading { padding:0; margin:0 0 4px; }
+  #adventureMapDialog.interior-view .dungeon-card { padding:4px; }
+  #adventureMapDialog.interior-view .dungeon-card>h3 { font-size:14px; }
+}
+/* END FUNCTIONAL UI FLOW */
+
+/* October20: requested transparent combat dock; retain readable individual controls. */
+body.is-playing #gameHud { background:transparent; box-shadow:none; border-top:0; }
+body.is-playing #world { bottom:0; height:100dvh; }
+.skill-section-hint { grid-column:1 / -1; }
+#campaignObjectiveStatus { position:absolute; top:158px; left:12px; max-width:min(370px,44vw); margin:0; padding:5px 8px; background:#18251de8; color:#f2e2bc; border:1px solid #9aab82; font-size:13px; }
+#campaignScene { max-width:490px; }
+@media(max-height:450px) { #campaignObjectiveStatus { top:141px; left:8px; font-size:12px; max-width:40vw; } #campaignScene { max-height:85dvh; overflow:auto; padding:16px; } }
+
+/* BEGIN CAMPAIGN PRESENTATION V1 */
+/* Compact protected-scene controls leave the actual dragon visible. */
+#campaignScene { position:fixed; inset:auto auto 16px 50%; transform:translateX(-50%); margin:0; width:min(580px,calc(100vw - 28px)); padding:14px 18px; }
+#campaignScene h2 { font-size:19px; margin:0 0 8px; }
+#campaignScene p { font-size:13px; margin:6px 0 10px; }
+#campaignScene .subtle { display:none; }
+#campaignScene::backdrop { background:rgba(8,18,15,.12); }
+.campaign-evidence { display:flex; align-items:center; gap:8px; font-size:12px; }
+.campaign-evidence img { image-rendering:pixelated; flex:none; }
+@media (max-height:500px) { #campaignScene { bottom:8px; left:8px; transform:none; width:min(360px,calc(100vw - 24px)); padding:8px 12px; } #campaignScene h2 { font-size:16px; } #campaignScene p { font-size:11px; margin:3px 0 5px; } #campaignScene button { min-height:32px; padding:5px 12px; } }
+
+/* END CAMPAIGN PRESENTATION V1 */
+/* Focused release polish: one encounter instruction, local combat contrast. */
+#campaignObjectiveStatus { top:100px; max-width:min(430px,45vw); padding:8px 10px; border:1px solid #a69b71; background:rgba(20,25,23,.9); box-shadow:0 2px 7px #0007; line-height:1.4; }
+#campaignObjectiveStatus strong,#campaignObjectiveStatus span { display:block; }
+#campaignObjectiveStatus strong { color:#ffe6ad; font-size:13px; }
+#campaignObjectiveStatus span { margin-top:3px; color:#e2e5da; font-size:12px; }
+body.is-playing #hudCombat { padding:5px 8px; background:linear-gradient(#1b211dd9,#121714eb); border:1px solid #82795199; box-shadow:0 1px 6px #0008; }
+body.is-playing #hudCombat .ability-label,body.is-playing #hudCombat .ability-meta { text-shadow:0 1px 2px #000; }
+@media (orientation:landscape) and (max-height:500px) {
+  #campaignObjectiveStatus { top:86px; left:8px; max-width:42vw; padding:5px 7px; }
+  #campaignObjectiveStatus strong { font-size:11px; }
+  #campaignObjectiveStatus span { font-size:11px; line-height:1.3; }
+  body.is-playing #hudCombat { padding:3px 5px; }
+}
+
+
+/* BEGIN RELEASE PRESENTATION V5 */
+/* Release V5 readability. Stable panel dimensions; no gameplay controls changed. */
+body.is-playing #pouchPanel.hud-open { background:#202c26; border-color:#a89b70; }
+body.is-playing #pouchPanel.hud-open .quick-pouch { align-items:start; }
+body.is-playing #pouchPanel.hud-open .quick-pouch { grid-auto-flow:row; grid-auto-columns:auto; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); max-height:min(48dvh,420px); overflow-y:auto; overflow-x:hidden; }
+#pouchPanel .quick-item,#pouchPanel .pouch-item { min-width:0; }
+#pouchPanel .item-title-text,#pouchPanel .pouch-item-description { overflow-wrap:anywhere; }
+body .barrier-badge { top:auto; bottom:calc(100% + 6px); right:0; max-width:210px; white-space:pre-line; padding:3px 5px; color:#d7dfcb; background:#1b2c2a; border-left:2px solid #c8b57e; font:11px/1.4 Consolas,monospace; }
+@media(min-width:900px) and (min-height:550px) {
+ body.is-playing { --flow-dock:100px; }
+ body.is-playing .ability-center .ability-icon-button { height:86px; grid-template-rows:42px 28px 12px; }
+ body.is-playing .ability-icon-button .ability-name { white-space:normal; overflow:hidden; text-overflow:clip; line-height:13px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+}
+@media(max-width:600px) {
+ body #storyDialog[data-presentation=npc] { top:12px; bottom:12px; margin:0 auto; height:calc(100dvh - 24px); max-height:calc(100dvh - 24px); overflow-y:auto; }
+ body #storyDialog[data-presentation=npc] .story-conversation { grid-template-columns:minmax(0,1fr); }
+ body #storyDialog[data-presentation=npc] .npc-speaker { order:-1; }
+ body #storyDialog[data-presentation=npc] .speech-box { max-height:none; min-height:0; }
+ body #storyDialog[data-presentation=npc] .speaker-heading { height:58px; }
+ body #storyDialog[data-presentation=npc] .speaker-heading canvas { width:46px; height:50px; }
+ body #villagePortalDialog .transport-layout { grid-template-columns:minmax(0,1fr); gap:12px; }
+ body #villagePortalDialog .transport-map-viewport { height:36dvh; min-height:220px; }
+ body #villagePortalDialog .map-controls { display:flex; flex-wrap:wrap; gap:5px; }
+ body #villagePortalDialog #transportDetails { max-height:none; border-left:0; border-top:1px solid #717963; }
+ body #villagePortalDialog #transportDetails h3 { font-size:16px; }
+ #adventureMapDialog .map-toolbar { display:grid; grid-template-columns:minmax(0,1fr); gap:7px; }
+ #adventureMapDialog .map-view-buttons { flex-wrap:wrap; min-width:0; }
+ #adventureMapDialog .map-zoom-buttons { justify-content:flex-end; flex-wrap:wrap; }
+ #adventureMapDialog #atlasRegionChoice { flex:1 1 145px; min-width:0; max-width:100%; }
+ #adventureMapDialog .map-heading { align-items:flex-start; gap:8px; }
+ #adventureMapDialog .map-heading>div { min-width:0; }
+ body.is-playing #pouchPanel.hud-open .quick-pouch { grid-template-columns:repeat(2,minmax(0,1fr)); max-height:48dvh; }
+ #pouchPanel button { min-width:40px; min-height:40px; }
+}
+
+/* END RELEASE PRESENTATION V5 */

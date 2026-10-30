@@ -4,20 +4,27 @@ import time
 
 INTERVAL_SECONDS=600
 CHECK_SECONDS=2
-EXCLUDED={'hunter_wolves','camp_guards','mill-approach','mill-approach-flank'}
+EXCLUDED={'hunter_wolves','camp_guards','mill-approach','mill-approach-flank','workers-approach','oath-trial'}
+
+
+def retire_quest_groups(state):
+    """Retire legacy workers' future respawns, preserving bodies and receipts."""
+    groups=state.get('respawns',{}).get('groups',{})
+    for key in list(groups):
+        if key=='workers-approach' or key.startswith('workers-approach:'):groups.pop(key)
 
 
 def ordinary(area,e):
     import adventure,dungeons,region_content
-    return (area in adventure.GROUPS and area not in dungeons.AREAS and area not in region_content.HUBS and
-            area not in ('caravan','shrine','ruins','cellar') and e.get('group') and e['group'] not in EXCLUDED and
+    return ((area in adventure.GROUPS or area in __import__('campaign_expansion').PACKS) and area not in dungeons.AREAS and area not in region_content.HUBS and
+            area not in ('caravan','shrine','ruins','cellar') and e.get('group') and not any(e['group']==g or e['group'].startswith(g+':') for g in EXCLUDED) and
             'shrine' not in e['group'] and not any(e.get(k) for k in ('boss','miniBoss','structure','uniqueQuest')))
 
 
 def prepare(area,state,world=None,room=None):
-    if 'respawns' in state:return
+    if 'respawns' in state:retire_quest_groups(state);return
     import adventure
-    if area not in adventure.GROUPS:return
+    if area not in adventure.GROUPS and area not in __import__('campaign_expansion').PACKS:return
     groups={}
     templates=copy.deepcopy(state['enemies'])
     if world and room:
@@ -56,6 +63,7 @@ def tick(world,room,now):
     room['_respawnCheckAt']=now+CHECK_SECONDS
     a=room['adventure'];wall=time.time();changed=False
     for area,state in a['areas'].items():
+        retire_quest_groups(state)
         if area==a['current']:continue # Never materialize enemies in an occupied area.
         for group,g in state.get('respawns',{}).get('groups',{}).items():
             if g['eligibleAt'] is None or wall<g['eligibleAt']:continue
@@ -80,7 +88,8 @@ def validate(area,state):
         origins=[]
         for e in g['templates']:
             if not isinstance(e,dict) or not isinstance(e.get('group'),str) or not isinstance(e.get('lifeOrigin',e.get('id')),str):raise ValueError('Invalid respawn origin.')
-            if not ordinary(area,e) or e['group']!=key or e.get('lifeGeneration',0)!=0:raise ValueError('Unique encounter cannot respawn.')
+            legacy_workers=area=='yard' and (key=='workers-approach' or key.startswith('workers-approach:')) and not any(e.get(k) for k in ('boss','miniBoss','structure','uniqueQuest'))
+            if not (ordinary(area,e) or legacy_workers) or e['group']!=key or e.get('lifeGeneration',0)!=0:raise ValueError('Unique encounter cannot respawn.')
             origins.append(e.get('lifeOrigin',e['id']))
         if len(set(origins))!=len(origins) or not isinstance(g['deaths'],dict) or any(k not in origins or type(v) not in (int,float) or not 0<=v<=10**12 for k,v in g['deaths'].items()):raise ValueError('Invalid outdoor death receipts.')
         due=g['eligibleAt']

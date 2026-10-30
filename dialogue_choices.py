@@ -10,11 +10,13 @@ def supported(d):
 
 def options(d):
     if d.get('topic'):return [('back','Back to the main topic'),('leave','Leave the conversation')]
+    if d.get('campaignContact'):
+        return [(k,label) for k,label in [('accept','Accept the offered assignment'),('report','Report completed work')] if k in d.get('runnerActions',[])]+[('assignments','Review assignments'),('leave','Leave the conversation')]
     choices=[('region','What is happening in the woodland?'),('advice','What should I do next?'),
              ('steady','We will help. [encouraging]'),('skeptical','I need clearer answers. [skeptical]')]
-    if d['kind']=='adventure_runner':
+    if d['kind'] in ('adventure_runner','adventure_contact'):
         actions=[(k,label) for k,label in [('accept','Accept the offered assignment'),('report','Report completed work')] if k in d.get('runnerActions',['accept','report'])]
-        choices+=actions+[('assignments','Review assignments'),('leave','Not yet. Leave')]
+        choices+=actions+d.get('settlementChoices',[])+d.get('serviceChoices',[])+[('assignments','Review assignments'),('leave','Not yet. Leave')]
     elif d['kind']=='adventure_caretaker':choices+=[('treat','Restore my HP and mana · 5 shared Runes'),('leave','Leave')]
     else:choices+=[('continue','Continue' if d['page']<d.get('lastPage',0) else 'Help the hunter' if d['kind']=='adventure_hunter' else 'Understood'),('leave','Not now. Leave')]
     return choices[4:]+choices[:4]
@@ -25,6 +27,7 @@ def decorate(p,view):
     if not supported(d):return view
     d['lastPage']=view['total']-1
     if d.get('reaction'):view['text']=d['reaction']
+    if d.get('contactTitle'):view['title']=d['contactTitle'];view['portrait']=d['contactPortrait']
     if d['kind']=='adventure_caretaker':view['serviceRevision']=__import__('cottage').record(p)['revision']
     view['revision']=d.get('revision',0)
     view['choices']=[dict(id=k,label=v) for k,v in options(d)]
@@ -45,14 +48,26 @@ def choose(world,room,p,payload):
         d.update(topic=key,reply=dict(options(d))[key],reaction=(
             'The dragon disrupted the watch, but the Minotaur holds our old ruins. Beyond them, Dunmere’s failing water and harvest point toward Ashen Ridge.' if key=='region' else
             'Accept the runner’s current assignment. Read tracks on the Southern road; Rootwater’s cave mouth is on its lower east edge. Ordinary Skills can be learned in Oakvale after closing this conversation. Beds choose recovery; export keeps a portable backup.'))
+        if d.get('contactId'):d['reaction']=__import__('campaign_quests').npc_text(room,d['contactId'])
     elif key in ('steady','skeptical'):
         record['attitudes'][d['kind']]=key
         d.update(topic=key,reply=dict(options(d))[key],reaction='Thank you. Your choices will help people get home. Ask what you need, then take one assignment at a time.' if key=='steady' else 'Fair. Read the objective before committing. You can postpone assignments and retreat from ordinary trails; tower waves and awakened bosses seal their exits.')
     elif key=='back':
         for field in ('topic','reaction','reply'):d.pop(field,None)
+        if d.get('baseReaction'):d['reaction']=d['baseReaction']
+    elif key.startswith('service_'):
+        __import__('settlement_events').claim(world,room,p,key.removeprefix('service_'));p['dialogue']=None
+    elif key=='ascension_context':
+        d.update(topic=key,reply='Tell me about the oath.',reaction='The spring oath binds a hunter’s strength to the people they protect. Bring15 unspent personal Magic Runes after reporting Dunmere’s investigation. Preview your class signature and both passives in Skills. Ascend here in safety; the works and optional root sump give the new form a real trial. Permanent stat purchases delay the oath, but later fixed sources can fund both.')
+    elif key.startswith(('seed_','relief_')):
+        p['dialogue']=None
+        try:__import__('campaign_quests').choose(world,room,p,dict(choice=key))
+        except Exception:p['dialogue']=before;raise
     elif key in ('accept','report'):
         status='offered' if key=='accept' else 'ready-to-turn-in'
-        q=next((q for q in chapter_flow.menu(room,p) if q['status']==status and q['actionable']),None)
+        rows=([q for q in __import__('campaign_expansion').menu(room,p) if __import__('campaign_content').QUESTS[q['id']]['contact']==d.get('contactId')]
+              if d.get('campaignContact') else chapter_flow.menu(room,p))
+        q=next((q for q in rows if q['status']==status and q['actionable']),None)
         if not q:raise ValueError('No assignment is '+('available to accept.' if key=='accept' else 'ready to report.'))
         p['dialogue']=None
         try:chapter_flow.action(world,room,p,dict(action='chapterAccept' if key=='accept' else 'chapterReport',quest=q['id']))

@@ -74,7 +74,10 @@
     function update(room,now,roundTrip=0) {
       const own=room.players.find(p=>p.id===room.you);
       const nextScene=[room.code,room.adventure?.area,room.stage,room.phase,room.townInterior,room.innFloor,room.puzzle?.id].join(':');
-      const previous=nextScene===scene ? position(room,now) : null;
+      // Server-confirmed discontinuities (dash) must not be eased away like
+      // small network corrections. A 116px dash used to take seconds to appear.
+      const jumped=anchor && (anchor.jump||0)!==(room.movement?.jump||0);
+      const previous=nextScene===scene && !jumped ? position(room,now) : null;
       scene=nextScene;
       if (!own || !room.movement || !['combat','town','routes','stage_exit','chest','puzzle','peace'].includes(room.phase)) {anchor=null;return;}
       const sample=clamp(roundTrip/2,0,100);

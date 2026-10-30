@@ -37,6 +37,7 @@ def confirmed(room):
         for row in room['adventure'].get('rewardHistory',[]):
             if row['id'] in old['history']:continue
             for who in row['recipients']:
+                if row['id'] in now['resolved'] and row['id'] not in old['resolved']:continue
                 if who.get('id')==p['id'] and who.get('convertedRunes'):emit(name=who['item'],rarity='reward',quantity=1,destination='pouch full · converted to '+str(who['convertedRunes'])+' shared Runes')
         gained=set(now['claims'])-set(old['claims'])
         if gained:

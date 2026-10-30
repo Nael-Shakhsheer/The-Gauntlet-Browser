@@ -39,6 +39,9 @@ def approach(room,e,target,now,dt,stop):
 
 def tick(world,room,e,target,now,dt):
     role = e.setdefault("combatRole",ROLES.get(e["kind"],"bruiser"))
+    if role in __import__('encounter_roles').HINTS:
+        __import__('encounter_roles').tick(world,room,e,target,now,dt)
+        return
     if role == "draco":
         tick_draco(world,room,e,target,now,dt)
         return

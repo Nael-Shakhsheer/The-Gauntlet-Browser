@@ -29,7 +29,10 @@ def location(e):
 def choose(world,room,e,now):
     e['_awarenessTick']=now;e['allowAcquire']=False
     e.setdefault('homeX',e['x']);e.setdefault('homeY',e['y'])
-    outdoor=bool(room.get('adventure') and not room['adventure'].get('locked') and not __import__('dungeons').inside(room) and not __import__('opening').active(room))
+    # Unsealed cave chambers are exploration encounters too. Excluding all
+    # dungeons gave ordinary packs the arena's650px acquisition/2000px pursuit,
+    # ignoring their authored190/300px territory and threatening safe arrivals.
+    outdoor=bool(room.get('adventure') and not room['adventure'].get('locked') and not __import__('opening').active(room))
     radius=e.get('aggroRadius',170) if outdoor else 650
     leash=e.get('leashRadius',245) if outdoor else 2000
     home=dict(x=e['homeX'],y=e['homeY'])
@@ -65,6 +68,7 @@ def choose(world,room,e,now):
         e['moving']=math.dist(old,(e['x'],e['y']))>.1
         e['returning']=state=='returning'
         if state=='returning' and distance<12:e['returning']=False;change(e,'unaware',now)
+    elif state=='unaware' and __import__('settlement_events').patrol(room,e,now,dt):pass
     else:e['moving']=False
     return None
 
@@ -79,5 +83,5 @@ def attacked(e,p,now):
 def break_concealment(p,kind):
     # Successful offensive casts break Vanish/smoke. Dash concealment is still
     # granted by its existing modifiers; ongoing bleed/summons do not break it.
-    if kind in {'damage','stun','bleed','dash_strike','pierce','area','target_area','rush','root_burst','rift','trap','sunburst','venom','crosscut','ascend_rogue'}:
+    if kind in {'damage','stun','bleed','dash_strike','pierce','area','target_area','rush','root_burst','rift','trap','sunburst','venom','crosscut','ascend_rogue','mercy_lance','repulse'}:
         p['invisibleUntil']=0

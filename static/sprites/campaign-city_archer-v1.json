@@ -1,0 +1,80 @@
+﻿{
+    "sourceColumns":  12,
+    "version":  1,
+    "directions":  [
+                       "south",
+                       "south-east",
+                       "east",
+                       "north-east",
+                       "north",
+                       "north-west",
+                       "west",
+                       "south-west"
+                   ],
+    "neutralHeight":  48,
+    "id":  "city_archer",
+    "states":  {
+                   "defeat":  [
+                                  11
+                              ],
+                   "channel":  [
+                                   9
+                               ],
+                   "idle":  [
+                                0,
+                                1
+                            ],
+                   "signature":  [
+                                     7,
+                                     8,
+                                     6
+                                 ],
+                   "basic":  [
+                                 4,
+                                 5,
+                                 6
+                             ],
+                   "hit":  [
+                               10
+                           ],
+                   "move":  [
+                                2,
+                                3
+                            ]
+               },
+    "source":  "source/city_archer-v1.png",
+    "drawOffset":  [
+                       -48,
+                       -72
+                   ],
+    "columns":  12,
+    "anchor":  [
+                   48,
+                   84
+               ],
+    "columnMap":  [
+                      0,
+                      1,
+                      2,
+                      3,
+                      4,
+                      5,
+                      6,
+                      7,
+                      8,
+                      9,
+                      10,
+                      11
+                  ],
+    "scale":  0.33103448275862069,
+    "cell":  96,
+    "actionSource":  "source/city_archer-bow-actions-v3.png",
+    "actionColumns":  [
+                          4,
+                          5,
+                          6,
+                          7,
+                          8,
+                          9
+                      ]
+}

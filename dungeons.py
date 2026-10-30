@@ -89,10 +89,24 @@ def ensure(room):
         if not isinstance(states[key],dict) or states[key].get('version')!=1 or states[key].get('type')!=spec['type'] or states[key].get('id')!=key:
             raise ValueError('Unsupported dungeon record: '+key)
         s=states[key];attempt=s.get('attempt')
+        if attempt is not None and (not isinstance(attempt,dict) or set(attempt)!={'area','wave'} or type(attempt['wave']) is not int):raise ValueError('Unsupported dungeon attempt: '+key)
         if any(area not in spec['areas'] for area in s.get('visited',[])) or (attempt and
                 (attempt.get('area') not in spec['areas'] or attempt.get('wave') not in (1,2))):
             raise ValueError('Unsupported dungeon location or attempt: '+key)
     return states
+
+
+def validate(room):
+    """Full untrusted-record checks at import/load, not per travel marker."""
+    states=ensure(room)
+    for key,s in states.items():
+        spec=SPECS[key]
+        expected={'version','id','type','entrances','visited','completedEncounters','completedFloors','claimedTreasure','bossComplete','routeOpen','attempt'}
+        if set(s)!=expected or type(s['bossComplete']) is not bool or type(s['routeOpen']) is not bool:raise ValueError('Unsupported dungeon fields: '+key)
+        allowed_encounters=set(spec['areas'])|{area+':'+str(wave) for area in spec['areas'] for wave in (1,2)}
+        treasures={fid for area in spec['areas'] for fid,_,_,_,kind in FEATURES[area] if kind=='dungeon_treasure'}
+        for field,allowed in [('entrances',set(spec['entrances'])),('visited',set(spec['areas'])),('completedEncounters',allowed_encounters),('completedFloors',{1,2,3} if key=='tower' else set()),('claimedTreasure',treasures)]:
+            if not isinstance(s.get(field),list) or any(type(v) not in (str,int) or v not in allowed for v in s[field]) or len(set(s[field]))!=len(s[field]):raise ValueError('Unsupported dungeon '+field+': '+key)
 
 
 def state(room): return ensure(room)[AREAS[area_id(room)]['dungeon']]
@@ -138,6 +152,7 @@ def build(world,room,area):
 
 
 def entered(world,room,source):
+    __import__('pumping_works').entered(room)
     states=ensure(room);here=area_id(room)
     if here in AREAS:
         s=state(room)
@@ -155,6 +170,8 @@ def entered(world,room,source):
 
 def closed(room,source,destination):
     states=ensure(room)
+    reason=__import__('pumping_works').closed(room,source,destination)
+    if reason:return reason
     if {source,destination}=={'cave_heart','clearing'} and not states['cave']['routeOpen']:
         return 'The cave troll guards the far opening. Defeat it inside Rootwater passage.'
     if {source,destination}=={'tower_3','bridge'} and not states['tower']['routeOpen']:
@@ -170,6 +187,11 @@ def features(room):
     if not inside(room):return []
     s=state(room);here=area_id(room);result=[]
     for key,name,x,y,kind in FEATURES[here]:
+        if key=='warden_begin' and (s['bossComplete'] or s['attempt']):continue
+        if key=='intake_restored' and not s['bossComplete']:continue
+        if key=='sluice_survey' and key in s['claimedTreasure']:
+            # Shared supply stays claimed; late characters can still inspect the personal rune.
+            result.append(dict(id=key,name='Inspect the dry reserve',x=x,y=y,kind='discovery',claimed=True));continue
         if kind=='dungeon_begin' and (s['attempt'] or s['bossComplete'] or AREAS[here].get('floor') in s['completedFloors']):continue
         if kind=='dungeon_treasure' and key in s['claimedTreasure']:continue
         result.append(dict(id=key,name=name,x=x,y=y,kind=kind,description=LORE[here] if kind in ('dungeon_story','dungeon_begin') else 'Personal supplies · choose a reward in Journal.'))
@@ -295,13 +317,13 @@ def view(room):
         s=states[key]
         if not s['entrances'] and not s['visited']:continue
         nodes=[dict(id=k,name=AREAS[k]['name'],position=INTERIOR_POINTS[k],current=k==here,
-                    cleared=k in s['completedEncounters'] or (k=='cave_heart' and s['bossComplete']) or AREAS[k].get('floor') in s['completedFloors'],visited=k in s['visited'])
+                    cleared=k in s['completedEncounters'] or (k==spec['areas'][-1] and s['bossComplete']) or AREAS[k].get('floor') in s['completedFloors'],visited=k in s['visited'])
                for k in spec['areas'] if k in known]
         links=[dict(fromId=k,toId=t,locked=bool(closed(room,k,t))) for k in spec['areas'] if k in known
                for t,_,_ in AREAS[k]['exits'] if t in known and t in spec['areas'] and k<t]
         wave=s.get('attempt',{});wave=wave['wave'] if wave else 0
         summaries.append(dict(id=key,**{k:v for k,v in spec.items() if k not in ('areas','entrances')},complete=s['bossComplete'],routeOpen=s['routeOpen'],
-            roomHint=(('The toll passage is open between road and clearing. Unclaimed supplies remain in the explored chambers.' if key=='cave' else
+            roomHint=(('The service drain is open to upper irrigation. Restore the intake and report to Tovin.' if key=='sluice' else 'The toll passage is open between road and clearing. Unclaimed supplies remain in the explored chambers.' if key=='cave' else
                        'The watch is quiet. Both entrances stay open; cleared floors and claimed rewards remain completed.') if s['bossComplete'] else LORE.get(here))
                       if inside(room) and AREAS[here]['dungeon']==key else None,
             entrances=list(s['entrances']),nodes=nodes,links=links,treasure=len(s['claimedTreasure']),surveyFound='cave_survey' in s['claimedTreasure'],
@@ -309,8 +331,8 @@ def view(room):
             floor=AREAS.get(here,{}).get('floor'),wave=wave,waves=room['stageWaves'] if inside(room) else 0,
             breakLeft=max(0,room.get('waveStartsAt',0)-time.monotonic()),
             objective=('Dungeon complete · both entrances are open. Completed encounters stay cleared.' if s['bossComplete'] else
-                       'Defeat the guardian to open the far exit.' if here in ('cave_heart','tower_3') else
+                       'Defeat the guardian to open the far exit.' if here in ('cave_heart','tower_3','pump_chamber') else
                        'Fight the current wave; stairs are sealed.' if s['attempt'] else
                        'Floor cleared · stairs are open.' if AREAS.get(here,{}).get('floor') in s['completedFloors'] else
-                       'Gather at the bell to begin.' if key=='tower' else 'Explore east; the northern gallery trail hides a cache.')))
+                       'Gather at the bell to begin.' if key=='tower' else 'Secure both mechanisms; the northern survey trail hides a reserve.' if key=='sluice' else 'Explore east; the northern gallery trail hides a cache.')))
     return summaries

@@ -7,6 +7,9 @@ SOURCES={'shrine:brook':1,'shrine:deepwood':1,'shrine:watch':1,
  'report:hunter':1,'report:bridge':1,'report:shrine':1,'report:woodland_boss':2,
  'cache:dry_spring':1,'report:failed_harvest':1,'report:irrigation':2,
  'report:mill_cellar':2,'report:chapter_outcome':2}
+LEGACY_SOURCES=frozenset(SOURCES)
+SOURCES.update({'report:fire':1,'report:letters':1,'report:seeds':1,'report:upstream':2,
+ 'report:steward':1,'report:sluice_route':2,'report:pumping_finale':2,'cache:sluice_survey':1,'report:root_sump':1})
 
 
 def ensure(p):
@@ -30,6 +33,7 @@ def reconcile_reports(room):
     sources=available_rewards(room)
     for p in room['players'].values():
         for source in sources:claim(p,source)
+    __import__('campaign_progress').reconcile_personal(room)
 
 
 def maxima(p,health=None,mana=None,ascended=None):
@@ -87,7 +91,7 @@ def view(room,p):
     return dict(ascensionEligible='chapter_outcome' in room['adventure'].get('chapter',{}).get('turnedIn',[]),balance=m['balance'],collected=sum(SOURCES[k] for k in m['claims']),healthRanks=m['healthRanks'],manaRanks=m['manaRanks'],
         ascended=m['ascended'],safe=safe(room,p),healthBefore=hp,healthAfter=maxima(p,health=min(5,m['healthRanks']+1))[0],
         manaBefore=mana,manaAfter=maxima(p,mana=min(5,m['manaRanks']+1))[1],ascendHealth=maxima(p,ascended=True)[0],ascendMana=maxima(p,ascended=True)[1],
-        claims=m['claims'],chapterBudget=16,description='Personal Magic Runes. Health/Mana cost 1; Ascension requires the completed Dunmere investigation and spends 15 currently unspent. There are 15 guaranteed + 1 optional in the playable chapters. Spending more than one makes Ascension unavailable until later content adds sources. Purchases are permanent; resource proportions and recharge are kept.')
+        claims=m['claims'],chapterBudget=sum(SOURCES.values()),description='Personal Magic Runes. Health/Mana cost1, capped5 ranks each. Ascension requires the reported Dunmere investigation and15 currently unspent. The five-region contract offers54 finite runes:37 main and17 optional. Purchases are permanent; resource proportions and recharge are kept.')
 
 
 def validate(p):
@@ -96,7 +100,7 @@ def validate(p):
     keys={'version','claims','balance','healthRanks','manaRanks','ascended','transactions','legacyHp','legacyMana'}
     if not isinstance(m,dict) or set(m)!=keys or m['version']!=1 or type(m['ascended']) is not bool:raise ValueError('Unsupported personal Magic Rune record.')
     if not isinstance(m['claims'],list) or any(not isinstance(k,str) or k not in SOURCES for k in m['claims']) or len(m['claims'])!=len(set(m['claims'])):raise ValueError('Invalid Magic Rune claims.')
-    for key,maximum in [('balance',16),('healthRanks',5),('manaRanks',5),('legacyHp',2500),('legacyMana',2500)]:
+    for key,maximum in [('balance',sum(SOURCES.values())),('healthRanks',5),('manaRanks',5),('legacyHp',2500),('legacyMana',2500)]:
         if type(m[key]) is not int or not 0<=m[key]<=maximum:raise ValueError('Invalid permanent Magic Rune value.')
     if m['balance']!=sum(SOURCES[k] for k in m['claims'])-m['healthRanks']-m['manaRanks']-(15 if m['ascended'] else 0):raise ValueError('Magic Rune balance does not match its source/purchase receipts.')
     if not isinstance(m['transactions'],dict) or len(m['transactions'])>11 or any(not re.fullmatch('[A-Za-z0-9_-]{16,80}',k) or not isinstance(v,dict) or set(v)!={'kind'} or v['kind'] not in ('health','mana','ascend') for k,v in m['transactions'].items()):raise ValueError('Invalid Magic Rune transaction receipts.')
@@ -107,6 +111,8 @@ def validate_world(a,p):
     if not m:return
     import chapter_flow
     allowed={source for key,(source,_) in chapter_flow.MAGIC_SOURCES.items() if key in a.get('chapter',{}).get('turnedIn',[])}
+    allowed.update('campaign:'+key for key in a.get('campaign',{}).get('reported',[]) if __import__('campaign_content').QUESTS[key]['reward']['magicRunes'])
     allowed.update('shrine:'+key for key in a.get('travelShrines',{}).get('active',[]))
     if 'dry_spring_found' in a['claimed']:allowed.add('cache:dry_spring')
+    if 'sluice_survey_found' in a['claimed']:allowed.add('cache:sluice_survey')
     if any(key not in allowed for key in m['claims']):raise ValueError('Personal Magic Rune claim lacks its world activation or report receipt.')

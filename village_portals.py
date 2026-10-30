@@ -46,13 +46,13 @@ def personal_reason(room,p,method):
     if p.get('townInterior') or progression.locked(room,p) or p.get('townInteraction')=='guild':return p['name']+': close the conversation and step outside.'
     if p.get('rootUntil',0)>time.monotonic():return p['name']+': wait for the root to end.'
     if method=='shrine' and not source_shrine(room,p):return p['name']+': gather at an activated shrine for free travel.'
-    if method=='crystal' and soul_crystal.ensure(p)['charge']<soul_crystal.CAPACITY:return p['name']+': crystal needs 20 souls ('+str(p['soulCrystal']['charge'])+'/20).'
+    if method=='crystal' and soul_crystal.ensure(p)['charge']<soul_crystal.CAPACITY:return p['name']+': crystal needs '+str(soul_crystal.CAPACITY)+' souls ('+str(p['soulCrystal']['charge'])+'/'+str(soul_crystal.CAPACITY)+').'
     return None
 
 
 def charge_reason(room):
-    return next((p['name']+': crystal needs 20 souls ('+str(soul_crystal.ensure(p)['charge'])+'/20).'
-        for p in room['players'].values() if p.get('connected',True) and not p.get('bot') and soul_crystal.ensure(p)['charge']<20),None)
+    return next((p['name']+': crystal needs '+str(soul_crystal.CAPACITY)+' souls ('+str(soul_crystal.ensure(p)['charge'])+'/'+str(soul_crystal.CAPACITY)+').'
+        for p in room['players'].values() if p.get('connected',True) and not p.get('bot') and soul_crystal.ensure(p)['charge']<soul_crystal.CAPACITY),None)
 
 
 def readiness(room,p,pending):
@@ -129,7 +129,7 @@ def view(room,player=None):
     crystal=soul_crystal.ensure(player) if player else None
     waiting=[readiness(room,p,pending) for p in humans] if pending else []
     outcome=room.get('_portalOutcome',{})
-    return dict(destinations=destinations(room),reason=reason(room),crystal=crystal and dict(charge=crystal['charge'],capacity=20),
+    return dict(destinations=destinations(room),reason=reason(room),crystal=crystal and dict(charge=crystal['charge'],capacity=soul_crystal.CAPACITY),
         message=outcome.get('message') if time.monotonic()-outcome.get('at',0)<8 else None,
         methods={method:personal_reason(room,player,method) or (charge_reason(room) if method=='crystal' else None) for method in ('shrine','crystal')} if player else {},
         channel=pending and dict(target=pending['target'],method=pending['method'],id=pending['id'],anchor=list(pending['anchor']),duration=CHANNEL_SECONDS,

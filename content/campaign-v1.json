@@ -1,0 +1,4676 @@
+{
+  "version": 1,
+  "regionCount": 5,
+  "regions": {
+    "woodland": {
+      "order": 1,
+      "name": "Woodland",
+      "hub": "home",
+      "status": "existing"
+    },
+    "dunmere": {
+      "order": 2,
+      "name": "Dunmere and the pumping works",
+      "hub": "dunmere",
+      "status": "existing"
+    },
+    "aurelian": {
+      "order": 3,
+      "name": "Aurelian City",
+      "hub": "city_refuge",
+      "status": "playable-mechanics-prototype"
+    },
+    "verdant": {
+      "order": 4,
+      "name": "The Verdant Veil",
+      "hub": "veil_haven",
+      "status": "playable-mechanics-prototype"
+    },
+    "cinder": {
+      "order": 5,
+      "name": "The Cinder Crown",
+      "hub": null,
+      "status": "playable-mechanics-prototype"
+    }
+  },
+  "areas": {
+    "city_approach": {
+      "id": "city_approach",
+      "name": "Aurelian · refugee approach",
+      "position": [
+        5,
+        5
+      ],
+      "danger": 9,
+      "region": "aurelian",
+      "arrangement": "road",
+      "size": [
+        1440,
+        900
+      ],
+      "artFamily": "aurelian-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "pump_exterior",
+          "west",
+          "east"
+        ],
+        [
+          "city_gate",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "city_gate": {
+      "id": "city_gate",
+      "name": "Aurelian · breached gate",
+      "position": [
+        6,
+        5
+      ],
+      "danger": 9,
+      "region": "aurelian",
+      "arrangement": "gate",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "aurelian-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "city_approach",
+          "west",
+          "east"
+        ],
+        [
+          "city_refuge",
+          "south",
+          "north"
+        ],
+        [
+          "city_square",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "city_refuge": {
+      "id": "city_refuge",
+      "name": "Aurelian · merchant refuge",
+      "position": [
+        6,
+        6
+      ],
+      "danger": 0,
+      "region": "aurelian",
+      "arrangement": "hub",
+      "size": [
+        960,
+        540
+      ],
+      "artFamily": "aurelian-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "city_gate",
+          "north",
+          "south"
+        ],
+        [
+          "city_homes",
+          "east",
+          "west"
+        ],
+        [
+          "city_archive",
+          "south",
+          "north"
+        ]
+      ]
+    },
+    "city_homes": {
+      "id": "city_homes",
+      "name": "Aurelian · residential streets",
+      "position": [
+        7,
+        6
+      ],
+      "danger": 9,
+      "region": "aurelian",
+      "arrangement": "courtyard",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "aurelian-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "city_refuge",
+          "west",
+          "east"
+        ],
+        [
+          "city_square",
+          "north",
+          "south"
+        ],
+        [
+          "city_observatory",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "city_archive": {
+      "id": "city_archive",
+      "name": "Aurelian · archive and infirmary",
+      "position": [
+        6,
+        7
+      ],
+      "danger": 10,
+      "region": "aurelian",
+      "arrangement": "lanes",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "aurelian-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "city_refuge",
+          "north",
+          "south"
+        ],
+        [
+          "city_terrace",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "city_square": {
+      "id": "city_square",
+      "name": "Aurelian · barricaded square",
+      "position": [
+        7,
+        5
+      ],
+      "danger": 10,
+      "region": "aurelian",
+      "arrangement": "gate",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "aurelian-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "city_gate",
+          "west",
+          "east"
+        ],
+        [
+          "city_homes",
+          "south",
+          "north"
+        ],
+        [
+          "city_barracks",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "city_barracks": {
+      "id": "city_barracks",
+      "name": "Aurelian · militia barracks",
+      "position": [
+        8,
+        5
+      ],
+      "danger": 11,
+      "region": "aurelian",
+      "arrangement": "frontage",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "aurelian-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "city_square",
+          "west",
+          "east"
+        ],
+        [
+          "city_observatory",
+          "south",
+          "north"
+        ]
+      ]
+    },
+    "city_observatory": {
+      "id": "city_observatory",
+      "name": "Aurelian · occupied observatory",
+      "position": [
+        8,
+        6
+      ],
+      "danger": 11,
+      "region": "aurelian",
+      "arrangement": "pillars",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "aurelian-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "city_homes",
+          "west",
+          "east"
+        ],
+        [
+          "city_barracks",
+          "north",
+          "south"
+        ],
+        [
+          "city_terrace",
+          "south",
+          "north"
+        ]
+      ]
+    },
+    "city_terrace": {
+      "id": "city_terrace",
+      "name": "Aurelian · upper terrace",
+      "position": [
+        8,
+        7
+      ],
+      "danger": 11,
+      "region": "aurelian",
+      "arrangement": "terrace",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "aurelian-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "city_archive",
+          "west",
+          "east"
+        ],
+        [
+          "city_observatory",
+          "north",
+          "south"
+        ],
+        [
+          "veil_threshold",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "veil_threshold": {
+      "id": "veil_threshold",
+      "name": "Veil · forest threshold",
+      "position": [
+        9,
+        7
+      ],
+      "danger": 11,
+      "region": "verdant",
+      "arrangement": "road",
+      "size": [
+        1440,
+        900
+      ],
+      "artFamily": "verdant-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "city_terrace",
+          "west",
+          "east"
+        ],
+        [
+          "veil_haven",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "veil_haven": {
+      "id": "veil_haven",
+      "name": "Veil · Rootsong settlement",
+      "position": [
+        10,
+        7
+      ],
+      "danger": 0,
+      "region": "verdant",
+      "arrangement": "hub",
+      "size": [
+        960,
+        540
+      ],
+      "artFamily": "verdant-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "veil_threshold",
+          "west",
+          "east"
+        ],
+        [
+          "veil_glades",
+          "south",
+          "north"
+        ],
+        [
+          "veil_grove",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "veil_glades": {
+      "id": "veil_glades",
+      "name": "Veil · disturbed glades",
+      "position": [
+        10,
+        8
+      ],
+      "danger": 11,
+      "region": "verdant",
+      "arrangement": "grove",
+      "size": [
+        1440,
+        900
+      ],
+      "artFamily": "verdant-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "veil_haven",
+          "north",
+          "south"
+        ],
+        [
+          "veil_pools",
+          "east",
+          "west"
+        ],
+        [
+          "veil_sanctuary",
+          "south",
+          "north"
+        ]
+      ]
+    },
+    "veil_pools": {
+      "id": "veil_pools",
+      "name": "Veil · fading essence pools",
+      "position": [
+        11,
+        8
+      ],
+      "danger": 12,
+      "region": "verdant",
+      "arrangement": "pools",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "verdant-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "veil_glades",
+          "west",
+          "east"
+        ],
+        [
+          "veil_grove",
+          "north",
+          "south"
+        ],
+        [
+          "veil_siphon_east",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "veil_grove": {
+      "id": "veil_grove",
+      "name": "Veil · the ancient grove",
+      "position": [
+        11,
+        7
+      ],
+      "danger": 12,
+      "region": "verdant",
+      "arrangement": "grove",
+      "size": [
+        1440,
+        900
+      ],
+      "artFamily": "verdant-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "veil_haven",
+          "west",
+          "east"
+        ],
+        [
+          "veil_pools",
+          "south",
+          "north"
+        ]
+      ]
+    },
+    "veil_sanctuary": {
+      "id": "veil_sanctuary",
+      "name": "Veil · abandoned sanctuary",
+      "position": [
+        10,
+        9
+      ],
+      "danger": 12,
+      "region": "verdant",
+      "arrangement": "pillars",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "verdant-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "veil_glades",
+          "north",
+          "south"
+        ],
+        [
+          "veil_siphon_west",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "veil_siphon_west": {
+      "id": "veil_siphon_west",
+      "name": "Veil · western siphon",
+      "position": [
+        11,
+        9
+      ],
+      "danger": 13,
+      "region": "verdant",
+      "arrangement": "lanes",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "verdant-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "veil_sanctuary",
+          "west",
+          "east"
+        ],
+        [
+          "veil_sanctum",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "veil_siphon_east": {
+      "id": "veil_siphon_east",
+      "name": "Veil · eastern siphon",
+      "position": [
+        12,
+        8
+      ],
+      "danger": 13,
+      "region": "verdant",
+      "arrangement": "frontage",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "verdant-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "veil_pools",
+          "west",
+          "east"
+        ],
+        [
+          "veil_sanctum",
+          "south",
+          "north"
+        ]
+      ]
+    },
+    "veil_sanctum": {
+      "id": "veil_sanctum",
+      "name": "Veil · siphoning sanctum",
+      "position": [
+        12,
+        9
+      ],
+      "danger": 14,
+      "region": "verdant",
+      "arrangement": "pillars",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "verdant-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "veil_siphon_west",
+          "west",
+          "east"
+        ],
+        [
+          "veil_siphon_east",
+          "north",
+          "south"
+        ],
+        [
+          "cinder_foothills",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "cinder_foothills": {
+      "id": "cinder_foothills",
+      "name": "Ashen Ridge · Cinder foothills",
+      "position": [
+        13,
+        9
+      ],
+      "danger": 14,
+      "region": "cinder",
+      "arrangement": "road",
+      "size": [
+        1440,
+        900
+      ],
+      "artFamily": "cinder-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "veil_sanctum",
+          "west",
+          "east"
+        ],
+        [
+          "cinder_lava_road",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "cinder_lava_road": {
+      "id": "cinder_lava_road",
+      "name": "Cinder · broken lava road",
+      "position": [
+        14,
+        9
+      ],
+      "danger": 14,
+      "region": "cinder",
+      "arrangement": "lanes",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "cinder-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "cinder_foothills",
+          "west",
+          "east"
+        ],
+        [
+          "cinder_ravine",
+          "south",
+          "north"
+        ],
+        [
+          "cinder_vent",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "cinder_ravine": {
+      "id": "cinder_ravine",
+      "name": "Cinder · basalt ravine",
+      "position": [
+        14,
+        10
+      ],
+      "danger": 15,
+      "region": "cinder",
+      "arrangement": "pillars",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "cinder-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "cinder_lava_road",
+          "north",
+          "south"
+        ],
+        [
+          "cinder_slopes",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "cinder_slopes": {
+      "id": "cinder_slopes",
+      "name": "Cinder · high slopes",
+      "position": [
+        15,
+        10
+      ],
+      "danger": 15,
+      "region": "cinder",
+      "arrangement": "frontage",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "cinder-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "cinder_ravine",
+          "west",
+          "east"
+        ],
+        [
+          "cinder_vent",
+          "north",
+          "south"
+        ]
+      ]
+    },
+    "cinder_vent": {
+      "id": "cinder_vent",
+      "name": "Cinder · vent passage",
+      "position": [
+        15,
+        9
+      ],
+      "danger": 16,
+      "region": "cinder",
+      "arrangement": "lanes",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "cinder-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "cinder_slopes",
+          "south",
+          "north"
+        ],
+        [
+          "cinder_upper",
+          "east",
+          "west"
+        ],
+        [
+          "cinder_lava_road",
+          "west",
+          "east"
+        ]
+      ]
+    },
+    "cinder_upper": {
+      "id": "cinder_upper",
+      "name": "Cinder · upper approach",
+      "position": [
+        16,
+        9
+      ],
+      "danger": 16,
+      "region": "cinder",
+      "arrangement": "road",
+      "size": [
+        1440,
+        900
+      ],
+      "artFamily": "cinder-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "cinder_vent",
+          "west",
+          "east"
+        ],
+        [
+          "cinder_antechamber",
+          "south",
+          "north"
+        ]
+      ]
+    },
+    "cinder_antechamber": {
+      "id": "cinder_antechamber",
+      "name": "Cinder · dragon antechamber",
+      "position": [
+        16,
+        10
+      ],
+      "danger": 16,
+      "region": "cinder",
+      "arrangement": "terrace",
+      "size": [
+        1200,
+        720
+      ],
+      "artFamily": "cinder-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "cinder_upper",
+          "north",
+          "south"
+        ],
+        [
+          "cinder_lair",
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "cinder_lair": {
+      "id": "cinder_lair",
+      "name": "Cinder Crown · the final lair",
+      "position": [
+        17,
+        10
+      ],
+      "danger": 17,
+      "region": "cinder",
+      "arrangement": "lair",
+      "size": [
+        1440,
+        900
+      ],
+      "artFamily": "cinder-environment",
+      "artStatus": "awaiting-sprite-chat",
+      "exits": [
+        [
+          "cinder_antechamber",
+          "west",
+          "east"
+        ]
+      ]
+    }
+  },
+  "connections": [
+    [
+      "pump_exterior",
+      "city_approach",
+      "east"
+    ],
+    [
+      "city_approach",
+      "city_gate",
+      "east"
+    ],
+    [
+      "city_gate",
+      "city_refuge",
+      "south"
+    ],
+    [
+      "city_gate",
+      "city_square",
+      "east"
+    ],
+    [
+      "city_refuge",
+      "city_homes",
+      "east"
+    ],
+    [
+      "city_refuge",
+      "city_archive",
+      "south"
+    ],
+    [
+      "city_homes",
+      "city_square",
+      "north"
+    ],
+    [
+      "city_homes",
+      "city_observatory",
+      "east"
+    ],
+    [
+      "city_square",
+      "city_barracks",
+      "east"
+    ],
+    [
+      "city_barracks",
+      "city_observatory",
+      "south"
+    ],
+    [
+      "city_archive",
+      "city_terrace",
+      "east"
+    ],
+    [
+      "city_observatory",
+      "city_terrace",
+      "south"
+    ],
+    [
+      "city_terrace",
+      "veil_threshold",
+      "east"
+    ],
+    [
+      "veil_threshold",
+      "veil_haven",
+      "east"
+    ],
+    [
+      "veil_haven",
+      "veil_glades",
+      "south"
+    ],
+    [
+      "veil_haven",
+      "veil_grove",
+      "east"
+    ],
+    [
+      "veil_glades",
+      "veil_pools",
+      "east"
+    ],
+    [
+      "veil_glades",
+      "veil_sanctuary",
+      "south"
+    ],
+    [
+      "veil_pools",
+      "veil_grove",
+      "north"
+    ],
+    [
+      "veil_pools",
+      "veil_siphon_east",
+      "east"
+    ],
+    [
+      "veil_sanctuary",
+      "veil_siphon_west",
+      "east"
+    ],
+    [
+      "veil_siphon_west",
+      "veil_sanctum",
+      "east"
+    ],
+    [
+      "veil_siphon_east",
+      "veil_sanctum",
+      "south"
+    ],
+    [
+      "veil_sanctum",
+      "cinder_foothills",
+      "east"
+    ],
+    [
+      "cinder_foothills",
+      "cinder_lava_road",
+      "east"
+    ],
+    [
+      "cinder_lava_road",
+      "cinder_ravine",
+      "south"
+    ],
+    [
+      "cinder_ravine",
+      "cinder_slopes",
+      "east"
+    ],
+    [
+      "cinder_slopes",
+      "cinder_vent",
+      "north"
+    ],
+    [
+      "cinder_vent",
+      "cinder_upper",
+      "east"
+    ],
+    [
+      "cinder_upper",
+      "cinder_antechamber",
+      "south"
+    ],
+    [
+      "cinder_antechamber",
+      "cinder_lair",
+      "east"
+    ],
+    [
+      "cinder_lava_road",
+      "cinder_vent",
+      "east"
+    ]
+  ],
+  "towns": {
+    "home": {
+      "name": "Oakvale",
+      "services": [
+        "market",
+        "inn",
+        "guild",
+        "alchemist"
+      ],
+      "sideQuests": [
+        "fire",
+        "letters",
+        "seeds"
+      ]
+    },
+    "dunmere": {
+      "name": "Dunmere",
+      "services": [
+        "market",
+        "inn",
+        "guild",
+        "alchemist"
+      ],
+      "sideQuests": [
+        "root_sump",
+        "dunmere_medicine",
+        "dunmere_carrier",
+        "dunmere_reserve"
+      ]
+    },
+    "city_refuge": {
+      "name": "Aurelian refuge",
+      "services": [
+        "market",
+        "inn",
+        "guild",
+        "alchemist"
+      ],
+      "sideQuests": [
+        "city_family",
+        "city_heirloom",
+        "city_medicine",
+        "city_workshop"
+      ]
+    },
+    "veil_haven": {
+      "name": "Rootsong",
+      "services": [
+        "market",
+        "inn",
+        "guild",
+        "alchemist"
+      ],
+      "sideQuests": [
+        "veil_scout",
+        "veil_sanctuary_repair",
+        "veil_ritual",
+        "veil_memory"
+      ]
+    }
+  },
+  "npcs": {
+    "city_messenger": {
+      "name": "Ilyan · dispatch rider",
+      "area": "dunmere",
+      "role": "city assignment"
+    },
+    "city_marshal": {
+      "name": "Marshal Rhea",
+      "area": "city_refuge",
+      "role": "defense coordinator"
+    },
+    "city_physician": {
+      "name": "Sen · infirmary surgeon",
+      "area": "city_refuge",
+      "role": "medical supplies"
+    },
+    "city_archivist": {
+      "name": "Vela · city archivist",
+      "area": "city_refuge",
+      "role": "records and families"
+    },
+    "veil_pathfinder": {
+      "name": "Tess · foxfolk pathfinder",
+      "area": "veil_haven",
+      "role": "scouting and practical trust"
+    },
+    "veil_keeper": {
+      "name": "Arven · stagfolk keeper",
+      "area": "veil_haven",
+      "role": "essence channels"
+    },
+    "veil_scholar": {
+      "name": "Moru · owlfolk scholar",
+      "area": "veil_haven",
+      "role": "wards and bond evidence"
+    },
+    "veil_artisan": {
+      "name": "Bren · badgerfolk artisan",
+      "area": "veil_haven",
+      "role": "sanctuary repair"
+    }
+  },
+  "quests": {
+    "city_call": {
+      "id": "city_call",
+      "title": "The City’s Distress",
+      "hub": "dunmere",
+      "requires": [
+        "city_dispatch"
+      ],
+      "prerequisites": [
+        "pumping_finale"
+      ],
+      "optional": false,
+      "contact": "city_messenger",
+      "reward": {
+        "receipt": "campaign:city_call",
+        "sharedRunes": 0,
+        "magicRunes": 0,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "city_breach": {
+      "id": "city_breach",
+      "title": "Break the Outer Assault",
+      "hub": "city_refuge",
+      "requires": [
+        "city_breach"
+      ],
+      "prerequisites": [
+        "city_call"
+      ],
+      "optional": false,
+      "contact": "city_marshal",
+      "reward": {
+        "receipt": "campaign:city_breach",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 2,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "city_rescue": {
+      "id": "city_rescue",
+      "title": "Names in the Smoke",
+      "hub": "city_refuge",
+      "requires": [
+        "rescue:nara",
+        "rescue:olen",
+        "city_records"
+      ],
+      "prerequisites": [
+        "city_breach"
+      ],
+      "optional": false,
+      "contact": "city_marshal",
+      "reward": {
+        "receipt": "campaign:city_rescue",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 1,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "city_evacuation": {
+      "id": "city_evacuation",
+      "title": "Hold the Courtyard",
+      "hub": "city_refuge",
+      "requires": [
+        "defense:city_evacuation"
+      ],
+      "prerequisites": [
+        "city_breach"
+      ],
+      "optional": false,
+      "contact": "city_marshal",
+      "reward": {
+        "receipt": "campaign:city_evacuation",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 1,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "city_gate_repair": {
+      "id": "city_gate_repair",
+      "title": "The Gate Must Hold",
+      "hub": "city_refuge",
+      "requires": [
+        "city_gate_component",
+        "defense:city_gate_repair"
+      ],
+      "prerequisites": [
+        "city_breach"
+      ],
+      "optional": false,
+      "contact": "city_marshal",
+      "reward": {
+        "receipt": "campaign:city_gate_repair",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 1,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "city_infirmary": {
+      "id": "city_infirmary",
+      "title": "A Shelter Under Fire",
+      "hub": "city_refuge",
+      "requires": [
+        "city_medical_satchel",
+        "defense:city_infirmary"
+      ],
+      "prerequisites": [
+        "city_breach"
+      ],
+      "optional": false,
+      "contact": "city_marshal",
+      "reward": {
+        "receipt": "campaign:city_infirmary",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 1,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "city_commanders": {
+      "id": "city_commanders",
+      "title": "The Hidden Militia",
+      "hub": "city_refuge",
+      "requires": [
+        "city_militia_orders",
+        "boss:city_knight",
+        "boss:city_mage",
+        "boss:city_archer"
+      ],
+      "prerequisites": [
+        "city_rescue",
+        "city_evacuation",
+        "city_gate_repair",
+        "city_infirmary"
+      ],
+      "optional": false,
+      "contact": "city_marshal",
+      "reward": {
+        "receipt": "campaign:city_commanders",
+        "sharedRunes": 36,
+        "magicRunes": 2,
+        "skillPoints": 2,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "city_terrace": {
+      "id": "city_terrace",
+      "title": "Above the Broken Banners",
+      "hub": "city_refuge",
+      "requires": [
+        "cinematic:city_dragon"
+      ],
+      "prerequisites": [
+        "city_commanders"
+      ],
+      "optional": false,
+      "contact": "city_marshal",
+      "reward": {
+        "receipt": "campaign:city_terrace",
+        "sharedRunes": 20,
+        "magicRunes": 1,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "veil_trust": {
+      "id": "veil_trust",
+      "title": "Useful Hands",
+      "hub": "veil_haven",
+      "requires": [
+        "rescue:veil_forager",
+        "repair:veil_path"
+      ],
+      "prerequisites": [
+        "city_terrace"
+      ],
+      "optional": false,
+      "contact": "veil_keeper",
+      "reward": {
+        "receipt": "campaign:veil_trust",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 1,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "veil_imbalance": {
+      "id": "veil_imbalance",
+      "title": "What the Roots Remember",
+      "hub": "veil_haven",
+      "requires": [
+        "veil_sample_pool",
+        "veil_sample_root",
+        "veil_ward_fragment"
+      ],
+      "prerequisites": [
+        "veil_trust"
+      ],
+      "optional": false,
+      "contact": "veil_keeper",
+      "reward": {
+        "receipt": "campaign:veil_imbalance",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 2,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "veil_siphons": {
+      "id": "veil_siphons",
+      "title": "The Stolen Current",
+      "hub": "veil_haven",
+      "requires": [
+        "mechanism:veil_siphon_west",
+        "mechanism:veil_siphon_east",
+        "veil_siphon_records"
+      ],
+      "prerequisites": [
+        "veil_imbalance"
+      ],
+      "optional": false,
+      "contact": "veil_keeper",
+      "reward": {
+        "receipt": "campaign:veil_siphons",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 2,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "veil_archmage": {
+      "id": "veil_archmage",
+      "title": "The Hand on the Chain",
+      "hub": "veil_haven",
+      "requires": [
+        "boss:veil_archmage",
+        "bond_broken"
+      ],
+      "prerequisites": [
+        "veil_siphons"
+      ],
+      "optional": false,
+      "contact": "veil_keeper",
+      "reward": {
+        "receipt": "campaign:veil_archmage",
+        "sharedRunes": 40,
+        "magicRunes": 2,
+        "skillPoints": 2,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "cinder_dragon": {
+      "id": "cinder_dragon",
+      "title": "End the Dragon’s Reign",
+      "hub": "cinder_foothills",
+      "requires": [
+        "cinder_lair_seal",
+        "boss:cinder_dragon",
+        "ending:campaign"
+      ],
+      "prerequisites": [
+        "veil_archmage"
+      ],
+      "optional": false,
+      "contact": "cinder_assignment",
+      "reward": {
+        "receipt": "campaign:cinder_dragon",
+        "sharedRunes": 80,
+        "magicRunes": 2,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "dunmere_medicine": {
+      "id": "dunmere_medicine",
+      "title": "Clean Hands, Clean Water",
+      "hub": "dunmere",
+      "requires": [
+        "dunmere_medicine"
+      ],
+      "prerequisites": [
+        "chapter_outcome"
+      ],
+      "optional": true,
+      "contact": "city_messenger",
+      "reward": {
+        "receipt": "campaign:dunmere_medicine",
+        "sharedRunes": 8,
+        "magicRunes": 1,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "dunmere_carrier": {
+      "id": "dunmere_carrier",
+      "title": "The Last Carrier",
+      "hub": "dunmere",
+      "requires": [
+        "dunmere_carrier_note",
+        "rescue:dunmere_carrier"
+      ],
+      "prerequisites": [
+        "chapter_outcome"
+      ],
+      "optional": true,
+      "contact": "city_messenger",
+      "reward": {
+        "receipt": "campaign:dunmere_carrier",
+        "sharedRunes": 8,
+        "magicRunes": 1,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "dunmere_reserve": {
+      "id": "dunmere_reserve",
+      "title": "A Reserve for Tomorrow",
+      "hub": "dunmere",
+      "requires": [
+        "dunmere_reserve_tools",
+        "repair:dunmere_reserve"
+      ],
+      "prerequisites": [
+        "pumping_finale"
+      ],
+      "optional": true,
+      "contact": "city_messenger",
+      "reward": {
+        "receipt": "campaign:dunmere_reserve",
+        "sharedRunes": 10,
+        "magicRunes": 1,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "city_family": {
+      "id": "city_family",
+      "title": "The Name on the Door",
+      "hub": "city_refuge",
+      "requires": [
+        "rescue:city_brother"
+      ],
+      "prerequisites": [
+        "city_breach"
+      ],
+      "optional": true,
+      "contact": "city_archivist",
+      "reward": {
+        "receipt": "campaign:city_family",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "city_heirloom": {
+      "id": "city_heirloom",
+      "title": "The Brass Seal",
+      "hub": "city_refuge",
+      "requires": [
+        "city_heirloom"
+      ],
+      "prerequisites": [
+        "city_breach"
+      ],
+      "optional": true,
+      "contact": "city_archivist",
+      "reward": {
+        "receipt": "campaign:city_heirloom",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "city_medicine": {
+      "id": "city_medicine",
+      "title": "A Surgeon’s Satchel",
+      "hub": "city_refuge",
+      "requires": [
+        "city_medical_satchel"
+      ],
+      "prerequisites": [
+        "city_breach"
+      ],
+      "optional": true,
+      "contact": "city_physician",
+      "reward": {
+        "receipt": "campaign:city_medicine",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "city_workshop": {
+      "id": "city_workshop",
+      "title": "Tools for the Living",
+      "hub": "city_refuge",
+      "requires": [
+        "city_workshop_tools",
+        "repair:city_workshop"
+      ],
+      "prerequisites": [
+        "city_breach"
+      ],
+      "optional": true,
+      "contact": "city_physician",
+      "reward": {
+        "receipt": "campaign:city_workshop",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "veil_scout": {
+      "id": "veil_scout",
+      "title": "A Missing Pathfinder",
+      "hub": "veil_haven",
+      "requires": [
+        "rescue:veil_scout"
+      ],
+      "prerequisites": [
+        "veil_trust"
+      ],
+      "optional": true,
+      "contact": "veil_pathfinder",
+      "reward": {
+        "receipt": "campaign:veil_scout",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "veil_sanctuary_repair": {
+      "id": "veil_sanctuary_repair",
+      "title": "A Roof for the Roots",
+      "hub": "veil_haven",
+      "requires": [
+        "veil_ward_fragment",
+        "repair:veil_sanctuary"
+      ],
+      "prerequisites": [
+        "veil_trust"
+      ],
+      "optional": true,
+      "contact": "veil_artisan",
+      "reward": {
+        "receipt": "campaign:veil_sanctuary_repair",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "veil_ritual": {
+      "id": "veil_ritual",
+      "title": "The Interrupted Song",
+      "hub": "veil_haven",
+      "requires": [
+        "veil_ritual_focus",
+        "defense:veil_ritual"
+      ],
+      "prerequisites": [
+        "veil_trust"
+      ],
+      "optional": true,
+      "contact": "veil_keeper",
+      "reward": {
+        "receipt": "campaign:veil_ritual",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    },
+    "veil_memory": {
+      "id": "veil_memory",
+      "title": "A People’s Memory",
+      "hub": "veil_haven",
+      "requires": [
+        "veil_memory_tablet"
+      ],
+      "prerequisites": [
+        "veil_trust"
+      ],
+      "optional": true,
+      "contact": "veil_scholar",
+      "reward": {
+        "receipt": "campaign:veil_memory",
+        "sharedRunes": 12,
+        "magicRunes": 1,
+        "skillPoints": 0,
+        "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+        "fullPouch": "new item converts to sell value; existing items untouched"
+      }
+    }
+  },
+  "questObjects": {
+    "city_dispatch": {
+      "id": "city_dispatch",
+      "area": "dunmere",
+      "name": "Sealed city dispatch",
+      "pouch": false
+    },
+    "city_medical_satchel": {
+      "id": "city_medical_satchel",
+      "area": "city_homes",
+      "name": "Marked medical satchel",
+      "pouch": false
+    },
+    "city_gate_component": {
+      "id": "city_gate_component",
+      "area": "city_refuge",
+      "name": "Gate winch component",
+      "pouch": false
+    },
+    "city_records": {
+      "id": "city_records",
+      "area": "city_archive",
+      "name": "Evacuation register",
+      "pouch": false
+    },
+    "city_militia_orders": {
+      "id": "city_militia_orders",
+      "area": "city_square",
+      "name": "Militia command orders",
+      "pouch": false
+    },
+    "city_heirloom": {
+      "id": "city_heirloom",
+      "area": "city_homes",
+      "name": "Vela’s brass seal",
+      "pouch": false
+    },
+    "city_workshop_tools": {
+      "id": "city_workshop_tools",
+      "area": "city_gate",
+      "name": "Workshop tool roll",
+      "pouch": false
+    },
+    "dunmere_medicine": {
+      "id": "dunmere_medicine",
+      "area": "farmstead",
+      "name": "Unspoiled medicine case",
+      "pouch": false
+    },
+    "dunmere_carrier_note": {
+      "id": "dunmere_carrier_note",
+      "area": "irrigation_channels",
+      "name": "Carrier’s route note",
+      "pouch": false
+    },
+    "dunmere_reserve_tools": {
+      "id": "dunmere_reserve_tools",
+      "area": "pump_exterior",
+      "name": "Reserve ditch tools",
+      "pouch": false
+    },
+    "veil_sample_pool": {
+      "id": "veil_sample_pool",
+      "area": "veil_pools",
+      "name": "Fading essence sample",
+      "pouch": false
+    },
+    "veil_sample_root": {
+      "id": "veil_sample_root",
+      "area": "veil_glades",
+      "name": "Damaged root sample",
+      "pouch": false
+    },
+    "veil_ward_fragment": {
+      "id": "veil_ward_fragment",
+      "area": "veil_sanctuary",
+      "name": "Sanctuary ward fragment",
+      "pouch": false
+    },
+    "veil_siphon_records": {
+      "id": "veil_siphon_records",
+      "area": "veil_siphon_west",
+      "name": "Extraction records",
+      "pouch": false
+    },
+    "veil_ritual_focus": {
+      "id": "veil_ritual_focus",
+      "area": "veil_siphon_east",
+      "name": "Stolen ritual focus",
+      "pouch": false
+    },
+    "veil_memory_tablet": {
+      "id": "veil_memory_tablet",
+      "area": "veil_grove",
+      "name": "Rootsong memory tablet",
+      "pouch": false
+    },
+    "cinder_lair_seal": {
+      "id": "cinder_lair_seal",
+      "area": "cinder_vent",
+      "name": "Cracked lair ward",
+      "pouch": false
+    }
+  },
+  "enemies": {
+    "breach_captain": {
+      "id": "breach_captain",
+      "name": "Breach Captain",
+      "region": "aurelian",
+      "kind": "troll",
+      "role": "defender",
+      "affinity": "Stone",
+      "unique": true,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "breach_captain"
+    },
+    "knife_raider": {
+      "id": "knife_raider",
+      "name": "Knife Raider",
+      "region": "aurelian",
+      "kind": "wolf",
+      "role": "flanker",
+      "affinity": "Shadow",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "knife_raider"
+    },
+    "shield_bruiser": {
+      "id": "shield_bruiser",
+      "name": "Shield Bruiser",
+      "region": "aurelian",
+      "kind": "troll",
+      "role": "defender",
+      "affinity": "Stone",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "shield_bruiser"
+    },
+    "bow_poacher": {
+      "id": "bow_poacher",
+      "name": "Bow Poacher",
+      "region": "aurelian",
+      "kind": "serpent",
+      "role": "ranged",
+      "affinity": "Nature",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "bow_poacher"
+    },
+    "fire_saboteur": {
+      "id": "fire_saboteur",
+      "name": "Fire Saboteur",
+      "region": "aurelian",
+      "kind": "spider",
+      "role": "channeler",
+      "affinity": "Fire",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "fire_saboteur"
+    },
+    "militia_guard": {
+      "id": "militia_guard",
+      "name": "Militia Guard",
+      "region": "aurelian",
+      "kind": "troll",
+      "role": "defender",
+      "affinity": "Stone",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "militia_guard"
+    },
+    "militia_archer": {
+      "id": "militia_archer",
+      "name": "Militia Archer",
+      "region": "aurelian",
+      "kind": "serpent",
+      "role": "ranged",
+      "affinity": "Nature",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "militia_archer"
+    },
+    "militia_mage": {
+      "id": "militia_mage",
+      "name": "Militia Battlemage",
+      "region": "aurelian",
+      "kind": "serpent",
+      "role": "channeler",
+      "affinity": "Arcane",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "militia_mage"
+    },
+    "militia_officer": {
+      "id": "militia_officer",
+      "name": "Militia Signal Officer",
+      "region": "aurelian",
+      "kind": "troll",
+      "role": "support",
+      "affinity": "Arcane",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "militia_officer"
+    },
+    "city_knight": {
+      "id": "city_knight",
+      "name": "Commander Varr",
+      "region": "aurelian",
+      "kind": "minotaur",
+      "role": "charger",
+      "affinity": "Stone",
+      "unique": true,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "city_knight"
+    },
+    "city_mage": {
+      "id": "city_mage",
+      "name": "Magister Sere",
+      "region": "aurelian",
+      "kind": "serpent",
+      "role": "channeler",
+      "affinity": "Arcane",
+      "unique": true,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "city_mage"
+    },
+    "city_archer": {
+      "id": "city_archer",
+      "name": "Captain Kes",
+      "region": "aurelian",
+      "kind": "serpent",
+      "role": "ranged",
+      "affinity": "Nature",
+      "unique": true,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "city_archer"
+    },
+    "veil_scout_hostile": {
+      "id": "veil_scout_hostile",
+      "name": "Grafted Scout",
+      "region": "verdant",
+      "kind": "wolf",
+      "role": "flanker",
+      "affinity": "Nature",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "veil_scout_hostile"
+    },
+    "thorn_guardian": {
+      "id": "thorn_guardian",
+      "name": "Thorn Guardian",
+      "region": "verdant",
+      "kind": "troll",
+      "role": "defender",
+      "affinity": "Nature",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "thorn_guardian"
+    },
+    "siphon_construct": {
+      "id": "siphon_construct",
+      "name": "Siphon Construct",
+      "region": "verdant",
+      "kind": "behemoth",
+      "role": "bruiser",
+      "affinity": "Arcane",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "siphon_construct"
+    },
+    "siphon_apprentice": {
+      "id": "siphon_apprentice",
+      "name": "Siphon Apprentice",
+      "region": "verdant",
+      "kind": "serpent",
+      "role": "channeler",
+      "affinity": "Arcane",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "siphon_apprentice"
+    },
+    "essence_stalker": {
+      "id": "essence_stalker",
+      "name": "Essence Stalker",
+      "region": "verdant",
+      "kind": "spider",
+      "role": "ambusher",
+      "affinity": "Shadow",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "essence_stalker"
+    },
+    "veil_archmage": {
+      "id": "veil_archmage",
+      "name": "Archmage Orath",
+      "region": "verdant",
+      "kind": "serpent",
+      "role": "channeler",
+      "affinity": "Arcane",
+      "unique": true,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "veil_archmage"
+    },
+    "ash_draco": {
+      "id": "ash_draco",
+      "name": "Ash Draco",
+      "region": "cinder",
+      "kind": "draco",
+      "role": "draco",
+      "affinity": "Fire",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "ash_draco"
+    },
+    "basalt_guardian": {
+      "id": "basalt_guardian",
+      "name": "Basalt Guardian",
+      "region": "cinder",
+      "kind": "behemoth",
+      "role": "bruiser",
+      "affinity": "Stone",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "basalt_guardian"
+    },
+    "cinder_serpent": {
+      "id": "cinder_serpent",
+      "name": "Cinder Serpent",
+      "region": "cinder",
+      "kind": "serpent",
+      "role": "ranged",
+      "affinity": "Fire",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "cinder_serpent"
+    },
+    "vent_stalker": {
+      "id": "vent_stalker",
+      "name": "Vent Stalker",
+      "region": "cinder",
+      "kind": "spider",
+      "role": "ambusher",
+      "affinity": "Fire",
+      "unique": false,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "vent_stalker"
+    },
+    "ravine_keeper": {
+      "id": "ravine_keeper",
+      "name": "Ravine Keeper",
+      "region": "cinder",
+      "kind": "minotaur",
+      "role": "charger",
+      "affinity": "Stone",
+      "unique": true,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "ravine_keeper"
+    },
+    "summit_warden": {
+      "id": "summit_warden",
+      "name": "Summit Warden",
+      "region": "cinder",
+      "kind": "behemoth",
+      "role": "bruiser",
+      "affinity": "Fire",
+      "unique": true,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "summit_warden"
+    },
+    "cinder_dragon": {
+      "id": "cinder_dragon",
+      "name": "The Crownfire Dragon",
+      "region": "cinder",
+      "kind": "dragon",
+      "role": "charger",
+      "affinity": "Fire",
+      "unique": true,
+      "artStatus": "awaiting-sprite-chat",
+      "artFamily": "cinder_dragon"
+    }
+  },
+  "defenses": {
+    "city_evacuation": {
+      "area": "city_homes",
+      "name": "Evacuation courtyard",
+      "health": 280,
+      "position": [
+        480,
+        330
+      ],
+      "breakSeconds": 4,
+      "waves": [
+        [
+          "knife_raider",
+          "bow_poacher"
+        ],
+        [
+          "shield_bruiser",
+          "knife_raider",
+          "bow_poacher"
+        ]
+      ],
+      "spawns": [
+        [
+          130,
+          140
+        ],
+        [
+          820,
+          140
+        ],
+        [
+          760,
+          440
+        ],
+        [
+          140,
+          440
+        ]
+      ],
+      "description": "Hold two approaches while Nara and Olen reach the protected muster point."
+    },
+    "city_gate_repair": {
+      "area": "city_gate",
+      "name": "Gate repair winch",
+      "health": 320,
+      "position": [
+        620,
+        280
+      ],
+      "breakSeconds": 5,
+      "waves": [
+        [
+          "shield_bruiser",
+          "fire_saboteur"
+        ],
+        [
+          "militia_guard",
+          "militia_archer",
+          "fire_saboteur"
+        ]
+      ],
+      "spawns": [
+        [
+          140,
+          160
+        ],
+        [
+          820,
+          150
+        ],
+        [
+          180,
+          430
+        ],
+        [
+          820,
+          430
+        ]
+      ],
+      "description": "Protect the winch. Saboteurs approach from side lanes; cover blocks archers."
+    },
+    "city_infirmary": {
+      "area": "city_archive",
+      "name": "Infirmary supplies",
+      "health": 240,
+      "position": [
+        480,
+        370
+      ],
+      "breakSeconds": 6,
+      "waves": [
+        [
+          "militia_archer",
+          "knife_raider"
+        ],
+        [
+          "militia_officer",
+          "militia_guard",
+          "militia_archer"
+        ]
+      ],
+      "spawns": [
+        [
+          160,
+          130
+        ],
+        [
+          800,
+          130
+        ],
+        [
+          150,
+          420
+        ],
+        [
+          810,
+          420
+        ]
+      ],
+      "description": "Intercept ranged threats and their officer before they reach the medical stores."
+    },
+    "veil_ritual": {
+      "area": "veil_grove",
+      "name": "Rootsong ritual",
+      "health": 300,
+      "position": [
+        480,
+        320
+      ],
+      "breakSeconds": 5,
+      "waves": [
+        [
+          "essence_stalker",
+          "siphon_apprentice"
+        ],
+        [
+          "thorn_guardian",
+          "essence_stalker",
+          "siphon_apprentice"
+        ]
+      ],
+      "spawns": [
+        [
+          160,
+          140
+        ],
+        [
+          800,
+          140
+        ],
+        [
+          160,
+          430
+        ],
+        [
+          800,
+          430
+        ]
+      ],
+      "description": "Protect the returned focus while residents reconnect one damaged root."
+    }
+  },
+  "rescues": {
+    "nara": {
+      "area": "city_homes",
+      "position": [
+        330,
+        190
+      ],
+      "name": "Nara · granary keeper",
+      "guards": "homes-raiders"
+    },
+    "olen": {
+      "area": "city_archive",
+      "position": [
+        700,
+        330
+      ],
+      "name": "Olen · evacuation clerk",
+      "guards": "archive-patrol"
+    },
+    "city_brother": {
+      "area": "city_square",
+      "position": [
+        270,
+        400
+      ],
+      "name": "Jori · Vela’s brother",
+      "guards": "square-patrol"
+    },
+    "veil_forager": {
+      "area": "veil_glades",
+      "position": [
+        320,
+        390
+      ],
+      "name": "Siv · foxfolk forager",
+      "guards": "glade-thorns"
+    },
+    "veil_scout": {
+      "area": "veil_siphon_east",
+      "position": [
+        740,
+        450
+      ],
+      "name": "Ren · Rootsong scout",
+      "guards": "east-apprentices"
+    },
+    "dunmere_carrier": {
+      "area": "farmstead",
+      "position": [
+        280,
+        400
+      ],
+      "name": "Eris · grain carrier",
+      "guards": "barn-guards"
+    }
+  },
+  "repairs": {
+    "dunmere_reserve": {
+      "area": "fields",
+      "requires": [
+        "dunmere_reserve_tools"
+      ],
+      "position": [
+        300,
+        390
+      ]
+    },
+    "city_workshop": {
+      "area": "city_refuge",
+      "requires": [
+        "city_workshop_tools"
+      ],
+      "position": [
+        360,
+        390
+      ]
+    },
+    "veil_path": {
+      "area": "veil_threshold",
+      "requires": [],
+      "position": [
+        610,
+        340
+      ]
+    },
+    "veil_sanctuary": {
+      "area": "veil_sanctuary",
+      "requires": [
+        "veil_ward_fragment"
+      ],
+      "position": [
+        470,
+        350
+      ]
+    }
+  },
+  "checkpoints": {
+    "cinder_entry": {
+      "area": "cinder_foothills",
+      "position": [
+        220,
+        300
+      ],
+      "skillPoints": 1,
+      "restores": "only first activation outside combat; repeats only choose recovery",
+      "safeSkills": true
+    },
+    "cinder_shelter": {
+      "area": "cinder_ravine",
+      "position": [
+        220,
+        400
+      ],
+      "skillPoints": 1,
+      "restores": "only first activation outside combat; repeats only choose recovery",
+      "safeSkills": true
+    },
+    "cinder_upper": {
+      "area": "cinder_upper",
+      "position": [
+        220,
+        320
+      ],
+      "skillPoints": 2,
+      "restores": "only first activation outside combat; repeats only choose recovery",
+      "safeSkills": true
+    },
+    "cinder_last": {
+      "area": "cinder_antechamber",
+      "position": [
+        480,
+        380
+      ],
+      "skillPoints": 1,
+      "restores": "only first activation outside combat; repeats only choose recovery",
+      "safeSkills": true
+    }
+  },
+  "encounterRewards": {
+    "ravine_keeper": {
+      "receipt": "encounter:ravine_keeper",
+      "sharedRunes": 15,
+      "items": [
+        "cinder_heatward",
+        "phoenix_flask"
+      ],
+      "repeatable": false
+    },
+    "summit_warden": {
+      "receipt": "encounter:summit_warden",
+      "sharedRunes": 20,
+      "items": [
+        "cinder_pursuit_blade",
+        "cinder_shelter_plate",
+        "cinder_pack_focus"
+      ],
+      "repeatable": false
+    }
+  },
+  "siphonFeeds": {
+    "veil_feed_north": {
+      "area": "veil_siphon_west",
+      "position": [
+        450,
+        190
+      ],
+      "name": "Close the northern essence feed"
+    },
+    "veil_feed_south": {
+      "area": "veil_siphon_west",
+      "position": [
+        470,
+        460
+      ],
+      "name": "Close the southern essence feed"
+    }
+  },
+  "siphonFoci": {
+    "veil_focus_west": {
+      "area": "veil_siphon_east",
+      "position": [
+        400,
+        280
+      ]
+    },
+    "veil_focus_east": {
+      "area": "veil_siphon_east",
+      "position": [
+        740,
+        210
+      ]
+    }
+  },
+  "items": {
+    "city_duelist_edge": {
+      "id": "city_duelist_edge",
+      "name": "Aurelian Duelist Edge",
+      "kind": "weapon",
+      "damage": 7,
+      "effect": "pursuit",
+      "effectLabel": "Dash follow-up / direct damage -15%",
+      "description": "+7 damage. Direct damage is reduced15%; the next direct ability within2s after a dash gains60% damage under existing pursuit rules.",
+      "slot": "tool",
+      "rarity": "Rare",
+      "price": 40,
+      "sell": 20,
+      "color": "#d1b979",
+      "artFamily": "item-city_duelist_edge",
+      "artStatus": "awaiting-sprite-chat"
+    },
+    "city_rescue_plate": {
+      "id": "city_rescue_plate",
+      "name": "Evacuation Plate",
+      "kind": "armor",
+      "armor": 2,
+      "effect": "rescuer",
+      "effectLabel": "Rescue protection / light armor",
+      "description": "Only 2 ordinary armor; grants the existing protective rescue effect while reviving.",
+      "slot": "tool",
+      "rarity": "Rare",
+      "price": 40,
+      "sell": 20,
+      "color": "#d1b979",
+      "artFamily": "item-city_rescue_plate",
+      "artStatus": "awaiting-sprite-chat"
+    },
+    "city_signal_focus": {
+      "id": "city_signal_focus",
+      "name": "Militia Signal Focus",
+      "kind": "weapon",
+      "damage": 4,
+      "effect": "conductor",
+      "effectLabel": "Projectile chain / weaker first hit",
+      "description": "+4 damage. Projectiles chain using the conductor rules, trading away initial projectile damage.",
+      "slot": "tool",
+      "rarity": "Rare",
+      "price": 40,
+      "sell": 20,
+      "color": "#d1b979",
+      "artFamily": "item-city_signal_focus",
+      "artStatus": "awaiting-sprite-chat"
+    },
+    "veil_root_standard": {
+      "id": "veil_root_standard",
+      "name": "Rootsong Standard",
+      "kind": "armor",
+      "armor": 1,
+      "effect": "pilgrim",
+      "effectLabel": "Mobile fields / shorter duration",
+      "description": "Support fields follow their caster but expire 40% sooner; only 1 armor.",
+      "slot": "tool",
+      "rarity": "Rare",
+      "price": 48,
+      "sell": 24,
+      "color": "#8cc7a7",
+      "artFamily": "item-veil_root_standard",
+      "artStatus": "awaiting-sprite-chat"
+    },
+    "veil_bond_staff": {
+      "id": "veil_bond_staff",
+      "name": "Living Bond Staff",
+      "kind": "weapon",
+      "damage": 4,
+      "effect": "summoner",
+      "effectLabel": "Durable summons / less direct damage",
+      "description": "+4 damage. Existing summoner tradeoff improves summon health and reduces direct damage.",
+      "slot": "tool",
+      "rarity": "Rare",
+      "price": 48,
+      "sell": 24,
+      "color": "#8cc7a7",
+      "artFamily": "item-veil_bond_staff",
+      "artStatus": "awaiting-sprite-chat"
+    },
+    "veil_echo_lens": {
+      "id": "veil_echo_lens",
+      "name": "Essence Echo Lens",
+      "kind": "weapon",
+      "damage": 4,
+      "effect": "forked",
+      "effectLabel": "Arc chains / weaker first hit",
+      "description": "+4 damage. Arc Bolt gains the existing forked-lens jumps and range but loses first-hit damage.",
+      "slot": "tool",
+      "rarity": "Rare",
+      "price": 48,
+      "sell": 24,
+      "color": "#8cc7a7",
+      "artFamily": "item-veil_echo_lens",
+      "artStatus": "awaiting-sprite-chat"
+    },
+    "cinder_pursuit_blade": {
+      "id": "cinder_pursuit_blade",
+      "name": "Crownfire Pursuit Blade",
+      "kind": "weapon",
+      "damage": 11,
+      "effect": "pursuit",
+      "effectLabel": "Dash follow-up / direct damage -15%",
+      "description": "+11 damage. Direct damage is reduced15%; one follow-up within2s after a dash gains60% damage under existing pursuit rules.",
+      "slot": "tool",
+      "rarity": "Epic",
+      "price": 64,
+      "sell": 32,
+      "color": "#df9b65",
+      "artFamily": "item-cinder_pursuit_blade",
+      "artStatus": "awaiting-sprite-chat"
+    },
+    "cinder_shelter_plate": {
+      "id": "cinder_shelter_plate",
+      "name": "Ash Shelter Plate",
+      "kind": "armor",
+      "armor": 5,
+      "effect": "rescuer",
+      "effectLabel": "Revive safely / lower ordinary armor",
+      "description": "5 armor instead of the finest heavy plate; rescue protection supports dangerous revives.",
+      "slot": "tool",
+      "rarity": "Epic",
+      "price": 64,
+      "sell": 32,
+      "color": "#df9b65",
+      "artFamily": "item-cinder_shelter_plate",
+      "artStatus": "awaiting-sprite-chat"
+    },
+    "cinder_pack_focus": {
+      "id": "cinder_pack_focus",
+      "name": "Ember Pack Focus",
+      "kind": "weapon",
+      "damage": 7,
+      "effect": "pack",
+      "effectLabel": "Directed summons / owner damage -25%",
+      "description": "+7 damage. Summons follow your selected visible target under pack-whistle rules; owner direct damage is reduced 25%.",
+      "slot": "tool",
+      "rarity": "Epic",
+      "price": 64,
+      "sell": 32,
+      "color": "#df9b65",
+      "artFamily": "item-cinder_pack_focus",
+      "artStatus": "awaiting-sprite-chat"
+    },
+    "city_field_dressing": {
+      "id": "city_field_dressing",
+      "name": "City Field Dressing",
+      "kind": "heal",
+      "heal": 55,
+      "slot": "utility",
+      "description": "Restore55 HP. A marked infirmary supply; one use.",
+      "rarity": "Rare",
+      "price": 40,
+      "sell": 20,
+      "color": "#d1b979",
+      "artFamily": "item-city_field_dressing",
+      "artStatus": "awaiting-sprite-chat"
+    },
+    "veil_essence_vial": {
+      "id": "veil_essence_vial",
+      "name": "Rootsong Essence Vial",
+      "kind": "mana",
+      "mana": 60,
+      "slot": "utility",
+      "description": "Restore60 mana. One use; no cooldown reset.",
+      "rarity": "Rare",
+      "price": 48,
+      "sell": 24,
+      "color": "#8cc7a7",
+      "artFamily": "item-veil_essence_vial",
+      "artStatus": "awaiting-sprite-chat"
+    },
+    "cinder_heatward": {
+      "id": "cinder_heatward",
+      "name": "Cinder Heatward",
+      "kind": "ward",
+      "factor": 0.5,
+      "duration": 18,
+      "slot": "utility",
+      "description": "Take50% less damage for18 seconds. One use; no immunity to marked attacks.",
+      "rarity": "Epic",
+      "price": 64,
+      "sell": 32,
+      "color": "#df9b65",
+      "artFamily": "item-cinder_heatward",
+      "artStatus": "awaiting-sprite-chat"
+    }
+  },
+  "heroNodes": {
+    "Knight": {
+      "abilities": [
+        {
+          "id": "formation_break",
+          "name": "Formation Break",
+          "range": 235,
+          "cooldown": 12,
+          "mana": 24,
+          "power": 1.25,
+          "shape": "line",
+          "mechanic": "push",
+          "description": "Strike a 65 px wide,  235 px lane. Push ordinary foes 65 px; bosses instead receive a 0.35 s root.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "oath_link",
+          "name": "Oath Link",
+          "range": 240,
+          "cooldown": 18,
+          "mana": 30,
+          "power": 0,
+          "shape": "allies",
+          "mechanic": "link",
+          "description": "Allies within 240 px receive 24 barrier for 6 s. Those within 100 px also receive 25% protection for 4 s.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "citadel_fall",
+          "name": "Citadel Fall",
+          "range": 260,
+          "cooldown": 32,
+          "mana": 55,
+          "power": 3.0,
+          "shape": "line",
+          "mechanic": "ward",
+          "description": "Strike a 100 px wide,  260 px lane for 3× weapon damage; gain 30 barrier for 6 s.",
+          "artStatus": "awaiting-sprite-chat"
+        }
+      ],
+      "passive": {
+        "id": "knight_muster",
+        "name": "Muster",
+        "effect": "Completing a revive grants both hunters 24 barrier for 6 s."
+      },
+      "modifier": {
+        "id": "formation_breach",
+        "name": "Open the Formation",
+        "changes": {
+          "width": 100
+        },
+        "effect": "Formation Break widens to 100 px; committed positioning still matters."
+      }
+    },
+    "Wizard": {
+      "abilities": [
+        {
+          "id": "ember_seam",
+          "name": "Ember Seam",
+          "range": 330,
+          "cooldown": 12,
+          "mana": 24,
+          "power": 0.55,
+          "shape": "field",
+          "mechanic": "burn",
+          "description": "Mark a 95 px circle at a visible foe within 330 px. Three 1 s pulses each deal 0.55× weapon damage.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "prism_fracture",
+          "name": "Prism Fracture",
+          "range": 300,
+          "cooldown": 16,
+          "mana": 29,
+          "power": 1.0,
+          "shape": "line",
+          "mechanic": "root",
+          "description": "Strike a 70 px wide,  300 px lane. Root ordinary foes 1.5 s and weaken their damage 30% for 3 s; bosses resist root.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "star_corridor",
+          "name": "Star Corridor",
+          "range": 400,
+          "cooldown": 34,
+          "mana": 58,
+          "power": 1.15,
+          "shape": "field",
+          "mechanic": "arc",
+          "description": "At a visible foe within 400 px, three 115 px pulses each deal 1.15× weapon damage. Pulses stun ordinary foes briefly.",
+          "artStatus": "awaiting-sprite-chat"
+        }
+      ],
+      "passive": {
+        "id": "wizard_alternation",
+        "name": "Alternation",
+        "effect": "Casting a different active skill than your previous one restores 3 mana, at most once per 4 s."
+      },
+      "modifier": {
+        "id": "ember_retention",
+        "name": "Retained Embers",
+        "changes": {
+          "pulses": 4
+        },
+        "effect": "Ember Seam gains a fourth pulse; no shorter cooldown."
+      }
+    },
+    "Archer": {
+      "abilities": [
+        {
+          "id": "pinning_line",
+          "name": "Pinning Line",
+          "range": 370,
+          "cooldown": 11,
+          "mana": 20,
+          "power": 1.1,
+          "shape": "line",
+          "mechanic": "root",
+          "description": "Fire through a 50 px wide,  370 px lane. Each visible foe takes 1.1× weapon damage and a short root.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "snare_exchange",
+          "name": "Snare Exchange",
+          "range": 240,
+          "cooldown": 14,
+          "mana": 24,
+          "power": 0.8,
+          "shape": "move",
+          "mechanic": "trap",
+          "description": "Move 90 px backwards through clear ground, leaving a 90 px snare field for 3 pulses; each deals 0.8× weapon damage and roots.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "arrow_corridor",
+          "name": "Arrow Corridor",
+          "range": 410,
+          "cooldown": 32,
+          "mana": 52,
+          "power": 1.3,
+          "shape": "field",
+          "mechanic": "arrows",
+          "description": "Commit three 110 px arrow impacts at a selected visible cluster within 410 px, each 1.3× weapon damage.",
+          "artStatus": "awaiting-sprite-chat"
+        }
+      ],
+      "passive": {
+        "id": "archer_patience",
+        "name": "Patient Aim",
+        "effect": "After standing still for 1 s, your next direct hit gains 8 damage; once per 4 s."
+      },
+      "modifier": {
+        "id": "pinning_breadth",
+        "name": "Split Pins",
+        "changes": {
+          "width": 85
+        },
+        "effect": "Pinning Line widens to 85 px; its damage and range stay."
+      }
+    },
+    "Cleric": {
+      "abilities": [
+        {
+          "id": "purging_salve",
+          "name": "Purging Salve",
+          "range": 300,
+          "cooldown": 12,
+          "mana": 23,
+          "power": 1.0,
+          "shape": "target",
+          "mechanic": "cleanse",
+          "description": "A visible target within 300 px anchors a 100 px mixture burst. Foes take weapon damage; living allies clear roots and regain 8 HP.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "sealed_vessel",
+          "name": "Sealed Vessel",
+          "range": 260,
+          "cooldown": 17,
+          "mana": 28,
+          "power": 0,
+          "shape": "ally",
+          "mechanic": "vessel",
+          "description": "Give the most wounded visible living ally 28 barrier and cleanse roots. Sacred vapour damages nearby foes for 0.7× weapon damage.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "lustral_front",
+          "name": "Lustral Front",
+          "range": 320,
+          "cooldown": 33,
+          "mana": 54,
+          "power": 2.6,
+          "shape": "line",
+          "mechanic": "mend",
+          "description": "A 100 px wide,  320 px sacred wave deals 2.6× weapon damage and heals visible allies along its lane 24 HP.",
+          "artStatus": "awaiting-sprite-chat"
+        }
+      ],
+      "passive": {
+        "id": "cleric_residue",
+        "name": "Restorative Residue",
+        "effect": "Direct damage restores 4 HP to the nearest wounded living ally within 160 px, once per 4 s."
+      },
+      "modifier": {
+        "id": "salve_reserve",
+        "name": "Shared Salve",
+        "changes": {
+          "salveHeal": 14
+        },
+        "effect": "Purging Salve heals 14 instead of 8 per affected living ally."
+      }
+    },
+    "Rogue": {
+      "abilities": [
+        {
+          "id": "feint_cut",
+          "name": "Feint Cut",
+          "range": 170,
+          "cooldown": 10,
+          "mana": 18,
+          "power": 1.15,
+          "shape": "move",
+          "mechanic": "conceal",
+          "description": "Cut visible foes within 100 px for 1.15× weapon damage, retreat 90 px through clear ground and conceal for 1.2 s.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "shadow_anchor",
+          "name": "Shadow Anchor",
+          "range": 200,
+          "cooldown": 16,
+          "mana": 24,
+          "power": 0,
+          "shape": "self",
+          "mechanic": "anchor",
+          "description": "Place a 6 s shadow anchor. After 3 s return through a clear line to it, gaining 16 barrier. Blocked returns stay in place safely.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "nightfall_execution",
+          "name": "Nightfall Execution",
+          "range": 285,
+          "cooldown": 30,
+          "mana": 50,
+          "power": 2.5,
+          "shape": "target",
+          "mechanic": "execute",
+          "description": "Strike the selected visible foe for 2.5× weapon damage, doubled below 30% health. Conceal for 1 s after the strike.",
+          "artStatus": "awaiting-sprite-chat"
+        }
+      ],
+      "passive": {
+        "id": "rogue_fresh_wound",
+        "name": "Fresh Wound",
+        "effect": "Your first direct hit within 3 s of a dash applies 5 s bleed at 20% weapon damage, once per dash."
+      },
+      "modifier": {
+        "id": "feint_veil",
+        "name": "Lingering Feint",
+        "changes": {
+          "concealSeconds": 2
+        },
+        "effect": "Feint Cut conceals for 2 s after its retreat; attacking still reveals you."
+      }
+    },
+    "Druid": {
+      "abilities": [
+        {
+          "id": "bramble_lane",
+          "name": "Bramble Lane",
+          "range": 310,
+          "cooldown": 13,
+          "mana": 24,
+          "power": 0.45,
+          "shape": "field",
+          "mechanic": "root",
+          "description": "A 110 px bramble field at a visible foe pulses three times:0.45× weapon damage and brief roots.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "renewal_exchange",
+          "name": "Renewal Exchange",
+          "range": 240,
+          "cooldown": 18,
+          "mana": 26,
+          "power": 0,
+          "shape": "self",
+          "mechanic": "sacrifice",
+          "description": "Consume up to 20% current HP from each living summon, without killing it. Heal visible allies within 240 px by up to 24 HP each from that finite pool.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "pack_reckoning",
+          "name": "Pack Reckoning",
+          "range": 320,
+          "cooldown": 34,
+          "mana": 56,
+          "power": 2.0,
+          "shape": "self",
+          "mechanic": "pack",
+          "description": "Each living summon strikes visible foes within 110 px for 2× your weapon damage. You and nearby allies gain 20 barrier. Requires a living summon.",
+          "artStatus": "awaiting-sprite-chat"
+        }
+      ],
+      "passive": {
+        "id": "druid_mutual_shelter",
+        "name": "Mutual Shelter",
+        "effect": "While a living owned summon is within 100 px, reduce incoming damage by 3; no extra summon HP or free healing."
+      },
+      "modifier": {
+        "id": "bramble_reach",
+        "name": "Living Boundary",
+        "changes": {
+          "radius": 145
+        },
+        "effect": "Bramble Lane grows to 145 px; line-of-sight and root resistance remain."
+      }
+    },
+    "Bard": {
+      "abilities": [
+        {
+          "id": "syncopated_break",
+          "name": "Syncopated Break",
+          "range": 260,
+          "cooldown": 12,
+          "mana": 22,
+          "power": 0.9,
+          "shape": "line",
+          "mechanic": "interrupt",
+          "description": "A 90 px wide,  260 px sound lane deals 0.9× weapon damage and interrupts enemy channels. Allies in the lane gain 10 barrier.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "countermelody",
+          "name": "Countermelody",
+          "range": 230,
+          "cooldown": 18,
+          "mana": 28,
+          "power": 0,
+          "shape": "allies",
+          "mechanic": "tempo",
+          "description": "For 6 s, nearby allies move 20% faster and take 20% less damage. Does not reset recharge or stack with a stronger ward.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "concordant_finale",
+          "name": "Concordant Finale",
+          "range": 310,
+          "cooldown": 34,
+          "mana": 54,
+          "power": 2.2,
+          "shape": "circle",
+          "mechanic": "concord",
+          "description": "A 310 px resonance deals 2.2× weapon damage, interrupts channels, heals allies 16 HP and grants 16 barrier.",
+          "artStatus": "awaiting-sprite-chat"
+        }
+      ],
+      "passive": {
+        "id": "bard_relay",
+        "name": "Relay",
+        "effect": "Completing a revive grants nearby living allies 25% movement speed for 5 s."
+      },
+      "modifier": {
+        "id": "break_resonance",
+        "name": "Shared Break",
+        "changes": {
+          "barrier": 18
+        },
+        "effect": "Syncopated Break grants 18 instead of 10 barrier to allies in its lane."
+      }
+    },
+    "Healer": {
+      "abilities": [
+        {
+          "id": "judgment_ray",
+          "name": "Judgment Ray",
+          "range": 340,
+          "cooldown": 11,
+          "mana": 21,
+          "power": 1.35,
+          "shape": "line",
+          "mechanic": "judgment",
+          "description": "A 55 px wide,  340 px ray deals 1.35× weapon damage. Each foe struck gives the most wounded nearby living ally 4 HP, capped 12 total.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "lifeline_surge",
+          "name": "Lifeline Surge",
+          "range": 300,
+          "cooldown": 17,
+          "mana": 27,
+          "power": 0,
+          "shape": "ally",
+          "mechanic": "lifeline",
+          "description": "Heal the most wounded visible living ally 24 HP and give 16 barrier; foes within 90 px of that ally take weapon damage.",
+          "artStatus": "awaiting-sprite-chat"
+        },
+        {
+          "id": "dawn_deluge",
+          "name": "Dawn Deluge",
+          "range": 290,
+          "cooldown": 32,
+          "mana": 54,
+          "power": 2.0,
+          "shape": "circle",
+          "mechanic": "dawn",
+          "description": "Deal 2× weapon damage to visible foes within 290 px. Heal living allies 28 HP; downed allies gain a 24-point barrier for their next rescue, not an instant revive.",
+          "artStatus": "awaiting-sprite-chat"
+        }
+      ],
+      "passive": {
+        "id": "healer_respite",
+        "name": "Respite",
+        "effect": "Completing a revive heals you and the rescued ally 12 HP and clears their roots."
+      },
+      "modifier": {
+        "id": "judgment_mercy",
+        "name": "Merciful Judgment",
+        "changes": {
+          "healCap": 20
+        },
+        "effect": "Judgment Ray can distribute up to 20 healing from enemies struck, without raising damage."
+      }
+    }
+  },
+  "rewardLedger": {
+    "city_call": {
+      "receipt": "campaign:city_call",
+      "sharedRunes": 0,
+      "magicRunes": 0,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Wizard": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Archer": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Cleric": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Rogue": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Druid": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Bard": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Healer": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ]
+      }
+    },
+    "city_breach": {
+      "receipt": "campaign:city_breach",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 2,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Wizard": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Archer": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Cleric": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Rogue": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Druid": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Bard": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Healer": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ]
+      }
+    },
+    "city_rescue": {
+      "receipt": "campaign:city_rescue",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 1,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Wizard": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Archer": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Cleric": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Rogue": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Druid": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Bard": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Healer": [
+          "city_field_dressing",
+          "mana_draught"
+        ]
+      }
+    },
+    "city_evacuation": {
+      "receipt": "campaign:city_evacuation",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 1,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Wizard": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Archer": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Cleric": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Rogue": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Druid": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Bard": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Healer": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ]
+      }
+    },
+    "city_gate_repair": {
+      "receipt": "campaign:city_gate_repair",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 1,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Wizard": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Archer": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Cleric": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Rogue": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Druid": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Bard": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Healer": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ]
+      }
+    },
+    "city_infirmary": {
+      "receipt": "campaign:city_infirmary",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 1,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Wizard": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Archer": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Cleric": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Rogue": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Druid": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Bard": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Healer": [
+          "city_field_dressing",
+          "mana_draught"
+        ]
+      }
+    },
+    "city_commanders": {
+      "receipt": "campaign:city_commanders",
+      "sharedRunes": 36,
+      "magicRunes": 2,
+      "skillPoints": 2,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Wizard": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Archer": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Cleric": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Rogue": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Druid": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Bard": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Healer": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ]
+      }
+    },
+    "city_terrace": {
+      "receipt": "campaign:city_terrace",
+      "sharedRunes": 20,
+      "magicRunes": 1,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Wizard": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Archer": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Cleric": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Rogue": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Druid": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Bard": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Healer": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ]
+      }
+    },
+    "veil_trust": {
+      "receipt": "campaign:veil_trust",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 1,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Wizard": [
+          "veil_echo_lens",
+          "veil_essence_vial"
+        ],
+        "Archer": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Cleric": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Rogue": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Druid": [
+          "veil_bond_staff",
+          "veil_essence_vial"
+        ],
+        "Bard": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Healer": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ]
+      }
+    },
+    "veil_imbalance": {
+      "receipt": "campaign:veil_imbalance",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 2,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Wizard": [
+          "veil_echo_lens",
+          "veil_essence_vial"
+        ],
+        "Archer": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Cleric": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Rogue": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Druid": [
+          "veil_bond_staff",
+          "veil_essence_vial"
+        ],
+        "Bard": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Healer": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ]
+      }
+    },
+    "veil_siphons": {
+      "receipt": "campaign:veil_siphons",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 2,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Wizard": [
+          "veil_echo_lens",
+          "veil_essence_vial"
+        ],
+        "Archer": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Cleric": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Rogue": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Druid": [
+          "veil_bond_staff",
+          "veil_essence_vial"
+        ],
+        "Bard": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Healer": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ]
+      }
+    },
+    "veil_archmage": {
+      "receipt": "campaign:veil_archmage",
+      "sharedRunes": 40,
+      "magicRunes": 2,
+      "skillPoints": 2,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Wizard": [
+          "veil_echo_lens",
+          "veil_essence_vial"
+        ],
+        "Archer": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Cleric": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Rogue": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Druid": [
+          "veil_bond_staff",
+          "veil_essence_vial"
+        ],
+        "Bard": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Healer": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ]
+      }
+    },
+    "cinder_dragon": {
+      "receipt": "campaign:cinder_dragon",
+      "sharedRunes": 80,
+      "magicRunes": 2,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "cinder_pursuit_blade",
+          "cinder_heatward"
+        ],
+        "Wizard": [
+          "cinder_shelter_plate",
+          "cinder_heatward"
+        ],
+        "Archer": [
+          "cinder_pursuit_blade",
+          "cinder_heatward"
+        ],
+        "Cleric": [
+          "cinder_shelter_plate",
+          "cinder_heatward"
+        ],
+        "Rogue": [
+          "cinder_pursuit_blade",
+          "cinder_heatward"
+        ],
+        "Druid": [
+          "cinder_pack_focus",
+          "cinder_heatward"
+        ],
+        "Bard": [
+          "cinder_shelter_plate",
+          "cinder_heatward"
+        ],
+        "Healer": [
+          "cinder_shelter_plate",
+          "cinder_heatward"
+        ]
+      }
+    },
+    "dunmere_medicine": {
+      "receipt": "campaign:dunmere_medicine",
+      "sharedRunes": 8,
+      "magicRunes": 1,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Wizard": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Archer": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Cleric": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Rogue": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Druid": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Bard": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Healer": [
+          "healing_draught",
+          "mana_draught"
+        ]
+      }
+    },
+    "dunmere_carrier": {
+      "receipt": "campaign:dunmere_carrier",
+      "sharedRunes": 8,
+      "magicRunes": 1,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Wizard": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Archer": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Cleric": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Rogue": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Druid": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Bard": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Healer": [
+          "healing_draught",
+          "mana_draught"
+        ]
+      }
+    },
+    "dunmere_reserve": {
+      "receipt": "campaign:dunmere_reserve",
+      "sharedRunes": 10,
+      "magicRunes": 1,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Wizard": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Archer": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Cleric": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Rogue": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Druid": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Bard": [
+          "healing_draught",
+          "mana_draught"
+        ],
+        "Healer": [
+          "healing_draught",
+          "mana_draught"
+        ]
+      }
+    },
+    "city_family": {
+      "receipt": "campaign:city_family",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Wizard": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Archer": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Cleric": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Rogue": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Druid": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Bard": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Healer": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ]
+      }
+    },
+    "city_heirloom": {
+      "receipt": "campaign:city_heirloom",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Wizard": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Archer": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Cleric": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Rogue": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Druid": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Bard": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Healer": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ]
+      }
+    },
+    "city_medicine": {
+      "receipt": "campaign:city_medicine",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Wizard": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Archer": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Cleric": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Rogue": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Druid": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Bard": [
+          "city_field_dressing",
+          "mana_draught"
+        ],
+        "Healer": [
+          "city_field_dressing",
+          "mana_draught"
+        ]
+      }
+    },
+    "city_workshop": {
+      "receipt": "campaign:city_workshop",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Wizard": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Archer": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Cleric": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Rogue": [
+          "city_duelist_edge",
+          "city_rescue_plate"
+        ],
+        "Druid": [
+          "city_signal_focus",
+          "city_rescue_plate"
+        ],
+        "Bard": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ],
+        "Healer": [
+          "city_rescue_plate",
+          "city_signal_focus"
+        ]
+      }
+    },
+    "veil_scout": {
+      "receipt": "campaign:veil_scout",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Wizard": [
+          "veil_echo_lens",
+          "veil_essence_vial"
+        ],
+        "Archer": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Cleric": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Rogue": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Druid": [
+          "veil_bond_staff",
+          "veil_essence_vial"
+        ],
+        "Bard": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Healer": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ]
+      }
+    },
+    "veil_sanctuary_repair": {
+      "receipt": "campaign:veil_sanctuary_repair",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Wizard": [
+          "veil_echo_lens",
+          "veil_essence_vial"
+        ],
+        "Archer": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Cleric": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Rogue": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Druid": [
+          "veil_bond_staff",
+          "veil_essence_vial"
+        ],
+        "Bard": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Healer": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ]
+      }
+    },
+    "veil_ritual": {
+      "receipt": "campaign:veil_ritual",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Wizard": [
+          "veil_echo_lens",
+          "veil_essence_vial"
+        ],
+        "Archer": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Cleric": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Rogue": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Druid": [
+          "veil_bond_staff",
+          "veil_essence_vial"
+        ],
+        "Bard": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Healer": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ]
+      }
+    },
+    "veil_memory": {
+      "receipt": "campaign:veil_memory",
+      "sharedRunes": 12,
+      "magicRunes": 1,
+      "skillPoints": 0,
+      "ownership": "world shared Runes; personal item/Magic/SP; once, late join reconciliation",
+      "fullPouch": "new item converts to sell value; existing items untouched",
+      "repeatable": false,
+      "personalItemPriority": {
+        "Knight": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Wizard": [
+          "veil_echo_lens",
+          "veil_essence_vial"
+        ],
+        "Archer": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Cleric": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Rogue": [
+          "veil_essence_vial",
+          "veil_root_standard"
+        ],
+        "Druid": [
+          "veil_bond_staff",
+          "veil_essence_vial"
+        ],
+        "Bard": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ],
+        "Healer": [
+          "veil_root_standard",
+          "veil_essence_vial"
+        ]
+      }
+    }
+  },
+  "authoredCollision": {
+    "coordinateSpace": [
+      960,
+      540
+    ],
+    "scaleToAreaSize": true,
+    "arrangements": {
+      "road": [
+        [
+          410,
+          110,
+          130,
+          65
+        ],
+        [
+          620,
+          370,
+          130,
+          55
+        ]
+      ],
+      "gate": [
+        [
+          250,
+          130,
+          65,
+          115
+        ],
+        [
+          650,
+          350,
+          65,
+          100
+        ]
+      ],
+      "courtyard": [
+        [
+          220,
+          90,
+          140,
+          60
+        ],
+        [
+          650,
+          370,
+          100,
+          55
+        ]
+      ],
+      "lanes": [
+        [
+          310,
+          140,
+          65,
+          115
+        ],
+        [
+          610,
+          340,
+          65,
+          110
+        ]
+      ],
+      "frontage": [
+        [
+          280,
+          130,
+          85,
+          60
+        ],
+        [
+          650,
+          350,
+          85,
+          60
+        ]
+      ],
+      "pillars": [
+        [
+          280,
+          160,
+          50,
+          55
+        ],
+        [
+          650,
+          160,
+          50,
+          55
+        ],
+        [
+          280,
+          340,
+          50,
+          55
+        ],
+        [
+          650,
+          340,
+          50,
+          55
+        ]
+      ],
+      "terrace": [
+        [
+          250,
+          130,
+          60,
+          75
+        ],
+        [
+          650,
+          130,
+          60,
+          75
+        ]
+      ],
+      "grove": [
+        [
+          290,
+          130,
+          85,
+          65
+        ],
+        [
+          670,
+          350,
+          80,
+          65
+        ]
+      ],
+      "pools": [
+        [
+          260,
+          120,
+          170,
+          65
+        ],
+        [
+          580,
+          360,
+          150,
+          60
+        ]
+      ],
+      "lair": [
+        [
+          210,
+          140,
+          65,
+          65
+        ],
+        [
+          680,
+          360,
+          65,
+          65
+        ]
+      ],
+      "hub": []
+    },
+    "rule": "Finished scenery must match these authoritative footprints; props remain static by default."
+  },
+  "artifactText": {
+    "city_dispatch": "Aurelian controls the grain roads. Its outer gate has fallen. Marshal Rhea asks the hunters who repaired Dunmere’s intake to secure the breach and protect civilian routes.",
+    "city_militia_orders": "The raiders are not acting alone. Three militia commanders divide the city. Each order bears Orath’s split-root seal: the same device later seen on the dragon’s collar.",
+    "city_records": "Nara, the granary keeper, and Olen, the evacuation clerk, were separated in the homes and archive districts. The protected courtyard is their muster point; securing their rescue does not require a long escort.",
+    "city_medical_satchel": "Sen’s marked field dressings were stolen from the infirmary. They can support the main infirmary defense and the surgeon’s optional supply request; both have fixed receipts.",
+    "veil_siphon_records": "Orath siphons the old root network to strengthen a command bond. The same split-root seal directs the city militia and the dragon’s collar. The dragon was his weapon, not the source of this extraction.",
+    "veil_ward_fragment": "This sanctuary ward uses the old woodland watch geometry. Damaged roots link the spring failures to Orath’s extraction, not a natural drought.",
+    "veil_memory_tablet": "Rootsong keeps names through songs and carved memory tablets. Foxfolk pathfinders, stagfolk keepers, owlfolk scholars and badgerfolk artisans share the same settlement; the grafted raiders do not represent its people.",
+    "cinder_lair_seal": "The vent ward identifies a safe route through the lair threshold. Keep it with the final pursuit; it takes no pouch space. Activate the four ascent sanctuaries and defeat the two route keepers before entering the dragon’s lair."
+  },
+  "questOutcomes": {
+    "city_call": "Ilyan’s dispatch opens the eastern road from the pumping station to Aurelian. The repaired intake can supply a city refuge.",
+    "city_breach": "The breach is secured. Refuge and square routes open; Rhea can now coordinate named rescues and three critical defenses.",
+    "city_rescue": "Nara and Olen reach the refuge muster. Their names replace missing-person notices; the evacuation records are safe.",
+    "city_evacuation": "The courtyard evacuation is complete. Civilians shelter at the refuge; this finite assault cannot pay again.",
+    "city_gate_repair": "The gate mechanism holds. Defenders can reinforce the breach while hunters use the district loop.",
+    "city_infirmary": "Sen’s medical stores survive the attack. The refuge remains a recovery point.",
+    "city_commanders": "Varr, Sere and Kes are defeated. Their orders expose Orath’s militia. The upper terrace opens from archive and observatory.",
+    "city_terrace": "The dragon destroys the beacon, displays Orath’s collar seal and leaves. A magical disturbance leads through the eastern terrace into the Verdant Veil.",
+    "veil_trust": "Siv reaches Rootsong and the threshold path is repaired. Tess and Arven trust you with the failing pools and sanctuary wards.",
+    "veil_imbalance": "The pool, root and sanctuary evidence agree: deliberate siphoning is draining the old network.",
+    "veil_siphons": "Both siphon sites are disabled. Their records name Archmage Orath and identify the dragon’s command bond; his sanctum is open.",
+    "veil_archmage": "Orath is defeated. He owned and commanded the dragon through the split-root bond. Breaking it ends his control, but the still-destructive dragon flees to the Cinder Crown. Limited streams recover; pursue it before it returns.",
+    "cinder_dragon": "The dragon is dead, Orath’s threat is resolved and the main campaign is finished. Settlements and unfinished optional stories remain available in this completed save."
+  },
+  "encounters": {
+    "city_approach": [
+      {
+        "id": "city_approach-refugee-raiders",
+        "group": "refugee-raiders",
+        "center": [
+          280,
+          260
+        ],
+        "enemies": [
+          "knife_raider",
+          "bow_poacher"
+        ]
+      },
+      {
+        "id": "city_approach-road-saboteurs",
+        "group": "road-saboteurs",
+        "center": [
+          700,
+          370
+        ],
+        "enemies": [
+          "shield_bruiser",
+          "fire_saboteur"
+        ]
+      }
+    ],
+    "city_gate": [
+      {
+        "id": "city_gate-breach-approach",
+        "group": "breach-approach",
+        "center": [
+          420,
+          180
+        ],
+        "enemies": [
+          "knife_raider",
+          "shield_bruiser"
+        ]
+      }
+    ],
+    "city_homes": [
+      {
+        "id": "city_homes-homes-raiders",
+        "group": "homes-raiders",
+        "center": [
+          360,
+          240
+        ],
+        "enemies": [
+          "shield_bruiser",
+          "bow_poacher"
+        ]
+      },
+      {
+        "id": "city_homes-homes-alley",
+        "group": "homes-alley",
+        "center": [
+          740,
+          360
+        ],
+        "enemies": [
+          "knife_raider"
+        ]
+      }
+    ],
+    "city_archive": [
+      {
+        "id": "city_archive-archive-patrol",
+        "group": "archive-patrol",
+        "center": [
+          670,
+          300
+        ],
+        "enemies": [
+          "fire_saboteur",
+          "militia_archer"
+        ]
+      }
+    ],
+    "city_square": [
+      {
+        "id": "city_square-square-patrol",
+        "group": "square-patrol",
+        "center": [
+          300,
+          350
+        ],
+        "enemies": [
+          "militia_guard",
+          "militia_archer"
+        ]
+      },
+      {
+        "id": "city_square-orders-guard",
+        "group": "orders-guard",
+        "center": [
+          650,
+          180
+        ],
+        "enemies": [
+          "militia_officer",
+          "militia_guard"
+        ]
+      }
+    ],
+    "city_barracks": [
+      {
+        "id": "city_barracks-frontage",
+        "group": "frontage",
+        "center": [
+          500,
+          230
+        ],
+        "enemies": [
+          "militia_guard",
+          "militia_archer",
+          "militia_officer"
+        ]
+      }
+    ],
+    "city_observatory": [
+      {
+        "id": "city_observatory-observatory-entry",
+        "group": "observatory-entry",
+        "center": [
+          420,
+          300
+        ],
+        "enemies": [
+          "militia_guard",
+          "militia_mage"
+        ]
+      }
+    ],
+    "veil_threshold": [
+      {
+        "id": "veil_threshold-threshold-stalkers",
+        "group": "threshold-stalkers",
+        "center": [
+          480,
+          200
+        ],
+        "enemies": [
+          "essence_stalker",
+          "veil_scout_hostile"
+        ]
+      }
+    ],
+    "veil_glades": [
+      {
+        "id": "veil_glades-glade-thorns",
+        "group": "glade-thorns",
+        "center": [
+          350,
+          290
+        ],
+        "enemies": [
+          "thorn_guardian",
+          "veil_scout_hostile"
+        ]
+      },
+      {
+        "id": "veil_glades-glade-scouts",
+        "group": "glade-scouts",
+        "center": [
+          750,
+          340
+        ],
+        "enemies": [
+          "veil_scout_hostile"
+        ]
+      }
+    ],
+    "veil_pools": [
+      {
+        "id": "veil_pools-pool-drain",
+        "group": "pool-drain",
+        "center": [
+          400,
+          250
+        ],
+        "enemies": [
+          "siphon_construct",
+          "siphon_apprentice"
+        ]
+      },
+      {
+        "id": "veil_pools-pool-bank",
+        "group": "pool-bank",
+        "center": [
+          740,
+          390
+        ],
+        "enemies": [
+          "essence_stalker"
+        ]
+      }
+    ],
+    "veil_grove": [
+      {
+        "id": "veil_grove-grove-fracture",
+        "group": "grove-fracture",
+        "center": [
+          680,
+          220
+        ],
+        "enemies": [
+          "thorn_guardian",
+          "siphon_apprentice"
+        ]
+      }
+    ],
+    "veil_sanctuary": [
+      {
+        "id": "veil_sanctuary-sanctuary-roots",
+        "group": "sanctuary-roots",
+        "center": [
+          460,
+          250
+        ],
+        "enemies": [
+          "thorn_guardian",
+          "essence_stalker"
+        ]
+      }
+    ],
+    "veil_siphon_west": [
+      {
+        "id": "veil_siphon_west-west-apprentices",
+        "group": "west-apprentices",
+        "center": [
+          460,
+          220
+        ],
+        "enemies": [
+          "siphon_apprentice",
+          "siphon_construct"
+        ]
+      }
+    ],
+    "veil_siphon_east": [
+      {
+        "id": "veil_siphon_east-east-apprentices",
+        "group": "east-apprentices",
+        "center": [
+          610,
+          260
+        ],
+        "enemies": [
+          "siphon_apprentice",
+          "veil_scout_hostile",
+          "essence_stalker"
+        ]
+      }
+    ],
+    "veil_sanctum": [
+      {
+        "id": "veil_sanctum-sanctum-entry",
+        "group": "sanctum-entry",
+        "center": [
+          400,
+          210
+        ],
+        "enemies": [
+          "siphon_apprentice",
+          "thorn_guardian"
+        ]
+      }
+    ],
+    "cinder_foothills": [
+      {
+        "id": "cinder_foothills-ridge-sentries",
+        "group": "ridge-sentries",
+        "center": [
+          650,
+          260
+        ],
+        "enemies": [
+          "ash_draco",
+          "cinder_serpent"
+        ]
+      }
+    ],
+    "cinder_lava_road": [
+      {
+        "id": "cinder_lava_road-lava-road",
+        "group": "lava-road",
+        "center": [
+          370,
+          200
+        ],
+        "enemies": [
+          "basalt_guardian",
+          "cinder_serpent"
+        ]
+      },
+      {
+        "id": "cinder_lava_road-road-vents",
+        "group": "road-vents",
+        "center": [
+          740,
+          370
+        ],
+        "enemies": [
+          "vent_stalker",
+          "ash_draco"
+        ]
+      }
+    ],
+    "cinder_ravine": [
+      {
+        "id": "cinder_ravine-ravine-front",
+        "group": "ravine-front",
+        "center": [
+          620,
+          200
+        ],
+        "enemies": [
+          "basalt_guardian",
+          "ash_draco"
+        ]
+      }
+    ],
+    "cinder_slopes": [
+      {
+        "id": "cinder_slopes-slope-creatures",
+        "group": "slope-creatures",
+        "center": [
+          330,
+          200
+        ],
+        "enemies": [
+          "ash_draco",
+          "cinder_serpent"
+        ]
+      },
+      {
+        "id": "cinder_slopes-high-rocks",
+        "group": "high-rocks",
+        "center": [
+          720,
+          390
+        ],
+        "enemies": [
+          "basalt_guardian",
+          "vent_stalker"
+        ]
+      }
+    ],
+    "cinder_vent": [
+      {
+        "id": "cinder_vent-vent-pack",
+        "group": "vent-pack",
+        "center": [
+          420,
+          250
+        ],
+        "enemies": [
+          "vent_stalker",
+          "cinder_serpent",
+          "ash_draco"
+        ]
+      }
+    ],
+    "cinder_upper": [
+      {
+        "id": "cinder_upper-upper-pack",
+        "group": "upper-pack",
+        "center": [
+          710,
+          210
+        ],
+        "enemies": [
+          "ash_draco",
+          "basalt_guardian"
+        ]
+      }
+    ]
+  },
+  "bossEncounters": {
+    "city_breach": {
+      "id": "exp-city_breach",
+      "area": "city_gate",
+      "unique": true,
+      "retry": "full encounter, stable kill receipts"
+    },
+    "city_knight": {
+      "id": "exp-city_knight",
+      "area": "city_barracks",
+      "unique": true,
+      "retry": "full encounter, stable kill receipts"
+    },
+    "city_mage": {
+      "id": "exp-city_mage",
+      "area": "city_observatory",
+      "unique": true,
+      "retry": "full encounter, stable kill receipts"
+    },
+    "city_archer": {
+      "id": "exp-city_archer",
+      "area": "city_square",
+      "unique": true,
+      "retry": "full encounter, stable kill receipts"
+    },
+    "veil_archmage": {
+      "id": "exp-veil_archmage",
+      "area": "veil_sanctum",
+      "unique": true,
+      "retry": "full encounter, stable kill receipts"
+    },
+    "ravine_keeper": {
+      "id": "exp-ravine_keeper",
+      "area": "cinder_ravine",
+      "unique": true,
+      "retry": "full encounter, stable kill receipts"
+    },
+    "summit_warden": {
+      "id": "exp-summit_warden",
+      "area": "cinder_upper",
+      "unique": true,
+      "retry": "full encounter, stable kill receipts"
+    },
+    "cinder_dragon": {
+      "id": "exp-cinder_dragon",
+      "area": "cinder_lair",
+      "unique": true,
+      "retry": "full encounter, stable kill receipts"
+    }
+  },
+  "ownership": {
+    "gameplay": "this chat: IDs, rules, AI, collision, saves, progression",
+    "art": "sprite chat: finished images, cosmetic rendering; preserve IDs/footprints"
+  },
+  "cinematics": {
+    "city_dragon": {
+      "area": "city_terrace",
+      "seconds": 7,
+      "skippable": true,
+      "targetable": false,
+      "damage": false,
+      "restart": "restart finite scene; same resolved receipt"
+    }
+  },
+  "audio": {
+    "policy": "reuse existing event/Bfxr families; no new bank required",
+    "families": [
+      "interact",
+      "warning",
+      "release",
+      "complete",
+      "travel",
+      "skill-learn",
+      "boss-phase"
+    ]
+  },
+  "recovery": {
+    "progress": "completed facts/claims persist",
+    "attempts": "unfinished full encounter restarts, stable kill receipts",
+    "wipe": "existing 15% once",
+    "storage": "local disk; Render free disk temporary"
+  }
+}

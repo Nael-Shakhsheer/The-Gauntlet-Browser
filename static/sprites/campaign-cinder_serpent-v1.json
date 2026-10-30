@@ -1,0 +1,71 @@
+﻿{
+    "sourceColumns":  12,
+    "version":  1,
+    "directions":  [
+                       "south",
+                       "south-east",
+                       "east",
+                       "north-east",
+                       "north",
+                       "north-west",
+                       "west",
+                       "south-west"
+                   ],
+    "neutralHeight":  48,
+    "id":  "cinder_serpent",
+    "states":  {
+                   "defeat":  [
+                                  11
+                              ],
+                   "channel":  [
+                                   9
+                               ],
+                   "idle":  [
+                                0,
+                                1
+                            ],
+                   "signature":  [
+                                     7,
+                                     8,
+                                     6
+                                 ],
+                   "basic":  [
+                                 4,
+                                 5,
+                                 6
+                             ],
+                   "hit":  [
+                               10
+                           ],
+                   "move":  [
+                                2,
+                                3
+                            ]
+               },
+    "source":  "source/cinder_serpent-v1.png",
+    "drawOffset":  [
+                       -48,
+                       -72
+                   ],
+    "columns":  12,
+    "anchor":  [
+                   48,
+                   84
+               ],
+    "columnMap":  [
+                      0,
+                      1,
+                      2,
+                      3,
+                      4,
+                      5,
+                      6,
+                      7,
+                      8,
+                      9,
+                      10,
+                      11
+                  ],
+    "scale":  0.30573248407643311,
+    "cell":  96
+}

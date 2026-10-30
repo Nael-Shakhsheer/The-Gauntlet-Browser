@@ -42,8 +42,8 @@ class RunStorage:
     def save(self, room):
         path = self.checkpoints / (room["code"] + ".json")
         temporary = path.with_suffix(".tmp")
-        with temporary.open("w", encoding="utf-8") as stream:
-            json.dump({"version": 1, "room": room}, stream, ensure_ascii=False)
+        with temporary.open("wb") as stream:
+            stream.write(json.dumps({"version":1,"room":room},ensure_ascii=False).encode('utf-8'))
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(temporary, path)
@@ -73,23 +73,27 @@ class RunStorage:
         room=record['room'];world_id=str(uuid.UUID(room['world']['worldId']))
         path = self.adventure_paths.get(world_id, directory / (world_id + '.json'))
         with locked_record(path):
-            previous_record=None
+            previous_record=None;previous_bytes=None
             if path.exists():
                 if world_id not in self.adventure_paths:raise OSError(errno.EAGAIN,'An unloaded original save is preserved.')
                 try:
-                    previous_record=json.loads(path.read_text(encoding='utf-8'))
+                    previous_bytes=path.read_bytes()
+                    previous_record=json.loads(previous_bytes.decode('utf-8'))
                     previous=previous_record['room']['world'].get('revision',0)
                 except (OSError,ValueError,KeyError,TypeError):raise OSError(errno.EAGAIN,'An unreadable original save is preserved.') from None
                 if previous!=room['world']['revision']-1:raise OSError(errno.EAGAIN,'Save revision conflict; newer progress preserved.')
             temporary = path.with_suffix('.tmp')
-            with temporary.open('w',encoding='utf-8') as stream:
-                json.dump(record,stream,ensure_ascii=False);stream.flush();os.fsync(stream.fileno())
+            # Encode once rather than thousands of Python-level fragment writes.
+            # Same UTF-8 JSON, OS lock, revision check, fsync and atomic replace.
+            with temporary.open('wb') as stream:
+                stream.write(json.dumps(record,ensure_ascii=False).encode('utf-8'));stream.flush();os.fsync(stream.fileno())
             if previous_record is not None:
                 backup=self.directory/'adventure-backups'/(world_id+'.json')
                 backup.parent.mkdir(parents=True,exist_ok=True)
                 pending=backup.with_suffix('.tmp')
-                with pending.open('w',encoding='utf-8') as stream:
-                    json.dump(previous_record,stream,ensure_ascii=False);stream.flush();os.fsync(stream.fileno())
+                with pending.open('wb') as stream:
+                    # Preserve the exact confirmed previous bytes in the backup.
+                    stream.write(previous_bytes);stream.flush();os.fsync(stream.fileno())
                 os.replace(pending,backup)
             os.replace(temporary,path)
         self.adventure_paths[world_id]=path

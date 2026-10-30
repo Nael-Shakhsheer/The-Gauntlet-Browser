@@ -1,5 +1,6 @@
 /* Story dialogue and hunter training use server-owned progress. */
 let storySignature = "", storyBusy = false, trainingBusy = false, trainingDismissed = false;
+window.resetProgressionUI=()=>{storySignature='';storyBusy=trainingBusy=trainingDismissed=false;};
 const questButton = document.createElement("button");
 questButton.className = 'secondary legacy-quest-menu'; questButton.textContent = "Quest";
 $(".game-menu-items").append(questButton);
@@ -11,14 +12,14 @@ questButton.addEventListener("click", () => {
     "Follow the road. A wounded hunter waits in a peaceful clearing after the first or second stage.";
   openInfo("questDialog");
 });
-$("#storyDialog").addEventListener("cancel", event => {event.preventDefault();if(latestRoom?.dialogue?.choices?.length){const d=latestRoom.dialogue;sendAction('dialogueChoice',{id:d.id,page:d.page,revision:d.revision,choice:'leave'}).then(refresh).catch(e=>notice($('#storyNotice'),e.message));}else if(latestRoom?.dialogue?.presentation!=='npc')$('#storyNext').click();});
+$("#storyDialog").addEventListener("cancel", event => {event.preventDefault();if(storyBusy)return;if(latestRoom?.dialogue?.choices?.length){$('#storyChoices')?.querySelector('[data-choice-id="leave"]')?.click();}else if(latestRoom?.dialogue?.presentation!=='npc')$('#storyNext').click();});
 $("#storyNext").addEventListener("click", async () => {
   const d = latestRoom?.dialogue;
   if (!d || storyBusy) return;
-  storyBusy = true; $("#storyNext").disabled = true;
+  const owner=session;storyBusy = true; $("#storyNext").disabled = true;
   try { await sendAction("dialogueNext", { id: d.id, page: d.page }); }
-  catch (error) { notice($("#storyNotice"), error.message); }
-  finally { storyBusy = false; refresh(); }
+  catch (error) { if(owner===session)notice($("#storyNotice"), error.message,'error'); }
+  finally { if(owner===session){storyBusy = false; refresh();} }
 });
 async function closeTraining() {
   trainingDismissed = true; $("#trainingDialog").close();
@@ -41,20 +42,26 @@ function renderProgression(room) {
     const signature = d.id + ":" + d.page + ":" + (d.revision||0);
     if (signature !== storySignature) {
       storySignature = signature;
-      $("#storyTitle").textContent = d.title; $("#storyText").textContent = d.text;
+      $("#storyTitle").textContent = d.presentation==='npc'?d.title:d.title.replace(/^Inspect\s+(the\s+)?/i,''); $("#storyText").textContent = d.text;
       const npc=d.presentation==='npc';dialog.dataset.presentation=npc?'npc':d.presentation||'inspection';
       (npc?document.querySelector('.player-speaker .speech-box'):document.querySelector('.npc-speaker .speech-box')).append($('#storyNext'));
       $("#storyPlayerName").textContent = room.players.find(p => p.id === room.you)?.name || "You";
       $("#storyReply").textContent = d.reply || '';
-      $("#storyStep").textContent = (npc?'CONVERSATION':d.presentation==='signpost'?'DIRECTIONS':'INSPECTION')+' · '+(d.page+1)+' / '+d.total;
+      $("#storyStep").textContent = npc?(d.total>1?'Conversation · '+(d.page+1)+' / '+d.total:''):d.total>1?(d.page+1)+' / '+d.total:'';
       let choices=document.getElementById('storyChoices');if(!choices){choices=document.createElement('div');choices.id='storyChoices';choices.className='story-choices';document.querySelector('.player-speaker .speech-box').append(choices);}choices.replaceChildren();
       $('#storyNext').hidden=Boolean(d.choices?.length);
-      for(const response of d.choices||[]){const b=document.createElement('button');b.className='secondary small';b.textContent=response.label;b.onclick=async()=>{if(storyBusy)return;storyBusy=true;for(const x of choices.children)x.disabled=true;try{await sendAction('dialogueChoice',{id:d.id,page:d.page,revision:d.revision,choice:response.id,requestId:crypto.randomUUID().replaceAll('-',''),serviceRevision:d.serviceRevision});}catch(e){notice($('#storyNotice'),e.message);}finally{storyBusy=false;storySignature='';refresh();}};choices.append(b);}
-      $("#storyNext").textContent = d.button; notice($("#storyNotice"), "");
+      const kind=response=>['leave','back'].includes(response.id)?'navigation':['region','advice','steady','skeptical','ascension_context'].includes(response.id)?'question':/^(seed_|relief_)/.test(response.id)?'world-choice':response.id.startsWith('service_')?'reward':'action';
+      const priority=response=>kind(response)==='navigation'?2:kind(response)==='question'?1:0;
+      const ordered=[...(d.choices||[])].sort((a,b)=>priority(a)-priority(b));
+      if(ordered.some(r=>kind(r)==='world-choice')){const hint=document.createElement('small');hint.textContent='Party choice · once agreed, it stays with this world.';choices.append(hint);}
+      for(const response of ordered){const b=document.createElement('button');b.className='secondary small';b.textContent=response.label;
+        b.dataset.choiceId=response.id;b.dataset.choiceKind=kind(response);b.dataset.uiAction=b.dataset.choiceKind==='navigation'?'navigation':b.dataset.choiceKind==='question'?'secondary':'primary';
+        b.onclick=async()=>{if(storyBusy)return;const owner=session;storyBusy=true;for(const x of choices.children)x.disabled=true;try{await sendAction('dialogueChoice',{id:d.id,page:d.page,revision:d.revision,choice:response.id,requestId:crypto.randomUUID().replaceAll('-',''),serviceRevision:d.serviceRevision});}catch(e){if(owner===session)notice($('#storyNotice'),e.message,'error');}finally{if(owner===session){storyBusy=false;storySignature='';refresh();}}};choices.append(b);}
+      $("#storyNext").textContent = d.button;$('#storyNext').classList.toggle('primary',npc);$('#storyNext').classList.toggle('secondary',!npc);$('#storyNext').dataset.uiAction=npc?'primary':'navigation';notice($("#storyNotice"), "");
     }
     $("#storyNext").disabled = storyBusy;
     if(d.presentation==='npc')drawDialoguePortraits(room,d);
-    if (!dialog.open) { endHeldAttack(); keys.clear(); moveState = { x: 0, y: 0, attack: false }; dialog.showModal(); }
+    if (!dialog.open) { releaseControls(); dialog.showModal(); }
   } else { storySignature = ""; if (dialog.open) dialog.close(); }
   if (room.townInteraction !== "innkeeper") trainingDismissed = false;
   const training = !room.adventure && room.phase === "town" && room.townInteraction === "innkeeper" && room.trainingKnown && !d;
@@ -89,6 +96,7 @@ function drawDialoguePortraits(room, dialogue) {
   const drawn = player && drawImportedHero(left, {...player,status:"alive",moving:false,animationUntil:0,facingX:1,facingY:0},40,48);
   left.restore();
   if (!drawn) { left.fillStyle = player?.color || "#ffe389"; left.font = "bold 32px monospace"; left.fillText((player?.class || "Hero")[0],27,58); }
+  if(window.GauntletCampaignArt?.dialoguePortrait(right,dialogue))return;
   const storyKind=({wounded:'injured',welcome:'runner',adventure_hunter:'injured',adventure_recovered:'recovered',adventure_welcome:'runner'})[dialogue.kind];
   if (storyKind && window.GauntletAdventureSprites?.npc(right,storyKind,40,48,{gesture:storyKind!=='injured',scale:1.3})) return;
   const npc=dialogue.portrait;if(!npc)return;
@@ -106,7 +114,7 @@ function drawStairs(ctx, x, y, label, room = latestRoom) {
 }
 function drawInnRooms(ctx, room) {
   // Room walls and thresholds follow authoritative walkable geometry.
-  const themed = Boolean(villageImage(room, "upstairs"));
+  const themed = Boolean(window.GauntletCampaignScenery?.hasInterior(room,true)||villageImage(room, "upstairs"));
   if (!themed) { ctx.fillStyle = "#302d32"; ctx.fillRect(148, 94, 664, 256); }
   for (const [index, guest] of (room.innRooms || []).entries()) {
     const x = guest.x;

@@ -13,7 +13,7 @@ MAX_BYTES = 2_000_000
 WORLD_KEYS = ('version','seed','current','discovered','visited','quests','areas','claimed',
               'bridge','bossComplete','checkpoint','wipeCount','revision','savedAt',
               'dungeons','rewardHistory','homeNpcs','portalReturn','opening','chapter',
-              'regionProgress','hubStates','travelShrines')
+              'regionProgress','hubStates','travelShrines','campaign')
 
 
 def identity(room):
@@ -82,6 +82,7 @@ def validate(document):
     if not isinstance(a.get('seed'),int) or not 0<=a['seed']<2**31:raise ValueError('Invalid world seed.')
     __import__('opening').validate(a.get('opening'),a['current'])
     __import__('chapter_flow').validate(a.get('chapter'))
+    __import__('campaign_progress').validate(a.get('campaign'))
     __import__('region_content').validate(a)
     if not isinstance(a.get('revision',0),int) or not 0<=a.get('revision',0)<=10**9:raise ValueError('Invalid save revision.')
     for field in ('bridge','bossComplete'):
@@ -100,15 +101,24 @@ def validate(document):
         positions=route.get('positions');size=a['areas'].get(route['area'],{}).get('size',[960,540])
         if not isinstance(positions,list) or len(positions)>4 or any(not isinstance(p,list) or len(p)!=2 or
             any(not isinstance(v,(int,float)) or not 0<=v<=size[i] for i,v in enumerate(p)) for p in positions):raise ValueError('Invalid portal return positions.')
-    if a['checkpoint'].get('area') not in __import__('region_content').HUBS:raise ValueError('Invalid recovery location.')
+    checkpoint=a['checkpoint'];sanctuary=checkpoint.get('sanctuary')
+    if sanctuary is not None:
+        spec=__import__('campaign_content').CHECKPOINTS.get(sanctuary)
+        if not spec or checkpoint.get('area')!=spec['area'] or checkpoint.get('bed') is not None or sanctuary not in a.get('campaign',{}).get('sanctuaries',[]):raise ValueError('Invalid sanctuary recovery receipt.')
+    elif checkpoint.get('area') not in __import__('region_content').HUBS:raise ValueError('Invalid recovery location.')
     for area,cache in a['areas'].items():
         if set(cache)-{'size','enemies','environment','encounterLayout','defeated','entered','details','respawns'}:raise ValueError('Unsupported area content.')
         if len(cache.get('enemies',[]))>80:raise ValueError('Too many enemies.')
         __import__('outdoor_respawns').validate(area,cache)
         templates=[e for g in cache.get('respawns',{}).get('groups',{}).values() for e in g['templates']]
         for e in cache.get('enemies',[])+templates:
+            if e.get('combatRole') not in {None,'charger','ranged','ambusher','support','bruiser','draco','defender','channeler','flanker'}:raise ValueError('Unsupported enemy combat role; backup preserved.')
             if set(e)-set(adventure.ENEMY_KEYS) or e.get('kind') not in ('wolf','spider','serpent','troll','minotaur','behemoth','dragon','draco'):
                 raise ValueError('Invalid enemy record.')
+            if e.get('archetype') is not None:
+                spec=__import__('campaign_content').ENEMIES.get(e['archetype'])
+                if not spec or e['kind']!=spec['kind']:raise ValueError('Unsupported enemy archetype; original preserved.')
+            if type(e.get('bodyRadius',12)) is not int or not 1<=e.get('bodyRadius',12)<=64:raise ValueError('Invalid enemy footprint.')
             if type(e.get('lifeGeneration',0)) is not int or not 0<=e.get('lifeGeneration',0)<=10**9 or not isinstance(e.get('lifeOrigin',e['id']),str) or len(e.get('lifeOrigin',e['id']))>100:raise ValueError('Invalid enemy life.')
             for field in ('x','y','hp','maxHp','damage','speed'):
                 if not isinstance(e.get(field),(int,float)) or not 0<=e[field]<=100000:raise ValueError('Invalid enemy properties.')
@@ -140,10 +150,12 @@ def validate(document):
         __import__('magic_runes').validate(p)
         __import__('magic_runes').validate_world(a,p)
         hero_skills.validate(p)
+        __import__('loadout_presets').validate(p)
         abilities={x[0]:x[7] for x in ABILITY_SETS[p['class']]}
         if p.get('heroProgress'):abilities={k:a['attackType'] for k,a in hero_skills.catalog(p).items()}
         elif len(p['abilities']) not in (2,3) or {abilities.get(x) for x in p['abilities']} not in ({'light','special'},{'light','special','ultimate'}):raise ValueError('Invalid ability loadout.')
-        if len(p['inventory'])>10 or len(p['toolSlots'])!=2 or len(p['utilitySlots'])!=3:raise ValueError('Invalid pouch/slots.')
+        __import__('pouch_storage').validate(p)
+        if len(p['inventory'])>__import__('pouch_storage').capacity(p) or len(p['toolSlots'])!=2 or len(p['utilitySlots'])!=3:raise ValueError('Invalid pouch/slots.')
         if not isinstance(p.get('shopStock',[]),list) or len(p.get('shopStock',[]))>30:raise ValueError('Invalid shop stock.')
         all_items=p['inventory']+p['toolSlots']+p['utilitySlots']
         ids=[i['id'] for i in all_items if i]
@@ -172,7 +184,7 @@ def validate(document):
         import adventure_rewards
         adventure_rewards.validate(p)
     # Validate additive dungeon state, including attempts, through its real adapter.
-    temp={'adventure':copy.deepcopy(a)};dungeons.ensure(temp)
+    temp={'adventure':copy.deepcopy(a)};dungeons.validate(temp)
     clean=project(dict(room=dict(world=a,players={str(i):p for i,p in enumerate(chars)},runes=progress['runes'],difficulty=progress['difficulty'])))
     clean['name']=str(document.get('name','Oakvale adventure'))[:48]
     return clean,migrated
@@ -182,5 +194,5 @@ def summary(document, migrated=False):
     p=document['progress'];a=p['world']
     return dict(name=document['name'],savedAt=a.get('savedAt'),characters=[dict(slot=i,name=c['name'],hero=c['class'],bot=bool(c.get('bot')),items=len(c['inventory']),training=sum(c.get('skillRanks',{}).values())) for i,c in enumerate(p['characters'])],
         runes=p['runes'],completed=sum(v=='complete' for v in a['quests'].values()),locations=len(a['visited']),
-        recovery='Caravan encounter checkpoint · no Rune loss' if a.get('opening') and 'opening_complete' not in a['opening']['facts'] else 'Upstairs inn bed' if a['checkpoint'].get('bed') else 'Oakvale gate',
+        recovery='Caravan encounter checkpoint · no Rune loss' if a.get('opening') and 'opening_complete' not in a['opening']['facts'] else a['checkpoint']['sanctuary'].replace('_',' ').title()+' sanctuary' if a['checkpoint'].get('sanctuary') else 'Upstairs inn bed' if a['checkpoint'].get('bed') else __import__('adventure').AREAS[a['checkpoint']['area']]['name']+' gate',
         dungeons=[k for k,s in a.get('dungeons',{}).items() if s.get('bossComplete')],migrated=migrated)

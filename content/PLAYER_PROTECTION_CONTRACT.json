@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "authority": "GameWorld.state players[]",
+  "scope": "Derived presentation fields only. No gameplay timers, stats, saved fields or schema changes.",
+  "fields": {
+    "barrier": "Existing active absorption amount; zero after expiry.",
+    "barrierRemaining": "Seconds remaining at packet generation if active absorption is positive; otherwise zero.",
+    "protectionRemaining": "Seconds remaining on wardUntil at packet generation, clamped at zero.",
+    "protectionFactor": "Active wardFactor multiplier used by GameWorld._damage_player; one after expiry. 0.6 means the ward stage multiplies damage by 0.6 before other mitigation/rounding."
+  },
+  "excludedFromProtectionFields": ["equipment armor", "barrier absorption", "rescue equipment", "parry", "passive mitigation", "enemy weakening"],
+  "clock": "Relative seconds, never server monotonic absolute timestamps. Presence pause/reconnect shifts the underlying timers through the existing authoritative rules.",
+  "depletedBarrier": "barrierRemaining becomes zero when absorption is exhausted. Other passive conditions that still use barrierUntil are not represented by this absorption timer.",
+  "auras": "Some standing-area wards refresh in 0.15-second pulses. Do not invent a longer duration or display noisy decimal countdowns.",
+  "olderServers": "If remaining/factor fields are absent, keep existing amount-only presentation or omit duration; never infer a default timer.",
+  "integrationStatus": "Source implementation and focused regressions complete; not activated on existing live servers or included in frozen candidate h. Visual timer presentation remains separate."
+}

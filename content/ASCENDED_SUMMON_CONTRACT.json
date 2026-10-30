@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "authority": "summon_presentation.view(room, summon)",
+  "ownerRule": "Only the current summon owner being an Ascended Druid selects the ascended appearance. Never use the viewer or another party member.",
+  "animals": ["lightning_bird", "fire_wolf", "ice_bear", "nature_golem"],
+  "keyFormat": "druid.<animal>.<normal|ascended>",
+  "publicFields": ["presentationVersion", "ownerAscended", "appearanceKey", "ownerId", "abilityId", "affinity", "facingX", "facingY", "moving", "animationUntil", "emergeRemaining", "damageTaken"],
+  "event": "summon_end includes appearanceKey, ownerId, abilityId, targetId, x, y and died; a cosmetic endpoint, never an authoritative live animal",
+  "states": ["emerge", "idle", "move", "attack", "hurt", "death", "dismiss"],
+  "directions": 8,
+  "liveAscension": "Existing animals update their form on the next state response without re-spawning.",
+  "travelRecovery": "Travel/restart dismiss live summons under existing rules and retain recharge. A subsequent summon derives the current owner's form. No saved appearance field is required.",
+  "invariants": ["HP", "maxHP", "lifetime", "target", "damage", "cooldown", "collision", "element", "gameplay role"],
+  "artOwnership": "Sprites chat supplies final distinct animal variants and dispatches the client presentation. Stable normal art remains usable while those exports are under review.",
+  "artStatus": "pending visual chat integration and in-game review"
+}

@@ -1,0 +1,24 @@
+﻿{
+    "source":  "art/release-visual-v5/source/normal-lightning_bird-reactions-v5.png",
+    "appearanceKey":  "druid.lightning_bird.normal",
+    "version":  5,
+    "columns":  2,
+    "drawOffset":  [
+                       -48,
+                       -72
+                   ],
+    "anchor":  [
+                   48,
+                   84
+               ],
+    "states":  {
+                   "defeat":  [
+                                  1
+                              ],
+                   "hurt":  [
+                                0
+                            ]
+               },
+    "cell":  96,
+    "file":  "normal-summon-lightning_bird-reactions-v5.png"
+}

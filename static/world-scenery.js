@@ -2,7 +2,7 @@
 (() => {
   const root=document.currentScript?.dataset.spriteRoot || '/sprites/';
   const regions=['woodland','ruins','cavern','frost'],ground={},art=new Image();
-  const layers=new Map(),layouts=new Map(),alphaBounds=new WeakMap(),fades=new WeakMap();let revision=0;
+  const layers=new Map(),layouts=new Map(),alphaBounds=new WeakMap(),fades=new WeakMap(),broadGround=new WeakMap();let revision=0;
   function groundImage(region){
     if(!ground[region]){const img=ground[region]=new Image();img.onload=()=>{revision++;layers.clear();};img.src=root+'world-ground-'+region+'-v2.png';}
     return ground[region];
@@ -16,8 +16,8 @@
   function regionOf(room){return regions.includes(room.region)?room.region:'woodland';}
   function profile(room){
     if(room.adventure?.area==='caravan')return {id:'opening',cap:8,interior:0};
-    if(room.adventure?.area==='eastern_threshold')return {id:'dry-threshold',cap:26,interior:.25};
-    if(room.adventure?.area==='fields')return {id:'dry-fields',cap:60,interior:.65};
+    if(['eastern_threshold','irrigation_channels','farmstead','pump_exterior'].includes(room.adventure?.area))return {id:'dry-threshold',cap:18,interior:0};
+    if(room.adventure?.area==='fields')return {id:'dry-fields',cap:24,interior:.12};
     if(room.adventure)return {id:'exploration',cap:90,interior:1};
     if(room.phase==='town')return {id:'village',cap:50,interior:.6};
     if(room.phase==='routes'||room.phase==='peace')return {id:'route',cap:20,interior:.45};
@@ -42,11 +42,15 @@
     const list=paths(room,w,h);if(!list.length)return;
     const region=regionOf(room),color={woodland:'#ad9970',ruins:'#bfb199',cavern:'#708496',frost:'#8cb4c4'}[region];
     const wide=w>960||h>540?70:48;
+    const route=p=>{if(p.points){const points=p.points;g.moveTo(points[0][0]/2,points[0][1]/2);
+      for(let i=1;i<points.length-1;i++)g.quadraticCurveTo(points[i][0]/2,points[i][1]/2,(points[i][0]+points[i+1][0])/4,(points[i][1]+points[i+1][1])/4);
+      const last=points[points.length-1];g.lineTo(last[0]/2,last[1]/2);
+    }else{g.moveTo(p.x/2,p.y/2);g.quadraticCurveTo(p.cx/2,p.cy/2,p.ex/2,p.ey/2);}};
     g.save();g.lineJoin=g.lineCap='round';
     // Several restrained edge bands blend the route into the material, on the native pixel grid.
-    for(const [extra,alpha] of [[26,.05],[18,.07],[10,.09],[0,.14]]){g.strokeStyle=color;g.globalAlpha=alpha;g.lineWidth=(wide+extra)/2;
-      for(const p of list){g.beginPath();if(p.points)p.points.forEach(([x,y],i)=>g[i?'lineTo':'moveTo'](x/2,y/2));
-        else {g.moveTo(p.x/2,p.y/2);g.quadraticCurveTo(p.cx/2,p.cy/2,p.ex/2,p.ey/2);}g.stroke();}}
+    for(const [extra,alpha] of [[36,.025],[26,.035],[18,.045],[10,.06],[4,.08],[0,.12]]){g.strokeStyle=color;g.globalAlpha=alpha;g.lineWidth=(wide+extra)/2;
+      // One joined path prevents dark overlaps where branches meet.
+      g.beginPath();for(const p of list)route(p);g.stroke();}
     g.restore();
   }
   function floor(ctx,room,w,h,puzzle=false){
@@ -59,7 +63,10 @@
       // Mirrored macro tiles share their edge pixels; no cut-and-pasted perimeter strips.
       const tile=512;
       for(let y=0;y<layer.height;y+=tile)for(let x=0;x<layer.width;x+=tile){const flipX=(x/tile)%2,flipY=(y/tile)%2;
-        g.save();g.translate(x+(flipX?tile:0),y+(flipY?tile:0));g.scale(flipX?-1:1,flipY?-1:1);g.drawImage(img,0,0,tile,tile);g.restore();}
+        g.save();g.translate(x+(flipX?tile:0),y+(flipY?tile:0));g.scale(flipX?-1:1,flipY?-1:1);g.drawImage(img,0,0,tile,tile);
+        // A low-frequency copy reduces microcontrast while keeping native pixel edges.
+        let broad=broadGround.get(img);if(!broad){broad=document.createElement('canvas');broad.width=broad.height=32;const b=broad.getContext('2d');b.imageSmoothingEnabled=true;b.drawImage(img,0,0,32,32);broadGround.set(img,broad);}
+        g.globalAlpha=.34;g.drawImage(broad,0,0,tile,tile);g.globalAlpha=1;g.restore();}
       const mood={camp:['#b29964',.19],clearing:['#9caf7d',.07],shrine:['#233d39',.14],bridge:['#365d5b',.11],puzzle:['#253f38',.13]}[puzzle?'puzzle':room.adventure?.area];
       if(mood){g.fillStyle=mood[0];g.globalAlpha=mood[1];g.fillRect(0,0,layer.width,layer.height);g.globalAlpha=1;}
       if(!puzzle)paintPaths(g,room,w,h);
@@ -85,7 +92,7 @@
     if(room.objective)reserved.push([room.objective.x??w/2,room.objective.y??h/2]);
     function add(x,y,variant,scale=1){
       if(items.length>=settings.cap)return;
-      const dryness=area==='eastern_threshold'?.65+.35*x/w:area==='fields'?x/w:0;
+      const dryness=['eastern_threshold','irrigation_channels','farmstead','pump_exterior'].includes(area)?.65+.35*x/w:area==='fields'?x/w:0;
       if(dryness>.55&&variant<2&&rng()<.8)return;
       const tall=variant<2 || region==='frost'&&variant===3;
       if(puzzle&&tall)scale*=.6;
@@ -145,6 +152,8 @@
   function bounds(o){const s=o.scale*1.65;return spriteBounds(art,o.variant*cell,o.row*cell,cell,cell,o.x-anchor[0]*s,o.y-anchor[1]*s,cell*s,cell*s);}
   const objectEntries=new WeakMap();
   function objects(room,w,h){
+    const authored=window.GauntletRoomDesigns?.objects(room,w,h);if(authored)return authored;
+    const campaign=window.GauntletCampaignScenery?.objects(room,w,h);if(campaign)return campaign;
     if(room.adventure?.dungeon)return [];
     const items=layout(room,w,h);let cached=objectEntries.get(items);
     if(!cached||cached.revision!==revision){cached={revision,entries:items.map(o=>({key:[room.code,room.adventure?.area,room.stage,o.id].join(':'),depth:o.depth,occluder:true,bounds:bounds(o),draw:ctx=>drawObject(ctx,o)}))};objectEntries.set(items,cached);}
@@ -170,8 +179,9 @@
       state.alpha=reduced?target:state.alpha+Math.sign(target-state.alpha)*Math.min(Math.abs(target-state.alpha),step);
       state.last=now;states.set(key,state);ctx.save();ctx.globalAlpha*=state.alpha;entry.draw(ctx);ctx.restore();
     }
-    for(const p of outlined){const b=p.bounds,x=b.x+b.width/2,y=b.y+b.height*.38;ctx.save();ctx.strokeStyle=p.player.local?'#fff0b5':'#c6d9d4';ctx.globalAlpha=.65;ctx.lineWidth=1.5;
-      ctx.beginPath();ctx.ellipse(x,y,b.width*.28,b.height*.42,0,0,Math.PI*2);ctx.stroke();ctx.restore();}
+    for(const p of outlined){const b=p.bounds,x=b.x+b.width/2,y=b.y+5;ctx.save();ctx.strokeStyle=p.player.local?'#eee2bc':'#c6d9d4';ctx.globalAlpha=.55;ctx.lineWidth=1;
+      // Small visibility notches identify an overlapped hunter without a shield-like oval.
+      ctx.beginPath();for(const sign of [-1,1]){ctx.moveTo(x+sign*8,y);ctx.lineTo(x+sign*15,y);ctx.lineTo(x+sign*15,y+7);}ctx.stroke();ctx.restore();}
     for(const entry of entries)if(entry.after){ctx.save();entry.after(ctx);ctx.restore();}
     for(const [key,state]of states)if(now-state.last>2000)states.delete(key);
   }

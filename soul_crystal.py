@@ -3,12 +3,15 @@ import math
 import re
 import time
 
-CAPACITY=20
+CAPACITY=10
 PARTICIPATION_RANGE=450
 
 
 def ensure(p):
-    return p.setdefault('soulCrystal',dict(version=1,charge=CAPACITY,receipts={}))
+    s=p.setdefault('soulCrystal',dict(version=2,charge=CAPACITY,receipts={}))
+    if s['version']==1:
+        s.update(version=2,charge=min(CAPACITY,s['charge']))
+    return s
 
 
 def grant(room,enemy):
@@ -28,5 +31,5 @@ def grant(room,enemy):
 def validate(p):
     s=p.get('soulCrystal')
     if s is None:return # Additive migration: old characters receive the initial full crystal.
-    if not isinstance(s,dict) or set(s)!={'version','charge','receipts'} or s['version']!=1 or type(s['charge']) is not int or not 0<=s['charge']<=CAPACITY:raise ValueError('Invalid soul crystal.')
+    if not isinstance(s,dict) or set(s)!={'version','charge','receipts'} or s['version'] not in (1,2) or type(s['charge']) is not int or not 0<=s['charge']<=(20 if s['version']==1 else CAPACITY):raise ValueError('Invalid soul crystal.')
     if not isinstance(s['receipts'],dict) or len(s['receipts'])>1024 or any(not isinstance(k,str) or not re.fullmatch(r'[A-Za-z0-9_:-]{1,100}',k) or type(v) is not int or not 0<=v<=10**9 for k,v in s['receipts'].items()):raise ValueError('Invalid enemy-life soul receipts.')

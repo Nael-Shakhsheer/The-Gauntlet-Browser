@@ -47,6 +47,7 @@
         <div class="section-heading"><div><p class="eyebrow">PERSONAL CONTROLS</p><h3>Keybindings</h3></div><button id="closeSettings" class="secondary small" type="button">Close</button></div>
         <p class="subtle">Movement uses WASD by default. Select a key, then press the key you want.</p>
         <div id="keyBindingFields" class="key-binding-fields"></div>
+        <p id="bindingNotice" class="notice" role="status"></p>
         <p id="controlHint" class="control-hint">Move: WASD · Dash: Space (5s) · Light attack: Left click · Special: Q · Ultimate: X</p>
         <button id="resetBindings" class="secondary small" type="button">Restore defaults</button>
       </section>
@@ -77,12 +78,15 @@
           <p class="subtle">Each class is unique within the party. Choose one Light, one Special, and one Ultimate ability.</p>
           <fieldset id="runOptions" class="run-options">
             <legend>Run options · host chooses</legend>
-            <label><span>Mode</span><select id="modeChoice"><option value="gauntlet">Gauntlet · stage campaign</option><option value="adventure">Adventure · woodland prototype</option></select></label>
+            <label><span>Mode</span><select id="modeChoice"><option value="gauntlet">Gauntlet · stage campaign</option><option value="adventure">Adventure · five-region campaign</option></select></label>
             <label><span>Challenge</span><select id="difficultyChoice"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select></label>
             <label id="lengthOption"><span>Run length</span><select id="lengthChoice"><option value="9">Tester · 9 stages</option><option value="20">Short · 20 stages</option><option value="25" selected>Standard · 25 stages</option><option value="30">Long · 30 stages</option></select></label>
+            <label id="challengeOption"><span>Gauntlet rules</span><select id="challengeChoice"><option value="classic">Classic</option><option value="seeded">Seeded modifiers · extra kill Runes</option></select></label>
+            <label id="challengeSeedOption"><span>Modifier seed</span><input id="challengeSeed" type="number" min="0" max="2147483647" step="1" value="0"></label>
             <p id="adventureModeHint" class="subtle hidden">Adventure is a connected woodland around Oakvale. Explore freely, help the missing hunter, repair a shortcut and secure the old ruins. Separate automatic local saves; rest at the inn to set your return point.</p>
             <label class="companion-choice"><input id="npcCompanion" type="checkbox"><span>Add NPC companion</span></label>
             <p id="testerModeHint" class="subtle hidden">Tester compresses 25-stage combat progression into 9 stages, with bosses at 3, 6 and 9 and Dracos from 7.</p>
+            <p id="gauntletChallengeHint" class="subtle"></p>
             <p class="subtle">The companion fills one of four party slots and chooses a random available hero when the run starts. Enemy numbers and strength scale with your full party.</p>
           </fieldset>
           <div id="classGrid" class="class-grid"></div>
@@ -98,6 +102,7 @@
             <div class="game-top-actions"><button id="toggleChat" class="secondary small">Chat</button><button id="togglePouch" class="secondary small">Pouch</button><button id="mainMenuGame" class="secondary small">Main menu</button></div>
           </div>
           <nav id="adventureTools" class="adventure-tools hidden" aria-label="Adventure tools"><button id="adventureMapButton" class="secondary small">Map</button><button id="adventureJournalButton" class="secondary small">Journal</button><button id="heroSkillsButton" class="secondary small">Skills</button><button id="villageTeleportButton" class="secondary small">Village portal</button><span id="adventureStatus" role="status"></span></nav>
+          <details id="gauntletModifier" class="hidden"><summary id="gauntletModifierName"></summary><p id="gauntletModifierRules" class="subtle"></p></details>
           <canvas id="world" width="960" height="540" aria-label="Shared real-time game area"></canvas>
           <aside id="signpostDirections" class="signpost-directions hidden" role="status" aria-live="polite" aria-labelledby="signpostTitle">
             <h3 id="signpostTitle">Woodland directions</h3><div id="signpostRoutes"></div>
@@ -157,7 +162,7 @@
           <section id="defeatPanel" class="defeat-panel hidden">
             <p class="eyebrow">THE GAUNTLET CLAIMED ITS DUE</p>
             <h3>Return to the last inn?</h3>
-            <p id="defeatMessage">The party lost 40% of its Runes. Items will be kept.</p>
+            <p id="defeatMessage">The party lost15% of its shared Runes. Items will be kept.</p>
             <button id="checkpointResume" class="primary">Return to last inn</button>
           </section>
           <section id="puzzlePanel" class="puzzle-panel hidden">
@@ -176,13 +181,13 @@
             </div>
           </div>
           <div id="gameHud" class="game-hud">
-            <div class="resource-stack">
+            <div id="hudResources" class="resource-stack" role="group" aria-label="Your health and mana" data-resource-scope="personal">
               <img id="hudHeroPortrait" class="hud-hero-portrait" src="/sprites/portrait-knight-v1.png" width="48" height="48" alt="" aria-hidden="true">
               <small id="barrierLabel" class="barrier-badge hidden" role="status"></small>
               <div class="resource-meter health-meter"><span id="hpLabel">HP 100 / 100</span><div class="resource-track"><div id="hpFill"></div></div></div>
               <div class="resource-meter mana-meter"><span id="manaLabel">MANA 100 / 100</span><div class="resource-track"><div id="manaFill"></div></div></div>
             </div>
-            <div class="hud-middle">
+            <div id="hudCombat" class="hud-middle" role="group" aria-label="Combat actions">
               <div id="toolHotbar" class="tool-hotbar" aria-label="Equipped tools">
                 <div id="toolLeft" class="tool-side"></div>
                 <div class="ability-center">
@@ -206,6 +211,11 @@
         <section id="pouchPanel" class="panel pouch-panel hidden">
           <div class="section-heading"><div><p class="eyebrow">YOUR ITEMS & STATUS</p><h2>Pouch & equipment <small id="pouchCount">0 / 10</small></h2></div><button id="expandPouch" class="secondary" aria-expanded="false">Expand</button></div>
           <p id="curseStatus" class="curse-status hidden"></p>
+          <div id="soulCrystalPouch" class="permanent-tool hidden">
+            <span class="crystal-icon" data-soul-crystal-sprite aria-hidden="true">◆</span>
+            <div><strong>Soul Transport Crystal</strong><small>Permanent travel tool</small></div>
+            <button id="inspectSoulCrystal" class="secondary small">Inspect</button>
+          </div>
           <div id="quickPouch" class="quick-pouch"></div>
           <h3 class="gear-caption">Equipped slots</h3>
           <div id="quickGear" class="quick-gear"></div>
@@ -238,10 +248,15 @@
   <script src="ability-animations.js" defer></script>
   <script src="ascended-sprites.js" defer></script>
   <script src="combat-visuals.js" defer></script>
+  <script src="release-visuals.js" defer></script>
+  <script src="room-design-data.js" defer></script>
+  <script src="room-designs.js" defer></script>
+  <script src="ascended-summons.js" defer></script>
   <script src="camera.js" defer></script>
   <script src="world-scenery.js" defer></script>
   <script src="dungeon-sprites.js" defer></script>
   <script src="region-sprites.js" defer></script>
+  <script src="travel-map.js" defer></script>
   <script src="adventure-sprites.js" defer></script>
   <script src="movement.js" defer></script>
   <script src="audio-routing.js" defer></script>
@@ -258,20 +273,22 @@
   <script src="adventure.js" defer></script>
   <script src="opening.js" defer></script>
   <script src="chapter.js" defer></script>
+  <script src="campaign.js" defer></script>
   <script src="recovery.js" defer></script>
+  <script src="campaign-recap.js" defer></script>
   <script src="front-menu.js" defer></script>
   <script src="adventure-skills.js" defer></script>
   <dialog id="adventureMapDialog" class="panel info-dialog adventure-map-dialog" aria-labelledby="adventureMapTitle">
-    <div class="section-heading map-heading"><div><p class="eyebrow">THE ADVENTURER'S ATLAS</p><h2 id="adventureMapTitle">The Oakvale woodland</h2></div><div class="map-view-buttons"><button id="toggleAdventureMapView" class="secondary small">Dungeon maps</button><button data-close="adventureMapDialog" class="secondary">Close</button></div></div>
-    <div class="map-toolbar" aria-label="Map view controls"><div class="map-view-buttons"><button class="secondary small" data-map-focus="party">Your party</button><button class="secondary small" data-map-focus="goal">Tracked goal</button></div><div class="map-zoom-buttons"><button class="secondary small" data-map-zoom="out" aria-label="Zoom map out">−</button><button class="secondary small" data-map-zoom="fit">Fit</button><button class="secondary small" data-map-zoom="in" aria-label="Zoom map in">+</button></div></div>
-    <div class="atlas-layout"><div class="map-viewport" id="adventureMapViewport" tabindex="0" aria-label="Woodland map. Scroll to pan when zoomed."><div id="adventureMap"></div></div><aside id="adventureMapDetails" class="map-details" aria-live="polite"></aside></div>
+    <div class="section-heading map-heading"><div><p class="eyebrow">THE ADVENTURER'S ATLAS</p><h2 id="adventureMapTitle">The Oakvale woodland</h2></div><div class="map-view-buttons"><select id="dungeonMapChoice" aria-label="Discovered dungeon" hidden></select><button id="toggleAdventureMapView" class="secondary small">Dungeon maps</button><button data-close="adventureMapDialog" class="secondary">Close</button></div></div>
+    <div class="map-toolbar" aria-label="Map view controls"><div class="map-view-buttons"><select id="atlasRegionChoice" aria-label="Charted region" hidden></select><button class="secondary small" data-map-focus="party">Your party</button><button class="secondary small" data-map-focus="goal">Tracked goal</button></div><div class="map-zoom-buttons"><button class="secondary small" data-map-zoom="out" aria-label="Zoom map out">−</button><button class="secondary small" data-map-zoom="fit">Fit</button><button class="secondary small" data-map-zoom="in" aria-label="Zoom map in">+</button></div></div>
+    <div class="atlas-layout"><div class="map-viewport" id="adventureMapViewport" tabindex="0" aria-label="Adventure atlas. Scroll to pan when zoomed."><div id="adventureMap"></div></div><aside id="adventureMapDetails" class="map-details" aria-live="polite"></aside></div>
     <div class="map-legend" aria-label="Map legend"><span><i class="legend-party"></i>Your party</span><span><i class="legend-visited"></i>Visited</span><span><i class="legend-goal">★</i>Tracked goal</span><span><i class="legend-closed"></i>Closed trail</span></div>
     <p class="map-footnote"><span id="adventureMapCount"></span> · Select a landmark for details. Scroll or swipe to pan when zoomed. Trails are charted by direction; distances are approximate.</p>
     <div id="adventureDungeonMaps"></div>
   </dialog>
   <dialog id="adventureJournalDialog" class="panel info-dialog adventure-journal-dialog" aria-labelledby="adventureJournalTitle">
     <div class="section-heading"><h2 id="adventureJournalTitle">Adventure journal</h2><button data-close="adventureJournalDialog" class="secondary">Close</button></div>
-    <p>Choose one goal to track. Woodland quests can be completed in any order.</p>
+    <p>Track a goal for its next step. Accept main assignments from their contact, then return to report. Optional stories and discovered dungeons fit around the main journey; clues found early are kept.</p>
     <div id="adventureJournal"></div><div id="adventureDungeonJournal"></div><div id="adventureDiscoveries"></div>
     <details class="adventure-journal-details"><summary>Recent party rewards</summary><div id="adventureRewards"></div></details>
     <section id="adventureRewardChoices" aria-label="Your pending reward choices"></section><p id="adventureRewardNotice" class="notice" role="status"></p>
@@ -286,10 +303,17 @@
     </details>
   </dialog>
   <dialog id="villagePortalDialog" class="panel info-dialog recovery-dialog" aria-labelledby="villagePortalTitle">
-    <div class="section-heading"><h2 id="villagePortalTitle">Travel shrines & Soul Crystal</h2><button data-close="villagePortalDialog" class="secondary">Close</button></div>
-    <p>Gather nearby. Every connected hunter confirms, then stands still for 3 seconds. Nearby enemies, damage or movement interrupt it. Sealed fights must be finished first.</p>
+    <div class="section-heading"><h2 id="villagePortalTitle">Travel map</h2><button data-close="villagePortalDialog" class="secondary">Close</button></div>
     <div id="villagePortalDestinations"></div><p id="villagePortalNotice" class="notice" role="status"></p>
-    <p class="subtle">Teleport keeps health, equipment and recharge. Use an inn bed to rest.</p>
+  </dialog>
+  <dialog id="soulCrystalDialog" class="panel info-dialog" aria-labelledby="soulCrystalTitle">
+    <div class="section-heading"><h2 id="soulCrystalTitle">Soul Transport Crystal</h2><button data-close="soulCrystalDialog" class="secondary">Close</button></div>
+    <div class="crystal-status"><span class="crystal-icon" data-soul-crystal-sprite aria-hidden="true">◆</span><div><strong id="soulCrystalCharge"></strong><p id="soulCrystalStatus" role="status"></p></div></div>
+    <progress id="soulCrystalMeter" max="20" value="0" aria-label="Crystal soul charge"></progress>
+    <p id="soulCrystalAvailability" class="notice"></p>
+    <p>Travel to discovered villages and activated shrines. Crystal travel spends a full charge of 10 souls. Shrine travel keeps your charge.</p>
+    <details><summary>Recharge & travel rules</summary><p>Recharge with 10 ordinary enemy kills: ordinary foes give 1 soul, elites give 3 and bosses give 5. Holds up to 10 souls.</p><p>Gather, confirm your destination and stand still for three seconds. Movement, damage or nearby enemies interrupt travel without spending charge. Sealed encounters must be finished first. Companions and offline players do not need to confirm.</p><p>Health, equipment, ability recharge and your inn recovery point stay unchanged.</p></details>
+    <div class="crystal-actions"><button id="soulCrystalTravel" class="primary">Open travel map</button><small>Permanent tool · does not use a pouch slot</small></div>
   </dialog>
   <dialog id="adventureImportDialog" class="panel info-dialog recovery-dialog" aria-labelledby="adventureImportTitle">
     <div class="section-heading"><h2 id="adventureImportTitle">Review backup</h2><button data-close="adventureImportDialog" class="secondary">Cancel</button></div>
@@ -310,13 +334,19 @@
     <p id="trainingPoints"></p><div id="trainingBranches" class="training-branches"></div><p id="trainingNotice" class="notice" role="status"></p>
   </dialog>
   <dialog id="heroSkillsDialog" class="panel info-dialog hero-skills-dialog" aria-labelledby="heroSkillsTitle">
-    <div class="section-heading"><h2 id="heroSkillsTitle">Hero skills</h2><button data-close="heroSkillsDialog" class="secondary">Close</button></div>
-    <p id="heroSkillsPoints"></p><p id="heroSkillsSafety" class="subtle"></p>
-    <div id="heroLoadout" class="hero-loadout" aria-label="Adventure action slots"></div>
-    <div id="heroBranches" class="hero-branches" aria-label="Skill branches"></div><div id="heroNodes" class="hero-nodes"></div>
+    <div class="section-heading"><h2 id="heroSkillsTitle">Hero skills</h2><button data-close="heroSkillsDialog" class="secondary" data-ui-action="navigation">Close</button></div>
+    <nav id="heroSkillSections" class="skill-sections" role="tablist" aria-label="Skills section"><button id="skillTabLearn" role="tab" data-skill-section="learn" aria-controls="skillLearn">Learn</button><button id="skillTabLoadout" role="tab" data-skill-section="loadout" aria-controls="skillLoadout">Loadout</button><button id="skillTabAscension" role="tab" data-skill-section="ascension" aria-controls="skillAscension">Ascension</button></nav>
+    <p id="heroSkillsPoints" role="status" data-resource-scope="personal"></p><p id="heroSkillsSafety" class="subtle"></p>
     <p id="heroSkillsNotice" class="notice" role="status"></p>
+    <div id="heroSkillsContent" class="skill-content" tabindex="0" aria-label="Skills content">
+    <section id="skillLearn" role="tabpanel" aria-labelledby="skillTabLearn"><div id="heroSkillActions" class="skill-actions" aria-label="Available skill decisions"></div><div id="heroBranches" class="hero-branches" aria-label="Skill branches"></div><div id="heroNodes" class="hero-nodes"></div>
     <details><summary>Milestone points and preserved training</summary><div id="heroMilestones"></div></details>
-    <button id="heroRespec" class="secondary small">Respec learned skills · free at villages</button><p class="subtle">Respec refunds spent points. It keeps health, mana, recharge, milestones and older training benefits. Live summons are dismissed with their normal death recharge.</p>
+    </section>
+    <section id="skillLoadout" role="tabpanel" aria-labelledby="skillTabLoadout" hidden><div id="heroLoadout" class="hero-loadout" aria-label="Adventure action slots"></div>
+    <details><summary>Changing your build</summary><button id="heroRespec" class="secondary small">Respec learned skills · free at villages</button><p class="subtle">Respec refunds spent points. Health, mana, recharge, milestones and older training stay. Dismissed summons require their normal recharge.</p></details>
+    </section>
+    <section id="skillAscension" role="tabpanel" aria-labelledby="skillTabAscension" hidden><div id="heroAscensionPurchases"></div><div id="heroAscensionNodes" class="hero-nodes"></div></section>
+    </div>
   </dialog>
   <dialog id="questDialog" class="panel info-dialog" aria-labelledby="questTitle">
     <div class="section-heading"><h2 id="questTitle">The wounded hunter's request</h2><button data-close="questDialog" class="secondary">Close</button></div>
@@ -352,7 +382,7 @@
     <p id="saveStatus"></p><p class="subtle">Overall totals for this run, including the current stage. Damage dealt includes your summons; damage taken counts your hero’s HP lost. Revives count allies rescued, deaths count falling or a party wipe, and kills go to the finishing attacker.</p>
     <div id="overallStats"></div><button id="downloadStats" class="secondary">Download run stats</button>
   </dialog>
-  <dialog id="runtimeDialog" class="panel info-dialog" aria-labelledby="runtimeTitle"><div class="section-heading"><h2 id="runtimeTitle">Technical details</h2><button class="secondary" data-close="runtimeDialog">Close</button></div><p id="runtimeBuild" class="subtle"></p><p>Anonymous timings from this page, in milliseconds. No player names or save contents are collected.</p><pre id="runtimeReadings"></pre><button id="runtimeServer" class="secondary">Read server timings</button><pre id="runtimeServerReadings"></pre></dialog>
+  <dialog id="runtimeDialog" class="panel info-dialog" aria-labelledby="runtimeTitle"><div class="section-heading"><h2 id="runtimeTitle">Technical details</h2><button class="secondary" data-close="runtimeDialog">Close</button></div><p id="runtimeBuild" class="subtle"></p><p>Anonymous timings from this page, in milliseconds. No player names or save contents are collected.</p><details><summary>What these timings mean</summary><p><strong>receivedSnapshotAgeMs</strong>: time since this browser accepted a state response. It shows polling gaps, including while standing still; it is not one-way network delay. <strong>movementSampleAgeMs</strong>: time since the server last integrated movement, which can be large while idle or downed. Request timings measure round trips; server timings are separate. Samples reset when changing sessions.</p></details><pre id="runtimeReadings"></pre><button id="runtimeServer" class="secondary">Read server timings</button><pre id="runtimeServerReadings"></pre></dialog>
   <dialog id="newRunDialog" class="panel info-dialog setup-dialog" aria-labelledby="newRunTitle">
     <div class="section-heading"><h2 id="newRunTitle">New Adventure</h2><button class="secondary" data-close="newRunDialog">Back</button></div>
     <p>A new run creates a separate character and world. Existing saves stay available in Continue.</p>
@@ -368,7 +398,7 @@
       <button id="newRunSubmit" class="primary" type="submit">Begin Adventure</button>
     </form>
   </dialog>
-  <dialog id="joinPartyDialog" class="panel info-dialog" aria-labelledby="joinPartyTitle"><div class="section-heading"><h2 id="joinPartyTitle">Join a party</h2><button class="secondary" data-close="joinPartyDialog">Back</button></div><p>Adventure parties accept new hunters in Oakvale or Dunmere. Use Continue to reconnect an existing character.</p><div id="joinPartyBody"></div><p id="joinPartyNotice" class="notice" role="status"></p></dialog>
+  <dialog id="joinPartyDialog" class="panel info-dialog" aria-labelledby="joinPartyTitle"><div class="section-heading"><h2 id="joinPartyTitle">Join a party</h2><button class="secondary" data-close="joinPartyDialog">Back</button></div><p>Adventure parties accept new hunters at a village or refuge. Use Continue to reconnect an existing character.</p><div id="joinPartyBody"></div><p id="joinPartyNotice" class="notice" role="status"></p></dialog>
   <dialog id="settingsDialog" class="panel info-dialog" aria-labelledby="settingsTitle"><div class="section-heading"><h2 id="settingsTitle">Settings</h2><button class="secondary" data-close="settingsDialog">Back</button></div><div id="settingsBody" class="settings-body"></div></dialog>
 </body>
 </html>
